@@ -142,3 +142,14 @@ npm run dev
 1. **Immutable Audit Trail**: Every administrative mutation (account suspension, user deletion, role modification, report resolution) requires an audited justification and writes directly to the immutable append-only `AuditLog` table.
 2. **Strict Route Guards**: Route protection operates at both the Next.js edge middleware level and NestJS JWT/Roles guard level, strictly enforcing role-level access.
 3. **Brevo Email Gateway**: System emails (supervision requests, account status notices, invitations) are routed through transactional Brevo email services with status telemetry.
+4. **Amazon S3 Object Storage**: Dedicated cloud storage for all research papers, thesis PDFs, evidence uploads, and workspace assets, fronted by AWS CloudFront CDN.
+
+---
+
+## 📚 Architecture & Capacity Documentation
+
+* [System Architecture Guide](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/architecture/ARCHITECTURE.md)
+* [Tech Stack Breakdown & Mermaid Topology](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/architecture/tech-stack.md)
+* [Production Capacity, Usage Tiers & Cost Analysis](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/architecture/PRODUCTION_CAPACITY_COST_ANALYSIS.md)
+* [Production Deployment & Infrastructure Runbook](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/deployment/DEPLOYMENT_GUIDE.md)
+

@@ -40,7 +40,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiFetch, API_URL, getSupabaseToken } from '@/lib/api-client';
-import { io } from 'socket.io-client';
 
 interface CollaborationFile {
   name: string;
@@ -84,9 +83,6 @@ export function CuriousNexusHub({ initialView = 'messages', initialUserId }: { i
   const [messages, setMessages] = useState<any[]>([]);
   const [messageInput, setMessageInput] = useState('');
   const [replyingTo, setReplyingTo] = useState<any | null>(null);
-  
-
-  const [socket, setSocket] = useState<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // Auto-scroll to bottom when messages change
@@ -146,59 +142,6 @@ export function CuriousNexusHub({ initialView = 'messages', initialUserId }: { i
   useEffect(() => {
     loadNexusData(myCollaborations.length === 0);
   }, [loadNexusData]);
-
-  // Initialize WebSockets
-  useEffect(() => {
-    let activeSocket: any;
-
-    const initSocket = async () => {
-      const token = await getSupabaseToken();
-      if (!token) return;
-
-      activeSocket = io(API_URL, {
-        auth: { token },
-      });
-
-      activeSocket.on('connect', () => {
-        console.log('Connected to real-time chat');
-      });
-
-      activeSocket.on('newMessage', (message: any) => {
-        setMessages((prev) => {
-          // Prevent duplicates
-          if (prev.find(m => m.id === message.id)) return prev;
-          
-          return [...prev, {
-            id: message.id,
-            senderId: message.senderId,
-            senderName: message.sender?.name || 'Unknown',
-            senderImage: message.sender?.image || getProfileImageUrl(message.sender?.name || 'User'),
-            content: message.content,
-            timestamp: new Date(message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          }];
-        });
-      });
-
-      setSocket(activeSocket);
-    };
-
-    initSocket();
-
-    return () => {
-      if (activeSocket) activeSocket.disconnect();
-    };
-  }, []);
-
-  // Handle Room joining
-  useEffect(() => {
-    if (socket && openedCollabId) {
-      socket.emit('joinCollaboration', openedCollabId);
-      
-      return () => {
-        socket.emit('leaveCollaboration', openedCollabId);
-      };
-    }
-  }, [socket, openedCollabId]);
 
   // Compile Active Collaborations list
   const activeCollaborations = useMemo(() => {

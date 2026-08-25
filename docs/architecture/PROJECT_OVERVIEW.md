@@ -1,66 +1,76 @@
-# CuriousBees V2 — Project Overview
+# CuriousBees V2 — Project Overview & Domain Model
 
-CuriousBees is a centralized, digital Research Collaboration Platform designed specifically for modern university ecosystems. It replaces fragmented communication channels (such as emails, external chats, and shared drives) with a unified environment dedicated to academic supervision, project tracking, and research discovery.
-
----
-
-## 👥 User Personas & Journeys
-
-### 1. Research Scholars (PhD / Researchers)
-* **Onboarding & Approval**: New scholars register using their university accounts. They are required to search the supervisor directory and request supervision. Once approved, the dashboard unlocks.
-* **Collaboration**: Scholars can search for active project recruitments on the Opportunities board, participate in cross-disciplinary Discussion Threads, and share documents inside Workspaces.
-* **Progress Tracking**: Scholars post periodic progress updates and report milestones directly to their advisors.
-
-### 2. Research Supervisors (Faculty Members)
-* **Advisor Management**: Supervisors receive requests from scholars, reviewing their profiles and credentials before granting formal approval.
-* **Workspaces**: Supervisors create workspaces for their active research grants, inviting their approved scholars to collaborate, assign deadlines, and review research drafts.
-* **Recruitment**: Supervisors post open research slots or scholar assistant positions to the Opportunities board to discover talent from other departments.
-
-### 3. Institutional Administrators (University Officials)
-* **System Governance**: Admins maintain a bird's-eye view of all platform activity. They can promote users to supervisors, verify credential status, and manage global department lists.
-* **Platform Security**: Admins monitor audit logs and ensure compliance with university research standards.
+**CuriousBees** is an enterprise-grade, institutional Academic Collaboration & Research Governance Platform designed specifically for university research ecosystems (e.g., SRMIST). It centralizes researcher onboarding, faculty supervision management, cross-departmental project recruitment, research output authoring, and institutional administrative compliance into a unified, secure digital platform.
 
 ---
 
-## 🛠️ System Modules & Workflows
+## 👥 User Personas & Workflows
 
 ```mermaid
 flowchart LR
     subgraph Onboarding Workflow
-        A[New User Login] --> B{Role Determined}
-        B -->|Scholar| C[Choose Supervisor]
-        C --> D[Awaiting Approval]
-        B -->|Supervisor| E[Awaiting Admin Approval]
+        A[Google OAuth Login<br/>srmist.edu.in] --> B{Institutional Role}
+        B -->|Research Scholar| C[Search Supervisor Directory]
+        C --> D[Submit Supervision Request]
         D -->|Superviser Approves| F[Approved Portal Access]
-        E -->|Admin Approves| F
+        B -->|Research Supervisor| F[Direct Access Active]
+        B -->|Institute Admin| G[Admin Governance Console]
     end
 
-    subgraph Core Collaboration
-        F --> G[Workspaces]
-        F --> H[Opportunities Board]
-        F --> I[Discussion Forums]
+    subgraph Core Collaboration Hub
+        F --> H[Workspaces & S3 Files]
+        F --> I[Nexus Google & Zoom Conferencing]
+        F --> J[My Research Doctoral Tracking]
+        F --> K[Feed & Opportunities Board]
     end
 ```
 
-### 1. Workspaces
-Dedicated rooms where members share files and post announcements. Features:
-* **Documents Area**: Secure files repository with size and type metadata.
-* **Project Milestones**: Progress checklist (e.g. thesis draft submission deadlines).
+### 1. Research Scholars (PhD / Postdoc Researchers)
+* **Direct Onboarding & Supervision Request:** Authenticates via university Google SSO. Selects an active faculty supervisor and submits a supervision proposal.
+* **My Research Lifecycle:** Tracks research progress through 6 formal stages (Proposal $\rightarrow$ Literature Review $\rightarrow$ Methodology $\rightarrow$ Implementation $\rightarrow$ Evaluation $\rightarrow$ Thesis Publication) with milestone deadlines and activity logs.
+* **CuriousNexus Collaboration Hub:** Connects with peer researchers across departments, initiates collaborative projects, shares workspace documents, launches Google Meet / Zoom conferences, and posts messages via REST API.
+* **Output Authoring & Storage:** Publishes research posts, registers papers with DOI metadata, and uploads paper drafts and milestone evidence directly to **Amazon S3**.
 
-### 2. Opportunities Board
-A dashboard where supervisors and scholars post project listings. Features:
-* **Collaboration Requests**: Scholars submit applications explaining their qualifications.
-* **Applications Management**: Owners accept or reject requests.
+### 2. Research Supervisors (Faculty Members)
+* **Immediate Autonomous Access:** Registered and verified immediately via institutional SSO with **no admin bottleneck**.
+* **Supervision Command Center:** Reviews inbound scholar supervision requests, inspecting candidate credentials, statement of purpose, and research areas before approving or rejecting (triggers automated Brevo email alerts).
+* **Workspace Governance:** Creates research grant workspaces, assigns milestones, sets submission deadlines, shares research materials, and reviews scholar monthly progress reports.
+* **Opportunities Board:** Posts funded PhD positions, research assistant openings, and cross-departmental project recruitments.
 
-### 3. Discussion Forums (Threads)
-A global discussion board for university-wide academic discussions. Features:
-* **Topic Tagging**: Organizes discussions by domain (e.g. "Generative AI", "Quantum Computing").
-* **Comment Trees**: Facilitates peer review and questions.
+### 3. Institutional Administrators (University Officials)
+* **Governance & Moderation Command Center (`/admin/*`):** Real-time monitoring of campus-wide research metrics, department activity timelines, and user distribution.
+* **Bulk User Management:** Imports university rosters via Excel (`.xlsx`) with automated email uniqueness checks, role assignments, and department mappings.
+* **Content & Compliance Moderation:** Reviews flagged posts, hides non-compliant content, reassigns supervisors, and enforces account suspensions with mandatory justifications.
+* **Immutable Audit Trail:** All administrative actions are permanently recorded in the append-only `AuditLog` database entity.
 
 ---
 
-## 🗺️ Product Roadmap
+## 🛠️ Core Modules & Capabilities
 
-* **Phase 1 (Active)**: Core features (Workspaces, Opportunities, Threads) with a local development auth bypass.
-* **Phase 2 (Planned)**: Native Mobile application (React Native) with real-time push alerts.
-* **Phase 3 (Future)**: Deep SSO integration with specific university directory systems (e.g., Active Directory / Shibboleth).
+### 1. Research Workspaces (`/workspace/:id`)
+Private collaborative workspaces containing:
+* **Amazon S3 File Store:** Secure repository with file size, metadata, and uploaded-by telemetry.
+* **Project Milestones:** Progress tracking with due dates, priority levels, and completion toggles.
+* **Workspace Announcements:** Direct advisor-to-scholar communications and guidelines.
+* **Conferencing Integrations:** One-click Google Meet and Zoom meeting link creation.
+
+### 2. CuriousNexus Collaboration Hub (`/nexus`)
+Cross-disciplinary collaboration suite providing:
+* **Controlled Request Pipeline:** Send, accept, decline, and track collaboration requests.
+* **Google Workspace & Zoom Integrations:** Integrated Google Meet, Google Chat Spaces, and Zoom Workplace meeting rooms.
+* **Shared Advisory Timeline:** Unified file and milestone repository between collaborating researchers.
+
+### 3. My Research Portal (`/scholar/my-research`)
+Doctoral milestone manager tailored for PhD progress reviews, enabling scholars to record achievements, link external profiles (ORCID, Google Scholar, ResearchGate), and submit periodic reports for supervisor sign-off.
+
+### 4. Opportunities Board (`/opportunities`)
+University-wide talent discovery board for funded projects, lab openings, and research grants with integrated candidate application workflows.
+
+---
+
+## 🏗️ Production Capacity Tiers
+
+CuriousBees is engineered to support institutional scale across three validated budget tiers:
+* **Base Tier (₹1,500 – ₹3,000 / mo):** 30–50 concurrent users, 2,500 registered scholars, 25 GB S3 storage.
+* **Standard Tier (₹3,000 – ₹4,500 / mo):** 100–150 concurrent users, 10,000 registered scholars, 100 GB S3 storage.
+* **Scale Tier (₹4,500 – ₹6,500 / mo):** 250–350 concurrent users, 25,000 registered scholars, 300 GB S3 storage.
