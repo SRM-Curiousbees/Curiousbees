@@ -31,9 +31,10 @@ supabase/.temp/
 .env.*
 !.env.example
 
-# 📑 System Diagnostics & Logs
+# 📑 System Diagnostics, Processes & Logs
 logs/
 *.log
+*.pid
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

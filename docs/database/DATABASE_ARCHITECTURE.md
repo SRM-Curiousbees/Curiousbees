@@ -75,7 +75,7 @@ The database is built around three user roles: **Research Scholars**, **Research
 
 By default, PostgreSQL does **not** create indexes on foreign keys. When executing relational joins (e.g., fetching a user's publications or listing workspace files), Postgres must perform a full table scan. 
 
-We audited the schema and implemented explicit indexes (`@@index`) in [schema.prisma](file:///Users/maddy/Current%20Project/CuriousBees_V2/apps/api/prisma/schema.prisma) on the following critical foreign keys:
+We audited the schema and implemented explicit indexes (`@@index`) in [`apps/api/prisma/schema.prisma`](../../apps/api/prisma/schema.prisma) on the following critical foreign keys:
 
 | Model | Indexed Column(s) | Optimized Query Pattern |
 | :--- | :--- | :--- |

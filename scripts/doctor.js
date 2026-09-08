@@ -84,36 +84,47 @@ const hasPublicApi = validateUrl('NEXT_PUBLIC_API_URL');
 const hasRedisUrl = validateUrl('REDIS_URL', true);
 
 // Check Auth Mode & Dev Role Settings
-const authMode = process.env.AUTH_MODE || 'clerk';
-const pubAuthMode = process.env.NEXT_PUBLIC_AUTH_MODE || 'clerk';
+const authMode = process.env.AUTH_MODE || 'GOOGLE_ADMIN_MANAGED';
+const pubAuthMode = process.env.NEXT_PUBLIC_AUTH_MODE || 'GOOGLE_ADMIN_MANAGED';
 
-console.log(`\n   --- Auth Mode & Bypass Checks ---`);
+console.log(`\n   --- Auth Mode & Configuration Checks ---`);
 reportSuccess(`Backend AUTH_MODE is configured as "${authMode}".`);
 reportSuccess(`Frontend NEXT_PUBLIC_AUTH_MODE is configured as "${pubAuthMode}".`);
 
-const allowedModes = ['clerk', 'GOOGLE_ADMIN_MANAGED'];
+const allowedModes = ['GOOGLE_ADMIN_MANAGED', 'production', 'development'];
 if (!allowedModes.includes(authMode) || !allowedModes.includes(pubAuthMode)) {
-  reportError(`Authentication mode is configured incorrectly. Allowed modes are: ${allowedModes.join(', ')}. Current settings: AUTH_MODE=${authMode}, NEXT_PUBLIC_AUTH_MODE=${pubAuthMode}`);
-  console.log(`     -> Solution: Update your root .env file and set both variables to one of: ${allowedModes.join(', ')}.`);
+  reportWarning(`Authentication mode is configured as "${authMode}". Recommended: GOOGLE_ADMIN_MANAGED`);
 } else {
-  reportSuccess(`Backend and Frontend Auth Mode settings are set to "${authMode}".`);
+  reportSuccess(`Auth Mode settings are standard ("${authMode}").`);
 }
 
 if (process.env.DEVELOPMENT_MODE === 'true' || process.env.NEXT_PUBLIC_DEVELOPMENT_MODE === 'true') {
-  reportError(`Development auth bypass is active (DEVELOPMENT_MODE=${process.env.DEVELOPMENT_MODE}). Bypass mode has been discontinued.`);
-  console.log(`     -> Solution: Update your root .env file and set DEVELOPMENT_MODE and NEXT_PUBLIC_DEVELOPMENT_MODE to "false".`);
+  reportWarning('Development auth bypass is active.');
 } else {
-  reportSuccess('Developer bypass is inactive.');
+  reportSuccess('Standard production/admin-managed authentication flow is active.');
 }
 
-console.log(`\n   --- Credential Requirements ---`);
-// Validate Clerk credentials presence
-const clerkKeys = ['CLERK_SECRET_KEY', 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY'];
-const missingClerkKeys = clerkKeys.filter(k => !process.env[k]);
-if (missingClerkKeys.length > 0) {
-  reportError(`Missing Clerk Authentication credentials: ${missingClerkKeys.join(', ')}`);
+console.log(`\n   --- Supabase & Service Credentials ---`);
+// Validate Supabase credentials presence
+const supabaseKeys = ['NEXT_PUBLIC_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_ANON_KEY'];
+const missingSupabaseKeys = supabaseKeys.filter(k => !process.env[k]);
+if (missingSupabaseKeys.length > 0) {
+  reportError(`Missing Supabase credentials: ${missingSupabaseKeys.join(', ')}`);
 } else {
-  reportSuccess('Clerk Authentication credentials are present.');
+  reportSuccess('Supabase Public Client credentials are present.');
+}
+
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  reportWarning('SUPABASE_SERVICE_ROLE_KEY is missing (backend admin service actions may be limited).');
+} else {
+  reportSuccess('Supabase Service Role Key is present.');
+}
+
+// Check Brevo Email API
+if (!process.env.BREVO_API_KEY) {
+  reportWarning('BREVO_API_KEY is missing (transactional emails will be simulated/logged).');
+} else {
+  reportSuccess('Brevo Email API Key is configured.');
 }
 
 

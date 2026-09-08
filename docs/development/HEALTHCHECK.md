@@ -106,4 +106,4 @@ You can query this information locally or via scripting using the cross-platform
 npm run health
 ```
 
-This runs the script [scripts/check-health.js](file:///Users/maddy/Current%20Project/CuriousBees_V2/scripts/check-health.js), checking that status codes return `200` and formats a beautiful console telemetry output.
+This runs the script [`scripts/health-check.js`](../../scripts/health-check.js), checking that status codes return `200` and formatting console telemetry output.

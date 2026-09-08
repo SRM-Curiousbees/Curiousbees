@@ -21,18 +21,18 @@ const req = http.request(options, (res) => {
     if (res.statusCode === 200) {
       try {
         const health = JSON.parse(data);
+        const isHealthy = health.status === 'ok' || health.status === 'healthy';
         console.log('\n=============================================');
         console.log(` CuriousBees Health Check: ${health.status.toUpperCase()}`);
         console.log('=============================================');
-        console.log(`📡 API Status:       ${health.api ? '✅ ONLINE' : '❌ OFFLINE'}`);
-        console.log(`🗄️ Database Status:  ${health.database ? '✅ CONNECTED' : '❌ DISCONNECTED'}`);
-        console.log(`💡 Redis Status:     ${health.redis ? '✅ CONNECTED' : '❌ DISCONNECTED'}`);
-        console.log(`🌐 Environment:      ${health.environment}`);
-        console.log(`🏷️ API Version:      ${health.version}`);
-        console.log(`⏱️ System Uptime:    ${Math.round(health.uptime)}s`);
-        console.log(`📅 Timestamp:        ${health.timestamp}`);
+        console.log(`📡 API Status:       ✅ ONLINE`);
+        console.log(`🗄️ Database Status:  ${health.database === 'connected' ? '✅ CONNECTED' : '❌ DISCONNECTED'}`);
+        console.log(`🌐 Environment:      ${health.environment || 'development'}`);
+        if (health.version) console.log(`🏷️ API Version:      ${health.version}`);
+        if (health.uptime) console.log(`⏱️ System Uptime:    ${Math.round(health.uptime)}s`);
+        console.log(`📅 Timestamp:        ${health.timestamp || new Date().toISOString()}`);
         console.log('=============================================\n');
-        process.exit(health.status === 'healthy' ? 0 : 1);
+        process.exit(isHealthy ? 0 : 1);
       } catch (err) {
         console.error('❌ Failed to parse health check response:', err.message);
         process.exit(1);

@@ -6,7 +6,7 @@ This manual outlines the continuous integration and deployment standards configu
 
 ## 🚀 GitHub Actions CI Pipeline
 
-The pipeline is defined in [.github/workflows/pr-check.yml](file:///Users/maddy/Current%20Project/CuriousBees_V2/.github/workflows/pr-check.yml) and executes on:
+The pipeline is defined in [`.github/workflows/pr-check.yml`](../../.github/workflows/pr-check.yml) and executes on:
 
 - **Push events** to branches: `main`, `master`, `staging`, `dev`
 - **Pull Request events** targeting branches: `main`, `master`, `staging`, `dev`

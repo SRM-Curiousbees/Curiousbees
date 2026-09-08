@@ -1,56 +1,61 @@
-# CuriousBees V2 — Documentation Directory
+# CuriousBees V2 — Documentation Portal
 
-Welcome to the documentation homepage for CuriousBees V2. This index categorizes all project blueprints, onboarding guides, architectural designs, and production capacity plans.
-
----
-
-## 🏛️ 1. Architecture & Blueprints
-
-Overview of the system design, tech stack selection, codebase structure, and capacity planning.
-
-* [System Architecture](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/architecture/ARCHITECTURE.md): Complete structural design of the Next.js 15 frontend, NestJS 11 API, PostgreSQL database, Amazon S3 storage, and Supabase Auth.
-* [Tech Stack Breakdown](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/architecture/tech-stack.md): In-depth inventory of chosen libraries, frameworks, and cloud services with updated Mermaid topology.
-* [Project Overview](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/architecture/PROJECT_OVERVIEW.md): Business domains, user journeys (Scholar, Supervisor, Admin), and core modules.
-* [Production Capacity & Cost Analysis](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/architecture/PRODUCTION_CAPACITY_COST_ANALYSIS.md): Comprehensive sizing, usage tier allocations, concurrent user formulas, and monthly cloud cost calculations.
-* [Directory Layout Details](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/architecture/file-structure.md): Granular file-tree layout details for monorepo packages and apps.
+Welcome to the central documentation portal for **CuriousBees V2** (Institutional Research Collaboration & Governance Platform). This directory provides architectural blueprints, database models, cloud deployment runbooks, security audits, and developer onboarding guides.
 
 ---
 
-## 💻 2. Local Development & Setup
+## 🏛️ 1. Architecture & System Design
 
-Guidelines for configuring local dev instances, database containers, and debugging setups.
+Blueprints, tech stack breakdowns, domain boundaries, and capacity calculations.
 
-* [Onboarding Quick Start](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/guides/QUICK_START.md): 5-minute local startup script workflow.
-* [Local Troubleshooting Guide](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/guides/troubleshooting.md): Resolution steps for PostgreSQL connections, CORS errors, or Prisma locks.
-* [Demo User Accounts Roster](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/guides/DEMO_USERS.md): List of pre-seeded supervisor, scholar, and admin credentials.
-* **Platform Setup Guides**:
-  * [macOS Installation](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/guides/setup-macos.md)
-  * [Windows Installation](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/guides/setup-windows.md)
-  * [Linux Installation](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/guides/setup-linux.md)
+* [System Architecture](./architecture/ARCHITECTURE.md) — Comprehensive architecture of Next.js 15 App Router, NestJS 11 Core API, PostgreSQL database, Supabase Auth, Brevo Gateway, and AWS S3 Object Storage.
+* [Tech Stack Breakdown](./architecture/tech-stack.md) — Full matrix of frontend, backend, database, and infrastructure frameworks with Mermaid topology diagrams.
+* [Project Overview](./architecture/PROJECT_OVERVIEW.md) — Business domain breakdown, institutional workflows, and role interaction models (Scholar, Supervisor, Institute Admin).
+* [Production Capacity & Cloud Cost Analysis](./architecture/PRODUCTION_CAPACITY_COST_ANALYSIS.md) — Sizing models, concurrency metrics, usage tier allocations, and projected AWS / cloud infrastructure costs.
+* [Monorepo Directory Layout](./architecture/file-structure.md) — Monorepo directory map across `apps/`, `packages/`, `docs/`, and `scripts/`.
 
 ---
 
-## 🗄️ 3. Database Architecture
+## 💻 2. Local Development & Onboarding
 
-* [Database System Design](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/database/DATABASE_ARCHITECTURE.md): Database schemas, tables, index definitions, and Prisma model relationships.
+Quickstart workflows, local database setup, demo credentials, and environment configuration.
 
----
-
-## 🚀 4. Deployment & Infrastructure
-
-Release checklists, production runbooks, and hosting environments.
-
-* [Cloud Production Hosting Guide](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/deployment/DEPLOYMENT_GUIDE.md): Complete cloud release runbook for Next.js, NestJS, Amazon S3, PostgreSQL, Supabase, and Brevo.
-* [Railway Deployment Runbook](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/deployment/railway.md): Specific deployment configurations for Railway.
-* [Production Build Details](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/deployment/deployment_test_production.md): Commands for testing production bundles locally.
-* [GitHub CI/CD Pipelines](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/deployment/CI_CD.md): Automated builds, lints, and test pipelines.
+* [Developer Quick Start Guide](./guides/QUICK_START.md) — 5-minute onboarding and setup workflow.
+* [Demo User Accounts Roster](./guides/DEMO_USERS.md) — Pre-seeded credentials for Admin, Supervisor, and Scholar roles.
+* [Development & Sandbox Mode](./guides/DEVELOPMENT_MODE_GUIDE.md) — Testing workflows, mocked bypass patterns, and development flags.
+* [Pre-Release Checklist](./guides/RELEASE_CHECKLIST.md) — Mandatory verification and quality assurance checklist prior to production deployment.
+* **Platform Installation Guides**:
+  * [macOS Setup Guide](./guides/setup-macos.md)
+  * [Linux Setup Guide](./guides/setup-linux.md)
+  * [Windows Setup Guide](./guides/setup-windows.md)
 
 ---
 
-## 🩺 5. Telemetry & Audits
+## 🗄️ 3. Database Architecture & Schemas
 
-Telemetry specs, security practices, and repository health audits.
+* [Database Architecture & Entity Relationships](./database/DATABASE_ARCHITECTURE.md) — PostgreSQL relational schema, Prisma models, indexing strategy, foreign key cascades, and audit triggers.
 
-* [Railway Readiness Audit Report](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/RAILWAY_DEPLOYMENT_AUDIT.md): Production hardening report confirming Redis removal and container alignment.
-* [Health Diagnostics Telemetry](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/development/HEALTHCHECK.md): Output specs for `/api/health` and `/api/system`.
-* [Security Audits](file:///Users/maddy/Current%20Project/Curious%20Bees/CuriousBees_V2/docs/audits/SECURITY_AUDIT.md): CORS setups, Helmet headers, and rate limits.
+---
+
+## 🚀 4. Deployment & Infrastructure Runbooks
+
+Production deployment configurations, containerization, hosting platforms, and CI/CD pipelines.
+
+* [Cloud Production Hosting Guide](./deployment/DEPLOYMENT_GUIDE.md) — Master deployment runbook for Next.js (Vercel), NestJS (Railway / Docker), PostgreSQL (Supabase), Brevo Email, and Amazon S3.
+* [Railway Deployment Runbook](./deployment/railway.md) — Backend deployment configuration on Railway.
+* [Vercel Deployment Runbook](./deployment/vercel.md) — Frontend Next.js deployment configuration on Vercel.
+* [Production Bundle Testing](./deployment/deployment_test_production.md) — Commands and procedures for compiling and validating production builds locally.
+* [Team Testing & Shared Staging](./deployment/TEAM_TESTING_DEPLOYMENT.md) — Guidelines for shared staging environments and team validation.
+* [GitHub CI/CD Automation](./deployment/CI_CD.md) — Automated build, linting, typechecking, and release pipelines.
+
+---
+
+## 🔒 5. Security, Auth & Audits
+
+Security policies, role-based access control, telemetry, and system audits.
+
+* [Admin-Managed Authentication](./auth/admin-managed-auth.md) — Institutional identity model, Google OAuth integration, role assignment, and administrative control.
+* [Security Policies & Headers](./audits/SECURITY_AUDIT.md) — CORS configuration, Helmet security headers, rate limiting, and input sanitization.
+* [Railway Deployment Audit](./audits/RAILWAY_DEPLOYMENT_AUDIT.md) — Infrastructure verification and container validation report.
+* [System Health Diagnostics](./development/HEALTHCHECK.md) — Health telemetry specification for `/api/health` and `/api/system`.
+* [Comprehensive Project Documentation](./reports/CuriousBees_V2_Project_Documentation.md) — Master reference report for the CuriousBees V2 platform.

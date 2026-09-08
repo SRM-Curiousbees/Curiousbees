@@ -23,7 +23,7 @@ To activate Development Mode, modify or create the respective environment config
 
 ### 1. NestJS API Backend Configuration
 
-In [apps/api/.env](file:///Users/maddy/Current%20Project/CuriousBees_V2/apps/api/.env):
+In `apps/api/.env` (or root `.env`):
 
 ```env
 DEVELOPMENT_MODE=true
@@ -31,7 +31,7 @@ DEVELOPMENT_MODE=true
 
 ### 2. Next.js Frontend Configuration
 
-In [apps/web/.env.local](file:///Users/maddy/Current%20Project/CuriousBees_V2/apps/web/.env.local):
+In `apps/web/.env.local` (or root `.env`):
 
 ```env
 NEXT_PUBLIC_DEVELOPMENT_MODE=true
