@@ -6,7 +6,7 @@
     "node": ">=22"
   },
   "packageManager": "npm@10.8.2",
-  "description": "CuriousBees — AI-powered Academic Collaboration Platform",
+  "description": "CuriousBees V2 — Institutional Academic Research Collaboration, Ph.D. Supervision & Governance Platform",
   "workspaces": [
     "packages/*",
     "apps/*"

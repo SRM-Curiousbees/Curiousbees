@@ -45,12 +45,12 @@ export default function AccessDeniedPage() {
         </h2>
         
         <p className="text-xs text-slate-550 dark:text-slate-400 mt-3 leading-relaxed font-semibold">
-          The email supplied is not authorized to access the SRM Recollab Intranet portal. 
+          The email supplied is not authorized to access the CuriousBees Research Portal. 
         </p>
 
         <div className="my-5 p-4 rounded-xl bg-red-50/50 dark:bg-red-950/15 border border-red-150 dark:border-red-900/30 text-left">
           <p className="text-[11px] text-red-700 dark:text-red-400 font-bold leading-relaxed">
-            Only accounts ending with <strong className="underline text-slate-900 dark:text-white">@srmist.edu.in</strong> are permitted. Guest profiles, personal Gmail accounts, or external domains are automatically rejected by our NextAuth firewall.
+            Only accounts ending with <strong className="underline text-slate-900 dark:text-white">@srmist.edu.in</strong> are permitted. Guest profiles, personal Gmail accounts, or external domains are automatically rejected by our firewall.
           </p>
         </div>
 

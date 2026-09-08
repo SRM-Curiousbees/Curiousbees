@@ -155,7 +155,7 @@ model TopicFollow {
   @@index([topic])
 }
 
-// SRM_Recollab Custom MVP Models
+// CuriousBees Custom Platform Models
 model ResearchInterest {
   id    String         @id @default(cuid())
   name  String         @unique

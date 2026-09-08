@@ -1,5 +1,4 @@
--- ==============================================================================
--- SRM_Recollab — DATABASE SCHEMA & SEED INITIALIZATION SCRIPT
+-- CuriousBees V2 — DATABASE SCHEMA & SEED INITIALIZATION SCRIPT
 -- ==============================================================================
 -- Run this script in your Supabase project's SQL Editor to set up all tables,
 -- relations, indexes, and beautiful default mock data instantly.
