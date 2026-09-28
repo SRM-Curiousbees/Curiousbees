@@ -74,6 +74,18 @@ export class AdminUsersController {
     return this.usersService.reassignSupervisor(req.user, id, supervisorId, reason);
   }
 
+  @Put(':id/affiliation')
+  async changeAffiliation(
+    @Param('id') id: string,
+    @Body() body: { facultyId: string; departmentId: string; reason?: string },
+    @Req() req: any
+  ) {
+    if (!body?.facultyId || !body?.departmentId) {
+      throw new BadRequestException('Both facultyId and departmentId are required');
+    }
+    return this.usersService.updateUserAffiliation(req.user, id, body);
+  }
+
   @Delete(':id')
   async deleteUser(
     @Param('id') id: string,

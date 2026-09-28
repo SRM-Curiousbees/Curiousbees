@@ -16,6 +16,7 @@ import {
   Loader2,
   CheckCircle2,
   Search,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -24,9 +25,11 @@ export default function FacultiesDepartmentsPage() {
     fetchAdminFaculties,
     createAdminFaculty,
     updateAdminFaculty,
+    deleteAdminFaculty,
     fetchAdminDepartments,
     createAdminDepartment,
     updateAdminDepartment,
+    deleteAdminDepartment,
   } = useStore();
 
   const [faculties, setFaculties] = useState<any[]>([]);
@@ -115,6 +118,28 @@ export default function FacultiesDepartmentsPage() {
     }
   };
 
+  const handleDeleteFaculty = async (f: any) => {
+    if (confirm(`Are you sure you want to delete Faculty "${f.name}"? This requires that no departments are attached.`)) {
+      try {
+        await deleteAdminFaculty(f.id);
+        await loadData();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  const handleDeleteDepartment = async (d: any) => {
+    if (confirm(`Are you sure you want to delete Department "${d.name}"? This requires that no researchers or opportunities are attached.`)) {
+      try {
+        await deleteAdminDepartment(d.id);
+        await loadData();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
   const filteredDepts = departments.filter((d) => {
     if (!search.trim()) return true;
     const s = search.toLowerCase();
@@ -192,12 +217,22 @@ export default function FacultiesDepartmentsPage() {
                     {f._count?.scholarProfiles ?? 0} Scholars • {f._count?.supervisorProfiles ?? 0} Supervisors
                   </p>
                 </div>
-                <button
-                  onClick={() => setFacultyModal({ id: f.id, name: f.name })}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setFacultyModal({ id: f.id, name: f.name })}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                    title="Edit Faculty"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteFaculty(f)}
+                    className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 transition-colors cursor-pointer"
+                    title="Delete Faculty"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -239,20 +274,30 @@ export default function FacultiesDepartmentsPage() {
                     Faculty: {d.faculty?.name || 'SRMIST'} • {d._count?.users ?? 0} Users
                   </p>
                 </div>
-                <button
-                  onClick={() =>
-                    setDeptModal({
-                      id: d.id,
-                      name: d.name,
-                      code: d.code,
-                      facultyId: d.facultyId || faculties[0]?.id || '',
-                      description: d.description || '',
-                    })
-                  }
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() =>
+                      setDeptModal({
+                        id: d.id,
+                        name: d.name,
+                        code: d.code,
+                        facultyId: d.facultyId || faculties[0]?.id || '',
+                        description: d.description || '',
+                      })
+                    }
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                    title="Edit Department"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteDepartment(d)}
+                    className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 transition-colors cursor-pointer"
+                    title="Delete Department"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>

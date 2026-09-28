@@ -28,6 +28,15 @@ export class UsersService {
         externalLinks: {
           orderBy: { createdAt: 'asc' },
         },
+        departmentRef: {
+          include: {
+            faculty: {
+              include: {
+                campus: true,
+              },
+            },
+          },
+        },
         supervisorProfile: {
           include: {
             department: true,
@@ -106,16 +115,80 @@ export class UsersService {
 
     const { name, department, departmentId, bio, interests } = parsed.data;
 
+    let resolvedDept: any = null;
+    if (departmentId) {
+      resolvedDept = await this.prisma.department.findUnique({
+        where: { id: departmentId },
+        include: { faculty: { include: { campus: true } } },
+      });
+      if (!resolvedDept) {
+        throw new BadRequestException('Selected department not found.');
+      }
+    } else if (department && department.trim()) {
+      // Deterministic lookup for legacy strings or codes
+      resolvedDept = await this.prisma.department.findFirst({
+        where: {
+          OR: [
+            { name: { equals: department.trim(), mode: 'insensitive' } },
+            { code: { equals: department.trim().toUpperCase(), mode: 'insensitive' } },
+          ],
+        },
+        include: { faculty: { include: { campus: true } } },
+      });
+      if (!resolvedDept) {
+        throw new BadRequestException(`Invalid department "${department}". Free-text entry is disabled. Please select a valid academic department.`);
+      }
+    }
+
+    const updateData: any = {
+      ...(name && { name }),
+      ...(bio !== undefined && { bio }),
+    };
+
+    if (resolvedDept) {
+      updateData.departmentId = resolvedDept.id;
+      updateData.department = resolvedDept.name;
+      updateData.faculty = resolvedDept.faculty.name;
+    }
+
     // Update user base fields
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
-      data: {
-        ...(name && { name }),
-        ...(department !== undefined && { department }),
-        ...(departmentId !== undefined && { departmentId }),
-        ...(bio !== undefined && { bio })
-      }
+      data: updateData,
     });
+
+    if (resolvedDept) {
+      // Synchronize SupervisorProfile and ScholarProfile
+      await this.prisma.supervisorProfile.updateMany({
+        where: { userId },
+        data: {
+          departmentId: resolvedDept.id,
+          facultyId: resolvedDept.facultyId,
+        },
+      });
+
+      await this.prisma.scholarProfile.updateMany({
+        where: { userId },
+        data: {
+          departmentId: resolvedDept.id,
+          facultyId: resolvedDept.facultyId,
+        },
+      });
+
+      await this.prisma.auditLog.create({
+        data: {
+          userId,
+          action: 'USER_AFFILIATION_UPDATED',
+          details: JSON.stringify({
+            departmentId: resolvedDept.id,
+            departmentName: resolvedDept.name,
+            facultyId: resolvedDept.facultyId,
+            facultyName: resolvedDept.faculty.name,
+            campus: resolvedDept.faculty.campus?.name,
+          }),
+        },
+      });
+    }
 
     // If interests are provided, sync them
     if (interests) {
@@ -346,13 +419,30 @@ export class UsersService {
     return declined;
   }
 
-  async getAllUsers(adminId: string) {
+  async getAllUsers(adminId: string, limit?: number, page?: number, search?: string, roleFilter?: string) {
     const admin = await this.prisma.user.findUnique({ where: { id: adminId } });
     if (!admin || admin.role !== Role.INSTITUTE_ADMIN) {
       throw new ForbiddenException('Only administrators can access this system management API.');
     }
 
+    const take = Math.min(Math.max(Number(limit) || 50, 1), 100);
+    const skip = Math.max((Number(page) || 1) - 1, 0) * take;
+
+    const where: any = {
+      ...(roleFilter && { role: roleFilter as Role }),
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } },
+          { department: { contains: search, mode: 'insensitive' } },
+        ]
+      })
+    };
+
     return this.prisma.user.findMany({
+      where,
+      skip,
+      take,
       orderBy: { createdAt: 'desc' }
     });
   }
@@ -494,6 +584,7 @@ export class UsersService {
       data: {
         role: payload.role === 'SCHOLAR' ? Role.RESEARCH_SCHOLAR : Role.RESEARCH_SUPERVISOR,
         status,
+        approved: payload.role === 'SUPERVISOR',
         supervisorId: payload.role === 'SCHOLAR' ? payload.supervisorId : null,
         supervisorEmail
       }
@@ -616,7 +707,7 @@ export class UsersService {
       if (!employeeId) {
         throw new BadRequestException('Research Supervisors must provide an Employee ID.');
       }
-      status = UserStatus.PENDING_SUPERVISOR_APPROVAL;
+      status = UserStatus.ACTIVE;
     } else {
       throw new BadRequestException('Invalid registration role.');
     }
@@ -633,7 +724,7 @@ export class UsersService {
         supervisorEmail,
         employeeId: employeeId || null,
         status,
-        approved: false,
+        approved: role === 'SUPERVISOR',
       },
     });
 
@@ -651,15 +742,6 @@ export class UsersService {
     // Trigger notification
     if (role === 'SCHOLAR' && supervisorId) {
       await this.notificationsService.notifyScholarRegistrationSubmitted(userId, supervisorId);
-    } else if (role === 'SUPERVISOR') {
-      await this.notificationsService.notifySupervisorRegistrationSubmitted(userId);
-      // Send email alert to Institute Admin
-      await this.mailService.sendSupervisorRegistrationAlert({
-        name: updatedUser.name || email,
-        email: updatedUser.email,
-        department: department.name,
-        employeeId: employeeId || 'N/A',
-      });
     }
 
     return updatedUser;
@@ -682,8 +764,18 @@ export class UsersService {
 
   // --- RESEARCHER NETWORK (FOLLOW) ---
 
-  async getResearchers(userId: string, query: { q?: string; role?: string; department?: string; interest?: string; page?: number; limit?: number }) {
-    const { q, role, department, interest, page = 1, limit = 20 } = query;
+  async getResearchers(userId: string, query: { 
+    q?: string; 
+    role?: string; 
+    department?: string; 
+    departmentId?: string;
+    facultyId?: string;
+    campusId?: string;
+    interest?: string; 
+    page?: number; 
+    limit?: number 
+  }) {
+    const { q, role, department, departmentId, facultyId, campusId, interest, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {
@@ -693,6 +785,8 @@ export class UsersService {
       where.OR = [
         { name: { contains: q, mode: 'insensitive' } },
         { department: { contains: q, mode: 'insensitive' } },
+        { departmentRef: { name: { contains: q, mode: 'insensitive' } } },
+        { departmentRef: { faculty: { name: { contains: q, mode: 'insensitive' } } } },
         { bio: { contains: q, mode: 'insensitive' } },
       ];
     }
@@ -702,9 +796,21 @@ export class UsersService {
       where.role = { in: ['RESEARCH_SUPERVISOR', 'RESEARCH_SCHOLAR'] };
     }
 
-    if (department) {
-      where.department = { equals: department, mode: 'insensitive' };
+    if (departmentId) {
+      where.departmentId = departmentId;
+    } else if (facultyId) {
+      where.departmentRef = { facultyId };
+    } else if (campusId) {
+      where.departmentRef = { faculty: { campusId } };
+    } else if (department) {
+      where.OR = [
+        { departmentId: department },
+        { department: { equals: department, mode: 'insensitive' } },
+        { departmentRef: { name: { equals: department, mode: 'insensitive' } } },
+        { departmentRef: { code: { equals: department.toUpperCase(), mode: 'insensitive' } } },
+      ];
     }
+
     if (interest) {
       where.interests = {
         some: {
@@ -724,10 +830,45 @@ export class UsersService {
           id: true,
           name: true,
           role: true,
+          departmentId: true,
           department: true,
+          faculty: true,
+          departmentRef: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              faculty: {
+                select: {
+                  id: true,
+                  name: true,
+                  campus: {
+                    select: {
+                      id: true,
+                      name: true,
+                      code: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
           bio: true,
           image: true,
           interests: { include: { interest: true } },
+          userDomains: { include: { domain: true } },
+          userTopics: { include: { topic: true } },
+          supervisorProfile: true,
+          _count: {
+            select: {
+              scholars: {
+                where: {
+                  role: Role.RESEARCH_SCHOLAR,
+                  status: UserStatus.ACTIVE,
+                },
+              },
+            },
+          },
           followers: { where: { followerId: userId }, select: { id: true, notificationsEnabled: true } }
         },
         orderBy: { createdAt: 'desc' }
@@ -735,29 +876,86 @@ export class UsersService {
       this.prisma.user.count({ where }),
     ]);
 
-    // get current user interests to compute shared interests
+    // get current user profile, domains, topics, and interests to compute alignment
     const currentUser = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { interests: { include: { interest: true } } }
+      select: {
+        id: true,
+        departmentId: true,
+        department: true,
+        interests: { include: { interest: true } },
+        userDomains: { include: { domain: true } },
+        userTopics: { include: { topic: true } },
+      }
     });
-    const myInterests = currentUser?.interests.map(i => i.interest.name) || [];
+
+    const myInterests = currentUser?.interests.map(i => i.interest.name.toLowerCase()) || [];
+    const myDomains = currentUser?.userDomains.map(d => d.domain.name.toLowerCase()) || [];
+    const myTopics = currentUser?.userTopics.map(t => t.topic.name.toLowerCase()) || [];
+    const myDeptId = currentUser?.departmentId;
+    const myDept = currentUser?.department?.toLowerCase() || '';
 
     const items = users.map(user => {
       const userInterests = user.interests.map(i => i.interest.name);
-      const sharedInterests = userInterests.filter(i => myInterests.includes(i));
+      const userDomains = user.userDomains.map(d => d.domain.name);
+      const userTopics = user.userTopics.map(t => t.topic.name);
+
+      const sharedInterests = userInterests.filter(i => myInterests.includes(i.toLowerCase()));
+      const sharedDomains = userDomains.filter(d => myDomains.includes(d.toLowerCase()));
+      const sharedTopics = userTopics.filter(t => myTopics.includes(t.toLowerCase()));
+
+      // Calculate explainable alignment score (0-100)
+      let score = 20; // baseline connection
+      if ((myDeptId && user.departmentId && myDeptId === user.departmentId) || 
+          (myDept && user.department && myDept === user.department.toLowerCase())) {
+        score += 20;
+      }
+      if (sharedDomains.length > 0) {
+        score += Math.min(30, sharedDomains.length * 20);
+      }
+      if (sharedTopics.length > 0) {
+        score += Math.min(30, sharedTopics.length * 15);
+      }
+      if (sharedInterests.length > 0) {
+        score += Math.min(15, sharedInterests.length * 5);
+      }
+      const alignmentScore = Math.min(98, score);
+
+      const maxScholars = user.supervisorProfile?.maxScholars ?? 8;
+      const currentScholars = user._count?.scholars ?? 0;
+      const isAtCapacity = currentScholars >= maxScholars;
+      const capacityRemaining = Math.max(0, maxScholars - currentScholars);
+
       const followRec = user.followers[0];
+      const combinedShared = Array.from(new Set([...sharedTopics, ...sharedDomains, ...sharedInterests]));
+
       return {
         id: user.id,
         name: user.name,
         role: user.role,
-        department: user.department,
+        departmentId: user.departmentId,
+        department: user.departmentRef?.name || user.department,
+        faculty: user.departmentRef?.faculty?.name || user.faculty,
+        campus: user.departmentRef?.faculty?.campus?.name || null,
+        departmentRef: user.departmentRef,
         bio: user.bio,
         image: user.image,
+        designation: user.supervisorProfile?.designation || (user.role === Role.RESEARCH_SUPERVISOR ? 'Research Supervisor' : 'Research Scholar'),
+        researchArea: user.supervisorProfile?.researchArea || user.bio,
         researchInterests: userInterests,
+        researchDomains: userDomains,
+        researchTopics: userTopics,
+        currentScholars,
+        maxScholars,
+        isAtCapacity,
+        capacityRemaining,
+        alignmentScore,
         isFollowing: !!followRec,
         notificationsEnabled: followRec ? followRec.notificationsEnabled : false,
-        sharedInterestCount: sharedInterests.length,
-        sharedInterests
+        sharedInterestCount: combinedShared.length,
+        sharedInterests: combinedShared,
+        sharedTopics,
+        sharedDomains,
       };
     });
 

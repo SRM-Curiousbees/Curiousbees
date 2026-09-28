@@ -70,7 +70,11 @@ export class SupabaseAuthGuard implements CanActivate {
       // 3. User provisioning / auto-creation
       if (!user) {
         // Enforce allowed domains
-        const allowedDomains = (process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS || 'srmist.edu.in,gmail.com')
+        const allowedDomains = (
+          process.env.ALLOWED_EMAIL_DOMAINS ||
+          process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS ||
+          'gmail.com'
+        )
           .split(',')
           .map((d) => d.trim().toLowerCase())
           .filter(Boolean);
@@ -80,7 +84,7 @@ export class SupabaseAuthGuard implements CanActivate {
         if (!isAllowedDomain) {
           this.logger.warn(`Unauthorized domain attempted registration: ${email}`);
           throw new ForbiddenException({
-            message: 'CuriousBees is restricted to SRMIST researchers and authorized accounts.',
+            message: 'CuriousBees is restricted to authorized accounts.',
             code: 'EMAIL_DOMAIN_NOT_ALLOWED',
           });
         }
@@ -92,8 +96,15 @@ export class SupabaseAuthGuard implements CanActivate {
           decodedUser.user_metadata?.picture ||
           null;
 
-        const ADMIN_EMAILS = ['curiousbees@srmist.edu.in', 'r.matheshwaran.io@gmail.com'];
-        const role = ADMIN_EMAILS.includes(email) ? 'INSTITUTE_ADMIN' : 'RESEARCH_SCHOLAR';
+        const configuredAdmins = (
+          process.env.ADMIN_EMAILS ||
+          process.env.MAIN_ADMIN_EMAIL ||
+          'curiousbees@srmist.edu.in,r.matheshwaran.io@gmail.com'
+        )
+          .split(',')
+          .map((e) => e.trim().toLowerCase())
+          .filter(Boolean);
+        const role = configuredAdmins.includes(email) ? 'INSTITUTE_ADMIN' : 'RESEARCH_SCHOLAR';
 
         this.logger.log(`Auto-provisioning user profile for ${email} with role ${role}`);
         user = await this.prisma.user.create({

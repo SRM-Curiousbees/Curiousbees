@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, Loader2, Globe, AlertCircle } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { apiFetch } from '@/lib/api-client';
 import { STAGES } from './ResearchLifecycle';
 
 interface EditResearcherProfileDrawerProps {
@@ -36,8 +37,45 @@ export function EditResearcherProfileDrawer({
   const [currentStage, setCurrentStage] = useState('PROPOSAL');
   const [status, setStatus] = useState('ACTIVE');
 
+  // Institutional hierarchy state
+  const [faculties, setFaculties] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [selectedFacultyId, setSelectedFacultyId] = useState('');
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState('');
+  const [isLoadingOrg, setIsLoadingOrg] = useState(false);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  // Load institutional faculties & departments from API
+  useEffect(() => {
+    let isMounted = true;
+    async function loadOrgData() {
+      setIsLoadingOrg(true);
+      try {
+        const [facRes, deptRes] = await Promise.all([
+          apiFetch('/api/faculties'),
+          apiFetch('/api/departments'),
+        ]);
+        if (facRes.ok && deptRes.ok && isMounted) {
+          const facData = await facRes.json();
+          const deptData = await deptRes.json();
+          setFaculties(Array.isArray(facData) ? facData : []);
+          setDepartments(Array.isArray(deptData) ? deptData : []);
+        }
+      } catch (err) {
+        console.error('Failed to load institutional hierarchy:', err);
+      } finally {
+        if (isMounted) setIsLoadingOrg(false);
+      }
+    }
+    if (isOpen) {
+      loadOrgData();
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     if (user) {
@@ -49,6 +87,10 @@ export function EditResearcherProfileDrawer({
         : (user.researchInterests || []).join(', ');
       setInterestsText(existingInterests);
 
+      if (user.departmentId) {
+        setSelectedDepartmentId(user.departmentId);
+      }
+
       if (user.researchProfile) {
         setResearchTitle(user.researchProfile.title || '');
         setResearchArea(user.researchProfile.researchArea || '');
@@ -59,6 +101,29 @@ export function EditResearcherProfileDrawer({
     }
   }, [user]);
 
+  // Synchronize selectedFacultyId when departments load
+  useEffect(() => {
+    if (departments.length > 0) {
+      if (selectedDepartmentId) {
+        const matched = departments.find((d) => d.id === selectedDepartmentId);
+        if (matched?.facultyId && !selectedFacultyId) {
+          setSelectedFacultyId(matched.facultyId);
+        }
+      } else if (department) {
+        const matched = departments.find(
+          (d) => d.name.toLowerCase() === department.toLowerCase() ||
+                 department.toLowerCase().includes(d.name.toLowerCase())
+        );
+        if (matched) {
+          setSelectedDepartmentId(matched.id);
+          if (matched.facultyId && !selectedFacultyId) {
+            setSelectedFacultyId(matched.facultyId);
+          }
+        }
+      }
+    }
+  }, [departments, selectedDepartmentId, department, selectedFacultyId]);
+
   if (!isOpen) return null;
 
   const handleSave = async (e: React.FormEvent) => {
@@ -67,7 +132,7 @@ export function EditResearcherProfileDrawer({
     setErrorMsg(null);
 
     try {
-      // 1. Update Base User Profile
+      // 1. Update Base User Profile with authoritative departmentId
       const interestsArray = interestsText
         .split(',')
         .map((s) => s.trim())
@@ -75,7 +140,7 @@ export function EditResearcherProfileDrawer({
 
       await updateProfile({
         name: name.trim() || undefined,
-        department: department.trim() || undefined,
+        departmentId: selectedDepartmentId || undefined,
         bio: bio.trim(),
         interests: interestsArray,
       });
@@ -165,14 +230,47 @@ export function EditResearcherProfileDrawer({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Department / Faculty</label>
-                  <input
-                    type="text"
-                    value={department}
-                    placeholder="e.g. Computer Applications"
-                    onChange={(e) => setDepartment(e.target.value)}
-                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
-                  />
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Institutional Campus</label>
+                  <div className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
+                    Kattankulathur Campus (KTR)
+                  </div>
+                </div>
+              </div>
+
+              {/* Canonical Hierarchy: Faculty -> Department */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Faculty</label>
+                  <select
+                    value={selectedFacultyId}
+                    onChange={(e) => {
+                      setSelectedFacultyId(e.target.value);
+                      setSelectedDepartmentId('');
+                    }}
+                    disabled={isLoadingOrg}
+                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] cursor-pointer disabled:bg-slate-50 disabled:text-slate-400"
+                  >
+                    <option value="">Select Faculty...</option>
+                    {faculties.map((f) => (
+                      <option key={f.id} value={f.id}>{f.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Academic Department</label>
+                  <select
+                    value={selectedDepartmentId}
+                    onChange={(e) => setSelectedDepartmentId(e.target.value)}
+                    disabled={isLoadingOrg || !selectedFacultyId}
+                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] cursor-pointer disabled:bg-slate-50 disabled:text-slate-400"
+                  >
+                    <option value="">Select Department...</option>
+                    {departments
+                      .filter((d) => !selectedFacultyId || d.facultyId === selectedFacultyId)
+                      .map((d) => (
+                        <option key={d.id} value={d.id}>{d.name}</option>
+                      ))}
+                  </select>
                 </div>
               </div>
 

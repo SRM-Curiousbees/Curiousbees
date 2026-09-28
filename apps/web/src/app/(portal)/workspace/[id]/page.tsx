@@ -48,6 +48,7 @@ export default function WorkspacePage() {
     activeWorkspace, 
     fetchWorkspaceDetails, 
     addWorkspaceFile, 
+    uploadResearchFileToS3,
     addWorkspaceMilestone, 
     toggleWorkspaceMilestone, 
     addWorkspaceAnnouncement, 
@@ -71,6 +72,8 @@ export default function WorkspacePage() {
   // Local Form States
   const [fileName, setFileName] = useState('');
   const [fileUrl, setFileUrl] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [showFileModal, setShowFileModal] = useState(false);
 
   const [milestoneTitle, setMilestoneTitle] = useState('');
@@ -148,17 +151,32 @@ export default function WorkspacePage() {
   // Handle file upload
   const handleUploadFile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fileName || !fileUrl) return;
+    if (!selectedFile && !fileUrl) {
+      addToast('Please select a file to upload or enter a resource link.', 'error');
+      return;
+    }
 
+    setIsUploadingFile(true);
     try {
-      const simulatedSize = Math.floor(Math.random() * 8000) + 500;
-      await addWorkspaceFile(workspaceId, fileName, fileUrl, simulatedSize);
+      if (selectedFile) {
+        // Direct browser upload to S3 via presigned URL
+        const s3Result = await uploadResearchFileToS3(selectedFile, `workspaces/${workspaceId}`);
+        await addWorkspaceFile(workspaceId, fileName || selectedFile.name, s3Result.fileUrl, s3Result.size);
+        addToast(`Successfully uploaded ${fileName || selectedFile.name} to S3.`, 'success');
+      } else if (fileUrl) {
+        await addWorkspaceFile(workspaceId, fileName || 'Research Document Link', fileUrl, 0);
+        addToast(`Linked external resource to workspace.`, 'success');
+      }
+
       setFileName('');
       setFileUrl('');
+      setSelectedFile(null);
       setShowFileModal(false);
-      addToast(`Uploaded ${fileName} to workspace.`, 'success');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      addToast(err?.message || 'File upload failed.', 'error');
+    } finally {
+      setIsUploadingFile(false);
     }
   };
 
@@ -1204,48 +1222,103 @@ export default function WorkspacePage() {
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="cb-card bg-white max-w-md w-full p-6 rounded-2xl shadow-xl space-y-4 relative">
             <button 
-              onClick={() => setShowFileModal(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 cursor-pointer"
+              onClick={() => {
+                if (!isUploadingFile) {
+                  setShowFileModal(false);
+                  setSelectedFile(null);
+                }
+              }}
+              disabled={isUploadingFile}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 cursor-pointer disabled:opacity-50"
             >
               <X className="w-5 h-5" />
             </button>
-            <h3 className="text-base font-bold text-slate-900">Share Research Resource</h3>
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Upload Research Document</h3>
+              <p className="text-slate-500 text-xs">Direct encrypted S3 upload for papers, datasets, or presentations.</p>
+            </div>
             <form onSubmit={handleUploadFile} className="space-y-3 text-xs">
+              {/* File Selector */}
+              <div className="space-y-1.5">
+                <label className="font-bold text-slate-700">Select File (Max 50MB)</label>
+                <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-primary/50 transition-colors bg-slate-50/50">
+                  <input
+                    type="file"
+                    id="research-file-input"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setSelectedFile(file);
+                        if (!fileName) setFileName(file.name);
+                      }
+                    }}
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.png,.jpg,.jpeg,.txt,.csv"
+                  />
+                  <label htmlFor="research-file-input" className="cursor-pointer flex flex-col items-center gap-1.5">
+                    <UploadCloud className="w-8 h-8 text-primary" />
+                    {selectedFile ? (
+                      <div className="text-left w-full mt-1 px-2 py-1.5 bg-white border border-slate-200 rounded-lg flex items-center justify-between">
+                        <span className="font-semibold text-slate-800 truncate max-w-[240px]">{selectedFile.name}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="font-bold text-slate-800 hover:text-primary">Click to browse file</span>
+                        <span className="text-[10px] text-slate-400">PDF, Word, PPT, Excel, ZIP, Data up to 50MB</span>
+                      </>
+                    )}
+                  </label>
+                </div>
+              </div>
+
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Document Name</label>
+                <label className="font-bold text-slate-700">Display Name (Optional)</label>
                 <input 
                   type="text" 
                   value={fileName} 
                   onChange={(e) => setFileName(e.target.value)}
-                  placeholder="e.g. Model Architecture Draft v2.pdf" 
-                  required
+                  placeholder="e.g. SRM-Research-Report-2026.pdf" 
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-hidden focus:border-primary"
                 />
               </div>
+
+              <div className="relative flex py-1 items-center">
+                <div className="flex-grow border-t border-slate-200"></div>
+                <span className="flex-shrink mx-2 text-[10px] font-bold text-slate-400 uppercase">OR External Link</span>
+                <div className="flex-grow border-t border-slate-200"></div>
+              </div>
+
               <div className="space-y-1">
-                <label className="font-bold text-slate-700">Resource URL / Cloud Storage Link</label>
+                <label className="font-bold text-slate-700">External Resource URL</label>
                 <input 
                   type="url" 
                   value={fileUrl} 
                   onChange={(e) => setFileUrl(e.target.value)}
-                  placeholder="https://..." 
-                  required
+                  placeholder="https://drive.google.com/... or https://arxiv.org/..." 
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-hidden focus:border-primary"
                 />
               </div>
+
               <div className="pt-3 flex justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setShowFileModal(false)}
-                  className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-bold"
+                  disabled={isUploadingFile}
+                  onClick={() => {
+                    setShowFileModal(false);
+                    setSelectedFile(null);
+                  }}
+                  className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-bold disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 bg-primary hover:bg-primary/95 text-white rounded-lg font-bold shadow-xs"
+                  disabled={isUploadingFile || (!selectedFile && !fileUrl)}
+                  className="px-4 py-1.5 bg-primary hover:bg-primary/95 text-white rounded-lg font-bold shadow-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                 >
-                  Upload Resource
+                  {isUploadingFile && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  {isUploadingFile ? 'Uploading to S3...' : 'Upload Resource'}
                 </button>
               </div>
             </form>

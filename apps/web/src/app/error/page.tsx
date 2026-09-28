@@ -35,7 +35,7 @@ export default function ErrorPage() {
             <Home className="w-4 h-4" />
             Return to Homepage
           </Link>
-          <Link href="/sign-in" className="w-full py-3 px-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200">
+          <Link href="/login" className="w-full py-3 px-4 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200">
             <ArrowLeft className="w-4 h-4" />
             Back to Sign In
           </Link>

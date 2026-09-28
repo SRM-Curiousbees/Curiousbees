@@ -41,7 +41,7 @@ export default function AccessDeniedPage() {
             Access Denied
           </h1>
           <p className="text-sm text-slate-600 mb-8 font-sans font-medium leading-relaxed max-w-[90%] mx-auto">
-            CuriousBees is restricted to SRM Institute of Science and Technology researchers and authorized members. Please sign in using your official <strong className="text-[#0C4DA2]">@srmist.edu.in</strong> account.
+            CuriousBees is restricted to authorized accounts. Please sign in using an authorized email address.
           </p>
 
           {/* Sign Out Button */}
@@ -50,7 +50,7 @@ export default function AccessDeniedPage() {
             className="w-full bg-[#0C4DA2] hover:bg-[#003370] text-white font-extrabold text-xs py-4 px-6 rounded-2xl transition-all shadow-md shadow-blue-900/20 flex items-center justify-center gap-2 group cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
-            <span>Sign Out & Try SRM Account</span>
+            <span>Sign Out & Try Another Account</span>
             <ArrowRight className="w-4 h-4 ml-1 opacity-70 group-hover:translate-x-1 transition-transform" />
           </button>
         </motion.div>

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, Param, UseGuards, Req, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Req, BadRequestException } from '@nestjs/common';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
 import { Roles } from '../auth/roles/roles.decorator';
@@ -17,15 +17,27 @@ export class AdminInstitutionController {
   }
 
   @Post('faculties')
-  async createFaculty(@Body('name') name: string, @Req() req: any) {
+  async createFaculty(@Body() body: any, @Req() req: any) {
+    const name = typeof body === 'string' ? body : body?.name;
     if (!name) throw new BadRequestException('Faculty name is required');
-    return this.institutionService.createFaculty(req.user, name);
+    return this.institutionService.createFaculty(req.user, {
+      name,
+      campusId: body?.campusId,
+    });
   }
 
   @Put('faculties/:id')
-  async updateFaculty(@Param('id') id: string, @Body('name') name: string, @Req() req: any) {
-    if (!name) throw new BadRequestException('Faculty name is required');
-    return this.institutionService.updateFaculty(req.user, id, name);
+  async updateFaculty(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    const name = typeof body === 'string' ? body : body?.name;
+    return this.institutionService.updateFaculty(req.user, id, {
+      name,
+      campusId: body?.campusId,
+    });
+  }
+
+  @Delete('faculties/:id')
+  async deleteFaculty(@Param('id') id: string, @Req() req: any) {
+    return this.institutionService.deleteFaculty(req.user, id);
   }
 
   @Get('departments')
@@ -41,6 +53,11 @@ export class AdminInstitutionController {
   @Put('departments/:id')
   async updateDepartment(@Param('id') id: string, @Body() body: any, @Req() req: any) {
     return this.institutionService.updateDepartment(req.user, id, body);
+  }
+
+  @Delete('departments/:id')
+  async deleteDepartment(@Param('id') id: string, @Req() req: any) {
+    return this.institutionService.deleteDepartment(req.user, id);
   }
 
   @Get('campuses')

@@ -40,8 +40,37 @@ export function RequestSupervisorModal({
 }: RequestSupervisorModalProps) {
   const { currentUser, requestSupervisor } = useStore();
   const [message, setMessage] = useState('');
+  const [proposalTitle, setProposalTitle] = useState('');
+  const [researchDomain, setResearchDomain] = useState('');
+  const [researchTopic, setResearchTopic] = useState('');
+  const [availableDomains, setAvailableDomains] = useState<{ id: string; name: string; topics: { id: string; name: string }[] }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetch('/api/research-domains')
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setAvailableDomains(data);
+          setResearchDomain(data[0].name);
+          if (data[0].topics && data[0].topics.length > 0) {
+            setResearchTopic(data[0].topics[0].name);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleDomainChange = (domainName: string) => {
+    setResearchDomain(domainName);
+    const domainObj = availableDomains.find((d) => d.name === domainName);
+    if (domainObj && domainObj.topics && domainObj.topics.length > 0) {
+      setResearchTopic(domainObj.topics[0].name);
+    } else {
+      setResearchTopic('');
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -53,7 +82,11 @@ export function RequestSupervisorModal({
     setErrorMessage(null);
 
     try {
-      await requestSupervisor(supervisor.id, message);
+      await requestSupervisor(supervisor.id, message, {
+        proposalTitle: proposalTitle.trim() || undefined,
+        researchDomain: researchDomain.trim() || undefined,
+        researchTopic: researchTopic.trim() || undefined,
+      });
       if (onSuccess) onSuccess();
       onClose();
     } catch (err: any) {
@@ -165,6 +198,78 @@ export function RequestSupervisorModal({
               <p>
                 You are requesting this faculty member to become your research supervisor. Your request will remain pending until the supervisor accepts it.
               </p>
+            </div>
+
+            {/* Research Context */}
+            <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#0C4DA2]">
+                Research Topic Alignment
+              </span>
+              
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700">Proposal / Research Topic Title</label>
+                <input
+                  type="text"
+                  value={proposalTitle}
+                  onChange={(e) => setProposalTitle(e.target.value)}
+                  placeholder="e.g., Deep Learning Architectures for Autonomous Systems"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]/40"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Research Domain</label>
+                  {availableDomains.length > 0 ? (
+                    <select
+                      value={researchDomain}
+                      onChange={(e) => handleDomainChange(e.target.value)}
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]/40"
+                    >
+                      {availableDomains.map((d) => (
+                        <option key={d.id} value={d.name}>{d.name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      value={researchDomain}
+                      onChange={(e) => setResearchDomain(e.target.value)}
+                      placeholder="e.g. Computer Science & AI"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]/40"
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-700">Specific Topic</label>
+                  {(() => {
+                    const domainObj = availableDomains.find((d) => d.name === researchDomain);
+                    if (domainObj && domainObj.topics && domainObj.topics.length > 0) {
+                      return (
+                        <select
+                          value={researchTopic}
+                          onChange={(e) => setResearchTopic(e.target.value)}
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]/40"
+                        >
+                          {domainObj.topics.map((t) => (
+                            <option key={t.id} value={t.name}>{t.name}</option>
+                          ))}
+                        </select>
+                      );
+                    }
+                    return (
+                      <input
+                        type="text"
+                        value={researchTopic}
+                        onChange={(e) => setResearchTopic(e.target.value)}
+                        placeholder="e.g. Deep Learning"
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]/40"
+                      />
+                    );
+                  })()}
+                </div>
+              </div>
             </div>
 
             {/* Optional Scholar Message */}

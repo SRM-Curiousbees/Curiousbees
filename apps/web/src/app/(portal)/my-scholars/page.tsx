@@ -574,16 +574,36 @@ function SupervisionPanelContent() {
                                 <h3 className="text-sm font-extrabold text-slate-955 dark:text-[#F5F7FA] mt-0.5">{req.name}</h3>
                               </div>
                             </div>
-                            <div className="space-y-1.5 text-[11px]">
+                            <div className="space-y-2 text-[11px]">
                               <div>
                                 <span className="font-extrabold text-slate-400 dark:text-[#718096] uppercase tracking-wider block">Department</span>
                                 <span className="font-bold text-slate-800 dark:text-[#E2E8F0] block mt-0.5">{req.department || 'SRMIST'}</span>
                               </div>
-                              {req.bio && (
-                                <div className="pt-1.5">
-                                  <span className="font-extrabold text-slate-400 dark:text-[#718096] uppercase tracking-wider block">Scholar Message</span>
+                              {req._proposalTitle && (
+                                <div className="bg-blue-50/70 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 rounded-xl p-2.5">
+                                  <span className="font-extrabold text-[#0C4DA2] dark:text-blue-400 uppercase tracking-wider block text-[10px]">Research Proposal</span>
+                                  <p className="font-bold text-slate-900 dark:text-white mt-0.5">{req._proposalTitle}</p>
+                                </div>
+                              )}
+                              {(req._researchDomain || req._researchTopic) && (
+                                <div className="flex flex-wrap gap-1.5 pt-0.5">
+                                  {req._researchDomain && (
+                                    <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-md text-[10px]">
+                                      {req._researchDomain}
+                                    </span>
+                                  )}
+                                  {req._researchTopic && (
+                                    <span className="px-2 py-0.5 bg-[#FFC828]/15 dark:bg-[#FFC828]/10 text-amber-800 dark:text-amber-300 border border-amber-300/30 font-bold rounded-md text-[10px]">
+                                      Topic: {req._researchTopic}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                              {(req._requestMessage || req.bio) && (
+                                <div className="pt-1">
+                                  <span className="font-extrabold text-slate-400 dark:text-[#718096] uppercase tracking-wider block text-[10px]">Scholar Note</span>
                                   <p className="font-medium text-slate-600 dark:text-[#A7B3C5] bg-slate-50 dark:bg-[#0B1728] border border-slate-150 dark:border-white/[0.06] rounded-lg p-2.5 mt-1 leading-relaxed italic">
-                                    "{req.bio}"
+                                    "{req._requestMessage || req.bio}"
                                   </p>
                                 </div>
                               )}

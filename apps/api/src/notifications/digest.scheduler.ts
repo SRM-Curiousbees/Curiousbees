@@ -18,6 +18,11 @@ export class DigestScheduler {
    */
   @Cron(CronExpression.EVERY_DAY_AT_8AM)
   async handleDailyDigest() {
+    // In multi-instance deployments behind ALB, only instances designated with ENABLE_CRON=true run schedulers
+    if (process.env.ENABLE_CRON !== 'true' && process.env.NODE_ENV === 'production') {
+      return;
+    }
+
     this.logger.log('Running daily event digest cron job...');
     
     const today = new Date();

@@ -13,6 +13,31 @@ export class WorkspacesController {
     return this.workspacesService.getWorkspaces(req.user.id);
   }
 
+  @Post()
+  async createWorkspace(
+    @Req() req: any,
+    @Body('title') title: string,
+    @Body('description') description?: string,
+    @Body('researchDomain') researchDomain?: string,
+    @Body('researchDomainId') researchDomainId?: string,
+    @Body('researchTopic') researchTopic?: string,
+    @Body('researchTopicId') researchTopicId?: string,
+    @Body('scholarIds') scholarIds?: string[],
+  ) {
+    if (!title) {
+      throw new BadRequestException('Workspace title is required.');
+    }
+    return this.workspacesService.createWorkspace(req.user.id, {
+      title,
+      description,
+      researchDomain,
+      researchDomainId,
+      researchTopic,
+      researchTopicId,
+      scholarIds,
+    });
+  }
+
   @Get(':id')
   async getWorkspace(@Req() req: any, @Param('id') workspaceId: string) {
     return this.workspacesService.getWorkspace(req.user.id, workspaceId);

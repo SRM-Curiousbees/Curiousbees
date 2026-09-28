@@ -18,6 +18,96 @@ export class WorkspacesService {
     return member;
   }
 
+  async createWorkspace(
+    userId: string,
+    data: {
+      title: string;
+      description?: string;
+      researchDomain?: string;
+      researchDomainId?: string;
+      researchTopic?: string;
+      researchTopicId?: string;
+      scholarIds?: string[];
+    }
+  ) {
+    if (!data.title?.trim()) {
+      throw new BadRequestException('Workspace title is required.');
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new BadRequestException('User not found.');
+    }
+
+    const isSupervisor = user.role === 'RESEARCH_SUPERVISOR' || (user.role as any) === 'SUPERVISOR';
+
+    return this.prisma.$transaction(async (tx) => {
+      const ws = await tx.workspace.create({
+        data: {
+          title: data.title.trim(),
+          description: data.description?.trim() || null,
+          researchDomain: data.researchDomain?.trim() || null,
+          researchDomainId: data.researchDomainId || null,
+          researchTopic: data.researchTopic?.trim() || null,
+          researchTopicId: data.researchTopicId || null,
+          supervisorId: isSupervisor ? userId : null,
+        }
+      });
+
+      // Add creator as OWNER
+      await tx.workspaceMember.create({
+        data: {
+          workspaceId: ws.id,
+          userId,
+          role: 'OWNER',
+        }
+      });
+
+      // Add scholar members
+      if (Array.isArray(data.scholarIds) && data.scholarIds.length > 0) {
+        for (const sId of data.scholarIds) {
+          if (sId && sId !== userId) {
+            await tx.workspaceMember.upsert({
+              where: {
+                workspaceId_userId: { workspaceId: ws.id, userId: sId }
+              },
+              create: {
+                workspaceId: ws.id,
+                userId: sId,
+                role: 'MEMBER',
+              },
+              update: {}
+            });
+          }
+        }
+      }
+
+      return tx.workspace.findUnique({
+        where: { id: ws.id },
+        include: {
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  image: true,
+                  role: true
+                }
+              }
+            }
+          },
+          researchDomainRef: true,
+          researchTopicRef: true,
+          supervisor: {
+            select: { id: true, name: true, email: true }
+          }
+        }
+      });
+    });
+  }
+
   async getWorkspaces(userId: string) {
     return this.prisma.workspace.findMany({
       where: {
@@ -38,6 +128,11 @@ export class WorkspacesService {
               }
             }
           }
+        },
+        researchDomainRef: true,
+        researchTopicRef: true,
+        supervisor: {
+          select: { id: true, name: true, email: true }
         }
       },
       orderBy: {
@@ -97,6 +192,11 @@ export class WorkspacesService {
           orderBy: {
             createdAt: 'desc'
           }
+        },
+        researchDomainRef: true,
+        researchTopicRef: true,
+        supervisor: {
+          select: { id: true, name: true, email: true }
         }
       }
     });

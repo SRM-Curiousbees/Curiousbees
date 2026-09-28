@@ -26,6 +26,7 @@ export class AdminAnalyticsService {
       totalPublications,
       totalWorkspaces,
       totalReports,
+      faculties,
       departments,
       usersByDate,
       postsByDate,
@@ -38,14 +39,35 @@ export class AdminAnalyticsService {
       this.prisma.publication.count(),
       this.prisma.workspace.count(),
       this.prisma.moderationReport.count(),
+      this.prisma.faculty.findMany({
+        select: {
+          id: true,
+          name: true,
+          campus: { select: { id: true, name: true, code: true } },
+          departments: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              _count: {
+                select: { users: true, supervisorProfiles: true, scholarProfiles: true },
+              },
+            },
+          },
+        },
+        orderBy: { name: 'asc' },
+      }),
       this.prisma.department.findMany({
         select: {
+          id: true,
           name: true,
           code: true,
+          faculty: { select: { id: true, name: true } },
           _count: {
             select: { users: true, supervisorProfiles: true, scholarProfiles: true },
           },
         },
+        orderBy: { name: 'asc' },
       }),
       this.prisma.user.findMany({
         where: { createdAt: { gte: startDate } },
@@ -96,9 +118,25 @@ export class AdminAnalyticsService {
         supervisors: totalSupervisors,
         admins: totalAdmins,
       },
+      facultyActivity: faculties.map((f) => {
+        const totalUsers = f.departments.reduce((acc, d) => acc + d._count.users, 0);
+        const totalSupervisors = f.departments.reduce((acc, d) => acc + d._count.supervisorProfiles, 0);
+        const totalScholars = f.departments.reduce((acc, d) => acc + d._count.scholarProfiles, 0);
+        return {
+          id: f.id,
+          name: f.name,
+          campus: f.campus?.name || 'Kattankulathur',
+          departmentCount: f.departments.length,
+          userCount: totalUsers,
+          supervisorCount: totalSupervisors,
+          scholarCount: totalScholars,
+        };
+      }),
       departmentActivity: departments.map((d) => ({
+        id: d.id,
         name: d.name,
         code: d.code,
+        facultyName: d.faculty?.name || 'Unassigned',
         userCount: d._count.users,
         supervisorCount: d._count.supervisorProfiles,
         scholarCount: d._count.scholarProfiles,

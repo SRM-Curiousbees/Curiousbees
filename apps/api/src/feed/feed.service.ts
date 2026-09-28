@@ -22,7 +22,18 @@ export class FeedService {
       },
       include: {
         author: {
-          select: { id: true, name: true, image: true, role: true, department: true }
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            role: true,
+            department: true,
+            faculty: true,
+            departmentId: true,
+            departmentRef: {
+              select: { id: true, name: true, code: true, faculty: { select: { id: true, name: true } } }
+            }
+          }
         },
         _count: { select: { comments: true, likes: true, shares: true, saves: true } }
       },
@@ -48,7 +59,18 @@ export class FeedService {
           { bio: { contains: term, mode: 'insensitive' } }
         ]
       },
-      select: { id: true, name: true, image: true, role: true, department: true },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        role: true,
+        department: true,
+        faculty: true,
+        departmentId: true,
+        departmentRef: {
+          select: { id: true, name: true, code: true, faculty: { select: { id: true, name: true } } }
+        }
+      },
       take: 10
     });
 
@@ -83,6 +105,11 @@ export class FeedService {
         image: true,
         role: true,
         department: true,
+        faculty: true,
+        departmentId: true,
+        departmentRef: {
+          select: { id: true, name: true, code: true, faculty: { select: { id: true, name: true } } }
+        },
         interests: { include: { interest: true } },
         followers: { where: { followerId: userId }, select: { id: true } }
       },
@@ -100,8 +127,8 @@ export class FeedService {
         reason = `Because you follow ${matchingFollowedDomain}`;
       } else if (sharedInterests.length > 0) {
         reason = `${sharedInterests.length} shared research ${sharedInterests.length === 1 ? 'interest' : 'interests'}`;
-      } else if (peer.department && peer.department === user.department) {
-        reason = `Same department (${peer.department.split('(')[0].trim()})`;
+      } else if ((peer.departmentId && user.departmentId && peer.departmentId === user.departmentId) || (peer.department && peer.department === user.department)) {
+        reason = `Same department (${(peer.departmentRef?.name || peer.department || '').split('(')[0].trim()})`;
       }
 
       const formattedRole = peer.role === 'RESEARCH_SUPERVISOR' || (peer.role as any) === 'SUPERVISOR'
@@ -113,7 +140,7 @@ export class FeedService {
         name: peer.name || 'Scholar',
         image: peer.image,
         role: formattedRole,
-        department: peer.department ? peer.department.split('(')[0].trim() : 'SRMIST',
+        department: peer.departmentRef?.name || (peer.department ? peer.department.split('(')[0].trim() : 'SRMIST'),
         domains: peerDomains.slice(0, 3),
         reason,
         isFollowing: peer.followers.length > 0

@@ -277,13 +277,13 @@ export default async function PublicPostPage({ params }: { params: Promise<{ id:
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
-              href="/sign-up"
+              href="/login"
               className="px-6 py-3 bg-white text-[#0C4DA2] text-sm font-black rounded-full hover:bg-slate-50 transition-colors"
             >
               Sign Up Free
             </Link>
             <Link
-              href="/sign-in"
+              href="/login"
               className="px-6 py-3 bg-white/10 border border-white/20 text-white text-sm font-black rounded-full hover:bg-white/20 transition-colors"
             >
               Sign In to Reply

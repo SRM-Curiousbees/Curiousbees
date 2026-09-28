@@ -63,7 +63,11 @@ export class AdminUsersService {
 
     // Faculty filter
     if (query.faculty && query.faculty !== 'ALL') {
-      where.faculty = query.faculty;
+      where.OR = [
+        { faculty: query.faculty },
+        { departmentRef: { facultyId: query.faculty } },
+        { departmentRef: { faculty: { name: query.faculty } } },
+      ];
     }
 
     // Department filter
@@ -96,7 +100,15 @@ export class AdminUsersService {
         take: limit,
         orderBy,
         include: {
-          departmentRef: true,
+          departmentRef: {
+            include: {
+              faculty: {
+                include: {
+                  campus: true,
+                },
+              },
+            },
+          },
           supervisor: {
             select: { id: true, name: true, email: true },
           },
@@ -129,7 +141,15 @@ export class AdminUsersService {
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: {
-        departmentRef: true,
+        departmentRef: {
+          include: {
+            faculty: {
+              include: {
+                campus: true,
+              },
+            },
+          },
+        },
         supervisor: {
           select: { id: true, name: true, email: true, department: true, faculty: true },
         },
@@ -443,6 +463,122 @@ export class AdminUsersService {
     });
 
     return { success: true, message: 'User permanently deleted.' };
+  }
+
+  async updateUserAffiliation(
+    actor: any,
+    userId: string,
+    data: { facultyId: string; departmentId: string; reason?: string },
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { supervisorProfile: true, scholarProfile: true },
+    });
+    if (!user) throw new NotFoundException('User not found.');
+
+    if (!data.departmentId || !data.facultyId) {
+      throw new BadRequestException('Both Faculty and Department selections are required.');
+    }
+
+    const dept = await this.prisma.department.findUnique({
+      where: { id: data.departmentId },
+      include: { faculty: { include: { campus: true } } },
+    });
+
+    if (!dept) {
+      throw new BadRequestException('Selected department does not exist.');
+    }
+
+    if (dept.facultyId !== data.facultyId) {
+      throw new BadRequestException('Invalid department/faculty combination: The selected department does not belong to the selected faculty.');
+    }
+
+    const previousAffiliation = {
+      faculty: user.faculty,
+      department: user.department,
+      departmentId: user.departmentId,
+    };
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      // 1. Update User
+      const updatedUser = await tx.user.update({
+        where: { id: userId },
+        data: {
+          departmentId: dept.id,
+          department: dept.name,
+          faculty: dept.faculty.name,
+        },
+        include: {
+          departmentRef: {
+            include: {
+              faculty: {
+                include: {
+                  campus: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      // 2. Synchronize Profile if Supervisor or Scholar
+      if (user.role === Role.RESEARCH_SUPERVISOR) {
+        await tx.supervisorProfile.upsert({
+          where: { userId },
+          create: {
+            userId,
+            facultyId: dept.facultyId,
+            departmentId: dept.id,
+            designation: 'Supervisor',
+            employeeId: user.employeeId || `EMP-${Date.now()}`,
+          },
+          update: {
+            facultyId: dept.facultyId,
+            departmentId: dept.id,
+          },
+        });
+      } else if (user.role === Role.RESEARCH_SCHOLAR) {
+        await tx.scholarProfile.upsert({
+          where: { userId },
+          create: {
+            userId,
+            facultyId: dept.facultyId,
+            departmentId: dept.id,
+            researchArea: 'General Research',
+          },
+          update: {
+            facultyId: dept.facultyId,
+            departmentId: dept.id,
+          },
+        });
+      }
+
+      return updatedUser;
+    });
+
+    // 3. Institutional Audit Log
+    await this.auditHelper.log({
+      actorId: actor.id,
+      actorEmail: actor.email,
+      actorName: actor.name,
+      actorRole: actor.role,
+      action: 'USER_AFFILIATION_UPDATED',
+      targetId: user.id,
+      targetType: 'USER',
+      category: 'INSTITUTION',
+      severity: 'MEDIUM',
+      details: `Affiliation for user ${user.email} updated to Faculty "${dept.faculty.name}", Department "${dept.name}". ${data.reason ? `Reason: ${data.reason}` : ''}`.trim(),
+      previousState: previousAffiliation,
+      newState: {
+        faculty: dept.faculty.name,
+        department: dept.name,
+        departmentId: dept.id,
+        campus: dept.faculty.campus?.name,
+      },
+      metadata: { reason: data.reason },
+    });
+
+    return updated;
   }
 }
 

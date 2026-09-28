@@ -57,7 +57,7 @@ export class SupabaseService implements OnModuleInit {
         throw new Error('Supabase user does not have an email address.');
       }
 
-      this.logger.log(`Supabase token verified for user sub=${data.user.id}, email=${email}`);
+      this.logger.debug(`Supabase token verified for user sub=${data.user.id}, email=${email}`);
       return {
         id: data.user.id,
         email,

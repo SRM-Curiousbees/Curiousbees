@@ -69,10 +69,17 @@ export class NotificationsService {
    * Update User Preferences
    */
   async updatePreferences(userId: string, data: any) {
+    let departmentName = data.department;
+    if (data.departmentId) {
+      const dept = await this.prisma.department.findUnique({ where: { id: data.departmentId } });
+      if (dept) {
+        departmentName = dept.name;
+      }
+    }
     return await this.prisma.userPreference.upsert({
       where: { userId },
-      update: data,
-      create: { userId, ...data }
+      update: { ...data, ...(departmentName && { department: departmentName }) },
+      create: { userId, ...data, ...(departmentName && { department: departmentName }) }
     });
   }
 
@@ -267,8 +274,11 @@ export class NotificationsService {
     const matchedUserIds = new Set<string>();
 
     for (const pref of preferences) {
-      // 1. Department match
-      const departmentMatch = pref.department === event.department;
+      // 1. Department match (relational primary, legacy string secondary)
+      const departmentMatch = 
+        Boolean(pref.departmentId && event.departmentId && pref.departmentId === event.departmentId) ||
+        Boolean(pref.user.departmentId && event.departmentId && pref.user.departmentId === event.departmentId) ||
+        Boolean(pref.department && event.department && pref.department === event.department);
       
       // 2. Tag match (if event shares any tags with user preferences)
       const tagMatch = event.tags.some(tag => pref.tags.includes(tag));
@@ -277,9 +287,13 @@ export class NotificationsService {
       const typeMatch = pref.eventType === event.eventType;
 
       // 4. Default broad delivery for CRITICAL and HIGH priority events to their department
+      const userDeptMatch = 
+        Boolean(pref.user.departmentId && event.departmentId && pref.user.departmentId === event.departmentId) ||
+        Boolean(pref.user.department && event.department && pref.user.department === event.department);
+
       const priorityMatch = 
         (event.priority === 'CRITICAL') || 
-        (event.priority === 'HIGH' && pref.user.department === event.department);
+        (event.priority === 'HIGH' && userDeptMatch);
 
       if (departmentMatch || tagMatch || typeMatch || priorityMatch) {
         matchedUserIds.add(pref.userId);

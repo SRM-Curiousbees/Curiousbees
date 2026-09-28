@@ -68,6 +68,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
 
 export const PUBLIC_ROUTES: string[] = [
   '/',
+  '/login',
   '/sign-in',
   '/sign-up',
   '/about',

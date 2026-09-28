@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useStore } from '@/store/useStore';
-import { SRM_DEPARTMENTS } from '@curiousbees/shared-utils';
+import { apiFetch } from '@/lib/api-client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UpdateProfileSchema } from '@curiousbees/shared-utils';
@@ -99,6 +99,22 @@ function UnifiedSettingsContent() {
   const [supervisionCapacity, setSupervisionCapacity] = useState<number>(6);
   const [acceptingScholars, setAcceptingScholars] = useState<boolean>(true);
   const [labName, setLabName] = useState<string>('SRM Center for Advanced Intelligence & Systems');
+  const [departments, setDepartments] = useState<any[]>([]);
+
+  useEffect(() => {
+    async function loadDepts() {
+      try {
+        const res = await apiFetch('/api/departments');
+        if (res.ok) {
+          const data = await res.json();
+          setDepartments(Array.isArray(data) ? data : []);
+        }
+      } catch (err) {
+        console.error('Failed to load departments', err);
+      }
+    }
+    loadDepts();
+  }, []);
 
   // Setup form validation
   const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm({
@@ -470,9 +486,9 @@ function UnifiedSettingsContent() {
                           disabled
                           className="cb-input bg-slate-50/80 text-slate-500 border-slate-200 cursor-not-allowed font-medium"
                         >
-                          <option value="">Select Academic Department</option>
-                          {SRM_DEPARTMENTS.map((dept) => (
-                            <option key={dept} value={dept}>{dept}</option>
+                          <option value="">{currentUser?.department || 'Select Academic Department'}</option>
+                          {departments.map((dept) => (
+                            <option key={dept.id} value={dept.name}>{dept.name}</option>
                           ))}
                         </select>
                         <p className="text-[9px] text-slate-400 font-semibold">Managed via SRMIST institutional identity system</p>

@@ -43,7 +43,11 @@ export class DepartmentsService {
     return this.prisma.department.findMany({
       where: facultyId ? { facultyId } : {},
       include: {
-        faculty: true,
+        faculty: {
+          include: {
+            campus: true,
+          },
+        },
         _count: {
           select: { users: true },
         },
@@ -56,7 +60,11 @@ export class DepartmentsService {
     const dept = await this.prisma.department.findUnique({
       where: { id },
       include: {
-        faculty: true,
+        faculty: {
+          include: {
+            campus: true,
+          },
+        },
         users: {
           select: {
             id: true,
@@ -74,20 +82,20 @@ export class DepartmentsService {
   }
 
   async update(id: string, data: { name?: string; code?: string; facultyId?: string; description?: string }) {
-    await this.findOne(id);
+    const dept = await this.findOne(id);
 
+    let newFaculty: any = null;
     if (data.facultyId) {
-      const faculty = await this.prisma.faculty.findUnique({
+      newFaculty = await this.prisma.faculty.findUnique({
         where: { id: data.facultyId },
       });
-      if (!faculty) {
+      if (!newFaculty) {
         throw new NotFoundException(`Faculty with ID "${data.facultyId}" not found.`);
       }
     }
 
     if (data.name) {
-      const currentDept = await this.prisma.department.findUnique({ where: { id } });
-      const targetFacultyId = data.facultyId || currentDept?.facultyId;
+      const targetFacultyId = data.facultyId || dept.facultyId;
       if (targetFacultyId) {
         const existingName = await this.prisma.department.findFirst({
           where: { name: data.name, facultyId: targetFacultyId, id: { not: id } },
@@ -107,14 +115,62 @@ export class DepartmentsService {
       }
     }
 
-    return this.prisma.department.update({
+    const updated = await this.prisma.department.update({
       where: { id },
       data,
+      include: {
+        faculty: {
+          include: {
+            campus: true,
+          },
+        },
+      },
     });
+
+    // Synchronize denormalized department name
+    if (data.name && data.name !== dept.name) {
+      await this.prisma.user.updateMany({
+        where: { departmentId: id },
+        data: { department: data.name },
+      });
+      await this.prisma.opportunity.updateMany({
+        where: { departmentId: id },
+        data: { department: data.name },
+      });
+    }
+
+    // Synchronize denormalized faculty name and profiles if faculty changed
+    if (data.facultyId && data.facultyId !== dept.facultyId && newFaculty) {
+      await this.prisma.user.updateMany({
+        where: { departmentId: id },
+        data: { faculty: newFaculty.name },
+      });
+      await this.prisma.supervisorProfile.updateMany({
+        where: { departmentId: id },
+        data: { facultyId: data.facultyId },
+      });
+      await this.prisma.scholarProfile.updateMany({
+        where: { departmentId: id },
+        data: { facultyId: data.facultyId },
+      });
+    }
+
+    return updated;
   }
 
   async remove(id: string) {
     await this.findOne(id);
+
+    const userCount = await this.prisma.user.count({ where: { departmentId: id } });
+    const oppCount = await this.prisma.opportunity.count({ where: { departmentId: id } });
+    const eventCount = await this.prisma.event.count({ where: { departmentId: id } });
+
+    if (userCount > 0 || oppCount > 0 || eventCount > 0) {
+      throw new ConflictException(
+        `Cannot delete department: ${userCount} researchers, ${oppCount} opportunities, and ${eventCount} events are attached. Reassign them first.`
+      );
+    }
+
     return this.prisma.department.delete({
       where: { id },
     });

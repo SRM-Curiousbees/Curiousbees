@@ -1,65 +1,45 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { CheckSquare, Loader2, UserCheck, UserX, Clock, RefreshCw, Mail, Building2 } from 'lucide-react';
+import Link from 'next/link';
+import { 
+  ShieldCheck, 
+  Users, 
+  Building2, 
+  CheckCircle2, 
+  UserCheck, 
+  RefreshCw, 
+  Loader2, 
+  FileCheck2,
+  ExternalLink,
+  BookOpen
+} from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-interface PendingUser {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  department?: string;
-  bio?: string;
-  createdAt: string;
-}
-
 export default function AdminApprovalsPage() {
-  const [pending, setPending] = useState<PendingUser[]>([]);
+  const [stats, setStats] = useState({
+    supervisors: 0,
+    scholars: 0,
+    departments: 0,
+  });
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [done, setDone] = useState<{ id: string; result: 'approved' | 'declined' }[]>([]);
 
-  const fetchPending = async () => {
+  const fetchStats = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/users/admin`, {
-        headers: { 'x-admin-bypass': 'true' }
-      });
+      const res = await fetch(`${API_URL}/api/users/all`);
       if (res.ok) {
-        const all: PendingUser[] = await res.json();
-        setPending(all.filter(u => u.role === 'SUPERVISOR'
-          ? (u as any).status === 'PENDING_ADMIN_APPROVAL'
-          : (u as any).status === 'PENDING_ADMIN_APPROVAL'
-        ));
+        const users = await res.json();
+        const supervisors = users.filter((u: any) => u.role === 'RESEARCH_SUPERVISOR' || u.role === 'SUPERVISOR').length;
+        const scholars = users.filter((u: any) => u.role === 'RESEARCH_SCHOLAR' || u.role === 'SCHOLAR').length;
+        setStats(prev => ({ ...prev, supervisors, scholars }));
       }
     } catch { /* silent */ }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchPending(); }, []);
-
-  const handle = async (userId: string, action: 'approve' | 'decline', role: string) => {
-    setActionLoading(userId + action);
-    try {
-      const endpoint = role === 'SUPERVISOR'
-        ? (action === 'approve' ? '/api/users/approve-supervisor' : '/api/users/decline-supervisor')
-        : (action === 'approve' ? '/api/users/approve-scholar' : '/api/users/decline-scholar');
-      await fetch(`${API_URL}${endpoint}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'x-admin-bypass': 'true' },
-        body: JSON.stringify({ supervisorId: userId, scholarId: userId }),
-      });
-      setDone(d => [...d, { id: userId, result: action === 'approve' ? 'approved' : 'declined' }]);
-      setTimeout(() => {
-        setPending(p => p.filter(u => u.id !== userId));
-        setDone(d => d.filter(e => e.id !== userId));
-      }, 1200);
-    } catch { /* silent */ }
-    finally { setActionLoading(null); }
-  };
+  useEffect(() => { fetchStats(); }, []);
 
   return (
     <div className="space-y-6 max-w-4xl">
@@ -67,116 +47,122 @@ export default function AdminApprovalsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <CheckSquare className="w-6 h-6 text-amber-500" /> Approval Requests
+            <ShieldCheck className="w-6 h-6 text-[#0C4DA2]" /> Institutional Supervision Governance
           </h1>
-          <p className="text-slate-500 text-sm mt-1">{pending.length} pending registration{pending.length !== 1 ? 's' : ''}</p>
+          <p className="text-slate-500 text-sm mt-1">
+            CuriousBees decentralized academic model & oversight
+          </p>
         </div>
         <button
-          onClick={fetchPending}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:border-blue-300 hover:text-blue-600 transition-all"
+          onClick={fetchStats}
+          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:border-blue-300 hover:text-blue-600 transition-all cursor-pointer"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
         </button>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
-        </div>
-      ) : pending.length === 0 ? (
-        <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center mx-auto mb-3">
-            <CheckSquare className="w-6 h-6 text-emerald-500" />
+      {/* Model Governance Architecture Banner */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#0C4DA2] text-white flex items-center justify-center shrink-0">
+            <Building2 className="w-5 h-5" />
           </div>
-          <p className="font-semibold text-slate-700">All caught up!</p>
-          <p className="text-sm text-slate-400 mt-1">No pending approval requests.</p>
+          <div>
+            <h2 className="text-base font-bold text-slate-900">Institutional Roles & Approval Policy</h2>
+            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+              CuriousBees implements institutional research autonomy. Academic relationships are established directly between faculty and scholars without requiring administrative gatekeeping for supervisor onboarding:
+            </p>
+          </div>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {pending.map((user, i) => {
-            const isDone = done.find(d => d.id === user.id);
-            return (
-              <motion.div
-                key={user.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{
-                  opacity: isDone ? 0 : 1,
-                  y: 0,
-                  scale: isDone ? 0.98 : 1
-                }}
-                transition={{ delay: i * 0.04, duration: 0.3 }}
-                className="bg-white border border-slate-200/70 rounded-2xl p-5 flex items-center gap-5 shadow-sm"
-              >
-                {/* Avatar */}
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shrink-0">
-                  {user.name?.[0]?.toUpperCase() || '?'}
-                </div>
 
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-semibold text-slate-800 text-sm">{user.name}</p>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border
-                      ${user.role === 'SUPERVISOR' ? 'bg-blue-50 text-blue-700 border-blue-100' : 'bg-purple-50 text-purple-700 border-purple-100'}`}>
-                      {user.role}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1 flex-wrap">
-                    <span className="flex items-center gap-1 text-xs text-slate-400">
-                      <Mail className="w-3 h-3" />{user.email}
-                    </span>
-                    {user.department && (
-                      <span className="flex items-center gap-1 text-xs text-slate-400">
-                        <Building2 className="w-3 h-3" />{user.department}
-                      </span>
-                    )}
-                    <span className="flex items-center gap-1 text-xs text-slate-400">
-                      <Clock className="w-3 h-3" />
-                      {new Date(user.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: '2-digit' })}
-                    </span>
-                  </div>
-                  {user.bio && <p className="text-xs text-slate-500 mt-1.5 line-clamp-2">{user.bio}</p>}
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
+          <div className="bg-white p-4 rounded-xl border border-blue-200/60 shadow-xs space-y-2">
+            <div className="flex items-center gap-2 text-[#0C4DA2] font-bold text-xs uppercase tracking-wider">
+              <UserCheck className="w-4 h-4" />
+              <span>Research Supervisors</span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              Join directly with institutional faculty credentials. No administrative approval required. Supervisors create research workspaces and review candidate proposals.
+            </p>
+          </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2 shrink-0">
-                  {isDone ? (
-                    <span className={`text-xs font-semibold px-3 py-1.5 rounded-full border
-                      ${isDone.result === 'approved'
-                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                        : 'bg-red-50 text-red-600 border-red-100'}`}>
-                      {isDone.result === 'approved' ? '✓ Approved' : '✗ Declined'}
-                    </span>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => handle(user.id, 'decline', user.role)}
-                        disabled={!!actionLoading}
-                        className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer"
-                      >
-                        {actionLoading === user.id + 'decline'
-                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          : <UserX className="w-3.5 h-3.5" />}
-                        Decline
-                      </button>
-                      <button
-                        onClick={() => handle(user.id, 'approve', user.role)}
-                        disabled={!!actionLoading}
-                        className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition-all disabled:opacity-50 cursor-pointer shadow-sm shadow-emerald-600/20"
-                      >
-                        {actionLoading === user.id + 'approve'
-                          ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          : <UserCheck className="w-3.5 h-3.5" />}
-                        Approve
-                      </button>
-                    </>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })}
+          <div className="bg-white p-4 rounded-xl border border-blue-200/60 shadow-xs space-y-2">
+            <div className="flex items-center gap-2 text-indigo-700 font-bold text-xs uppercase tracking-wider">
+              <BookOpen className="w-4 h-4" />
+              <span>Research Scholars</span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              Discover supervisors aligned by research domain and topic. Supervision is granted directly by the designated supervisor through proposal review.
+            </p>
+          </div>
+
+          <div className="bg-white p-4 rounded-xl border border-blue-200/60 shadow-xs space-y-2">
+            <div className="flex items-center gap-2 text-slate-700 font-bold text-xs uppercase tracking-wider">
+              <ShieldCheck className="w-4 h-4" />
+              <span>Institute Admin</span>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              Governance only. Oversees compliance, user account suspension/activation, department taxonomy, and system audit logs.
+            </p>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* Quick Governance Links */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Link 
+          href="/sys-admin/users" 
+          className="bg-white border border-slate-200 hover:border-blue-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex items-center justify-between group cursor-pointer"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0C4DA2] flex items-center justify-center">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#0C4DA2] transition-colors">
+                User & Role Management
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Manage accounts, departments, and roles
+              </p>
+            </div>
+          </div>
+          <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#0C4DA2]" />
+        </Link>
+
+        <Link 
+          href="/sys-admin/audit" 
+          className="bg-white border border-slate-200 hover:border-blue-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex items-center justify-between group cursor-pointer"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
+              <FileCheck2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#0C4DA2] transition-colors">
+                System Audit Logs
+              </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Review governance actions and academic activities
+              </p>
+            </div>
+          </div>
+          <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#0C4DA2]" />
+        </Link>
+      </div>
+
+      {/* Governance Confirmation Card */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 flex items-center gap-4">
+        <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+          <CheckCircle2 className="w-5 h-5" />
+        </div>
+        <div>
+          <h4 className="text-sm font-bold text-slate-800">Decentralized Supervision Active</h4>
+          <p className="text-xs text-slate-500 mt-0.5">
+            All supervisor approvals are handled directly by faculty through their Supervision Panel (/my-scholars).
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

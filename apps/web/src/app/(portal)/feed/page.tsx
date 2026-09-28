@@ -109,7 +109,8 @@ function ScholarFeedContent() {
     isLoading, fetchFeedThreads, fetchFeedCounts, currentUser, createThread,
     toggleLikeThread, requestThreadCollaboration, shareThread, reportThread, connectWithPeer,
     toggleSaveThread, deleteThread, toggleSaveThreadLocally, addToast, fetchSuggestedPeers, fetchTrendingResearch,
-    followedUserIds, followedDomains, followedTopics
+    followedUserIds, followedDomains, followedTopics,
+    workspaces, myScholars
   } = useStore();
 
   // ─── LOCAL STATE ──────────────────────────────────────────────────────────
@@ -234,21 +235,66 @@ function ScholarFeedContent() {
 
     if (activeTab === 'foryou') {
       const userInterests = (currentUser?.interests || []).map((i: any) => (i.interest?.name || i.name || '').toLowerCase()).filter(Boolean);
+      const userDomains = ((currentUser as any)?.userDomains || []).map((d: any) => (d.domain?.name || d.name || '').toLowerCase()).filter(Boolean);
+      const userTopics = ((currentUser as any)?.userTopics || []).map((t: any) => (t.topic?.name || t.name || '').toLowerCase()).filter(Boolean);
+      const myScholarIds = (myScholars || []).map((s: any) => s.id);
+      const myWorkspaceMemberIds = new Set(
+        (workspaces || []).flatMap((ws: any) => (ws.members || []).map((m: any) => m.userId || m.user?.id))
+      );
+
+      const calculateScore = (item: Thread) => {
+        let score = 0;
+        const authorId = item.authorId || item.author?.id;
+
+        // 1. Direct Supervision Relationship (+18 pts)
+        if (authorId) {
+          if (currentUser?.supervisorId && authorId === currentUser.supervisorId) {
+            score += 18;
+          }
+          if (myScholarIds.includes(authorId)) {
+            score += 18;
+          }
+        }
+
+        // 2. Shared Research Workspace Co-membership (+14 pts)
+        if (authorId && myWorkspaceMemberIds.has(authorId)) {
+          score += 14;
+        }
+
+        // 3. Followed Author (+10 pts)
+        if (authorId && followedUserIds[authorId]) {
+          score += 10;
+        }
+
+        // 4. Research Domain & Topic Alignment (+12 pts)
+        const hasDomainMatch = item.tags.some(t => {
+          const cleanTag = t.toLowerCase().replace(/^#/, '');
+          return userDomains.includes(cleanTag) || !!followedDomains[cleanTag];
+        });
+        if (hasDomainMatch) score += 12;
+
+        const hasTopicMatch = item.tags.some(t => {
+          const cleanTag = t.toLowerCase().replace(/^#/, '');
+          return userTopics.includes(cleanTag) || !!followedTopics[cleanTag];
+        });
+        if (hasTopicMatch) score += 12;
+
+        // 5. General Interests Match (+6 pts)
+        if (item.tags.some(t => userInterests.includes(t.toLowerCase().replace(/^#/, '')))) {
+          score += 6;
+        }
+
+        // 6. Department Alignment (+4 pts)
+        if (item.author?.department && currentUser?.department && item.author.department.toLowerCase() === currentUser.department.toLowerCase()) {
+          score += 4;
+        }
+
+        return score;
+      };
 
       return [...matched].sort((a, b) => {
-        const aScore = (
-          (a.authorId && followedUserIds[a.authorId] ? 10 : 0) +
-          (a.tags.some(t => followedDomains[t.toLowerCase()] || followedTopics[t.toLowerCase().replace(/^#/, '')]) ? 8 : 0) +
-          (a.tags.some(t => userInterests.includes(t.toLowerCase())) ? 5 : 0) +
-          (a.author?.department && currentUser?.department && a.author.department === currentUser.department ? 3 : 0)
-        );
-
-        const bScore = (
-          (b.authorId && followedUserIds[b.authorId] ? 10 : 0) +
-          (b.tags.some(t => followedDomains[t.toLowerCase()] || followedTopics[t.toLowerCase().replace(/^#/, '')]) ? 8 : 0) +
-          (b.tags.some(t => userInterests.includes(t.toLowerCase())) ? 5 : 0) +
-          (b.author?.department && currentUser?.department && b.author.department === currentUser.department ? 3 : 0)
-        );
+        const aScore = calculateScore(a);
+        const bScore = calculateScore(b);
 
         if (bScore !== aScore) return bScore - aScore;
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -257,7 +303,7 @@ function ScholarFeedContent() {
 
     // DISCOVER: Return all matched threads chronologically
     return matched;
-  }, [threads, searchQuery, activeTag, activeTab, currentUser, followedUserIds, followedDomains, followedTopics]);
+  }, [threads, searchQuery, activeTag, activeTab, currentUser, followedUserIds, followedDomains, followedTopics, workspaces, myScholars]);
 
   // ─── ACTIONS ──────────────────────────────────────────────────────────────
 

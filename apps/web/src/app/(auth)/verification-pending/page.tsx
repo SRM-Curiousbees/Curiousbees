@@ -55,8 +55,8 @@ export default function VerificationPendingPage() {
           return;
         }
 
-        if (user.role === 'RESEARCH_SUPERVISOR' && user.status === 'ACTIVE' && user.approved) {
-          router.replace('/supervisor');
+        if ((user.role as string) === 'RESEARCH_SUPERVISOR' || (user.role as string) === 'SUPERVISOR') {
+          router.replace('/feed');
           return;
         }
 
@@ -154,7 +154,7 @@ export default function VerificationPendingPage() {
         <motion.button 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          onClick={() => { logout(); router.push('/sign-in'); }}
+          onClick={() => { logout(); router.push('/login'); }}
           className="pointer-events-auto flex items-center space-x-2 px-4 py-2 border border-white/15 rounded-full text-xs font-bold text-white/80 hover:text-yellow-400 hover:bg-white/10 hover:border-yellow-400/40 transition-all duration-300 cursor-pointer backdrop-blur-md shadow-lg"
         >
           <LogOut className="w-3.5 h-3.5" />

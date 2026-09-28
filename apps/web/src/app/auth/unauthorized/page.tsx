@@ -38,7 +38,7 @@ export default function UnauthorizedPage() {
   const userRoleLabel = currentUser?.role ? ROLE_LABELS[currentUser.role as UserRole] : null;
   const correctDashboard = currentUser
     ? getDashboardRoute(currentUser)
-    : '/sign-in';
+    : '/login';
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#07090e] text-slate-800 dark:text-slate-100 flex flex-col justify-center items-center px-6 relative overflow-hidden transition-colors duration-300">
@@ -98,7 +98,7 @@ export default function UnauthorizedPage() {
             Go to My Dashboard
           </Link>
           <Link
-            href="/sign-in"
+            href="/login"
             className="w-full py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider text-slate-500 hover:text-slate-800 dark:hover:text-white transition-all text-center flex items-center justify-center space-x-1"
           >
             <ArrowLeft className="w-4 h-4 shrink-0" />

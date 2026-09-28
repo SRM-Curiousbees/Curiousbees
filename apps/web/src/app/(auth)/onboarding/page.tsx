@@ -354,7 +354,11 @@ export default function OnboardingPage() {
       }
 
       await syncUserSession({ force: true });
-      router.replace('/verification-pending');
+      if (role === 'SUPERVISOR') {
+        router.replace('/feed');
+      } else {
+        router.replace('/verification-pending');
+      }
     } catch (e: any) {
       setErrorMsg(e.message || 'Failed to submit onboarding details.');
       setIsSubmitting(false);
@@ -430,7 +434,7 @@ export default function OnboardingPage() {
           <SRMLogo size={42} variant="full" theme="light" />
         </div>
         <button 
-          onClick={() => { logout(); router.push('/sign-in'); }}
+          onClick={() => { logout(); router.push('/login'); }}
           className="pointer-events-auto flex items-center space-x-1.5 px-4 py-2 border border-white/10 rounded-full text-xs font-bold text-white/70 hover:text-yellow-400 hover:bg-white/5 hover:border-yellow-400/30 transition-all duration-300 cursor-pointer backdrop-blur-sm shadow-md"
         >
           <LogOut className="w-3.5 h-3.5" />

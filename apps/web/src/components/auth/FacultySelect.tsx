@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Loader2 } from 'lucide-react';
+import { apiFetch } from '@/lib/api-client';
 
 interface FacultySelectProps {
   value: string;
@@ -10,15 +11,28 @@ interface FacultySelectProps {
   error?: string;
 }
 
-export const FACULTIES = [
-  { value: 'eng-tech', label: 'Faculty of Engineering & Technology' },
-  { value: 'sci-hum', label: 'Faculty of Science and Humanities' },
-  { value: 'mgmt', label: 'Faculty of Management' },
-  { value: 'health-sci', label: 'Faculty of Health Sciences & Research' },
-  { value: 'law', label: 'School Of Law' }
-];
-
 export default function FacultySelect({ value, onChange, error }: FacultySelectProps) {
+  const [faculties, setFaculties] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function loadFaculties() {
+      setLoading(true);
+      try {
+        const res = await apiFetch('/api/faculties');
+        if (res.ok) {
+          const data = await res.json();
+          setFaculties(Array.isArray(data) ? data : []);
+        }
+      } catch (e) {
+        console.error('Failed to load faculties', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadFaculties();
+  }, []);
+
   return (
     <div className="relative pt-6 text-left">
       <label 
@@ -41,15 +55,21 @@ export default function FacultySelect({ value, onChange, error }: FacultySelectP
             error && "border-error focus:border-error"
           )}
         >
-          <option value="" disabled className="bg-white text-outline">Select Faculty</option>
-          {FACULTIES.map((fac) => (
-            <option key={fac.value} value={fac.value} className="bg-white text-on-surface">
-              {fac.label}
+          <option value="" disabled className="bg-white text-outline">
+            {loading ? 'Loading Faculties...' : 'Select Faculty'}
+          </option>
+          {faculties.map((fac) => (
+            <option key={fac.id} value={fac.id} className="bg-white text-on-surface">
+              {fac.name}
             </option>
           ))}
         </select>
         <div className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-on-surface-variant flex items-center">
-          <ChevronDown className="w-4 h-4 text-outline" />
+          {loading ? (
+            <Loader2 className="w-4 h-4 text-outline animate-spin" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-outline" />
+          )}
         </div>
       </div>
       {error && (

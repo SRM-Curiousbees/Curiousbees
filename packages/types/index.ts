@@ -172,6 +172,7 @@ export interface CreateOpportunityInput {
   title: string;
   description: string;
   department?: string;
+  departmentId?: string;
   researchDomain: string;
   opportunityType?: string;
   positionsCount?: number;
@@ -189,6 +190,7 @@ export interface UpdateProfileInput {
   name?: string;
   role?: UserRole;
   department?: string;
+  departmentId?: string;
   bio?: string;
   interests?: string[]; // Array of interest names
 }

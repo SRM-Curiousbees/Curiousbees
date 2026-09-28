@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.0] — 2026-09-28
+
+### Added
+- **Canonical Institutional Hierarchy**: Established single source of truth: `Campus (Kattankulathur - KTR) -> Faculty (11 verified) -> Department (29 verified) -> Researcher (User.departmentId)`.
+- **Database Migration (`20260928000000_institutional_hierarchy`)**: Non-destructive migration adding `Faculty.campusId`, `Department.facultyId` (`ON DELETE RESTRICT`), and `User/Opportunity/Event/UserPreference.departmentId`.
+- **Idempotent Institutional Seed & Backfill**: Deterministic seed script establishing KTR campus, 11 official faculties, and 29 verified departments, backfilling 100% of researchers to relational departments.
+- **Cascading Profile Affiliation UI**: Modernized `EditResearcherProfileDrawer.tsx` with dynamic Faculty $\to$ Department dropdowns and KTR campus indicator, fully removing free-text department inputs.
+- **Institutional Unit Tests**: Added Jest suite `onboarding.service.spec.ts` verifying cross-faculty department mismatch rejection, canonical hierarchy setup, and audit logging.
+- **Migration Documentation**: Added [`docs/reports/Phase_2_Institutional_Hierarchy_Report.md`](./docs/reports/Phase_2_Institutional_Hierarchy_Report.md).
+
+### Changed
+- **Separation of Concerns**: Strictly isolated Institutional Identity ("Where does the researcher belong?") from Research Identity ("What does the researcher work on?").
+- **Backend Onboarding & Profile Services**: Updated `onboarding.service.ts` and `users.service.ts` to strictly validate `departmentId`, reject cross-faculty pairings, synchronize denormalized fields, and log institutional audit events.
+- **Relational Discovery & Alignment**: Updated `getResearchers` and `getSupervisors` to filter by `departmentId`, `facultyId`, and `campusId`, using relational IDs for institutional alignment scoring.
+- **Opportunities & Events Relational Binding**: Added relational `departmentId` foreign keys and access check guards.
+- **Frontend Department Selectors**: Replaced hardcoded static lists in `DepartmentSelect.tsx`, `FacultySelect.tsx`, `researchers/page.tsx`, `scholar/connections/page.tsx`, and `settings/page.tsx` with live dynamic API fetching.
+
+### Deprecated
+- **`SRM_DEPARTMENTS`**: Deprecated hardcoded static department array in `@curiousbees/shared-utils`, replaced by dynamic API queries.
+
+---
+
 ## [0.3.0] — 2026-06-05
 
 ### Added

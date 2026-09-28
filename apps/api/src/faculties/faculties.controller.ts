@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Query } from '@nestjs/common';
 import { FacultiesService } from './faculties.service';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
 import { ApprovedGuard } from '../auth/approved.guard';
@@ -9,8 +9,8 @@ export class FacultiesController {
   constructor(private readonly facultiesService: FacultiesService) {}
 
   @Get()
-  async findAll() {
-    return this.facultiesService.findAll();
+  async findAll(@Query('campusId') campusId?: string) {
+    return this.facultiesService.findAll(campusId);
   }
 
   @Get(':id')
@@ -20,7 +20,7 @@ export class FacultiesController {
 
   @Post()
   @UseGuards(SupabaseAuthGuard, ApprovedGuard, AdminGuard)
-  async create(@Body() body: { name: string }) {
+  async create(@Body() body: { name: string; campusId?: string }) {
     return this.facultiesService.create(body);
   }
 
@@ -28,7 +28,7 @@ export class FacultiesController {
   @UseGuards(SupabaseAuthGuard, ApprovedGuard, AdminGuard)
   async update(
     @Param('id') id: string,
-    @Body() body: { name: string }
+    @Body() body: { name?: string; campusId?: string }
   ) {
     return this.facultiesService.update(id, body);
   }

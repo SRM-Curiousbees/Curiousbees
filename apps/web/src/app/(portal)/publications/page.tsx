@@ -236,6 +236,12 @@ export default function PublicationsPage() {
                   {(pub as any).user && (
                     <span className="text-primary font-bold">
                       By: {(pub as any).user.name}
+                      {((pub as any).user.departmentRef?.name || (pub as any).user.department) && (
+                        <span className="text-slate-500 font-normal ml-1">
+                          · {(pub as any).user.departmentRef?.name || (pub as any).user.department}
+                          {(pub as any).user.departmentRef?.faculty?.name ? ` (${(pub as any).user.departmentRef.faculty.name})` : ''}
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>

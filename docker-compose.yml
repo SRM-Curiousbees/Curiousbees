@@ -19,18 +19,6 @@ services:
       timeout: 5s
       retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: srm_curiousbees_redis
-    restart: always
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   api:
     build:
       context: .
@@ -42,16 +30,12 @@ services:
       PORT: 4000
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/srm_curiousbees_db?schema=public
       DIRECT_URL: postgresql://postgres:postgres@postgres:5432/srm_curiousbees_db?schema=public
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
       DEVELOPMENT_MODE: "true"
       FRONTEND_URL: http://localhost:3000
     ports:
       - "4000:4000"
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
 
   web:

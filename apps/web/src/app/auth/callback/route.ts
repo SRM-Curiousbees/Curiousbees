@@ -32,8 +32,12 @@ export async function GET(request: Request) {
     if (!authError && authUser) {
       const email = authUser.email?.toLowerCase().trim() || '';
 
-      // Check allowed domains (enforcing SRMIST & Gmail during this stage)
-      const allowedDomains = (process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS || 'srmist.edu.in,gmail.com')
+      // Check allowed domains (enforcing configurable allowed domains with fallback to gmail.com)
+      const allowedDomains = (
+        process.env.ALLOWED_EMAIL_DOMAINS ||
+        process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS ||
+        'gmail.com'
+      )
         .split(',')
         .map((d) => d.trim().toLowerCase())
         .filter(Boolean);

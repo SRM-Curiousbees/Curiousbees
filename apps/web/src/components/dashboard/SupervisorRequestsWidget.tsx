@@ -102,8 +102,8 @@ export function SupervisorRequestsWidget() {
               {requests.map((req) => {
                 const scholar = req.scholar;
                 const scholarName = scholar?.name || scholar?.email || 'Research Scholar';
-                const scholarArea = scholar?.scholarProfile?.researchArea || scholar?.bio || 'Computer Science & Engineering';
-                const scholarDept = scholar?.department || 'SRMIST';
+                const scholarArea = scholar?.scholarProfile?.researchArea || scholar?.bio || 'Interdisciplinary Research';
+                const scholarDept = scholar?.departmentRef?.name || scholar?.department || 'Department Not Specified';
                 const requestedDate = new Date(req.createdAt).toLocaleDateString('en-US', {
                   month: 'short',
                   day: 'numeric'

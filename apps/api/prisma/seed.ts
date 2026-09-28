@@ -7,101 +7,190 @@ dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 const prisma = new PrismaClient();
 
-const FACULTIES_AND_DEPARTMENTS = [
-  {
-    facultyName: 'Engineering & Technology',
-    departments: [
-      { name: 'Computer Applications', code: 'MCA' },
-      { name: 'CSE', code: 'CSE' },
-      { name: 'IT', code: 'IT' },
-      { name: 'AIML', code: 'AIML' },
-      { name: 'ECE', code: 'ECE' },
-      { name: 'EEE', code: 'EEE' },
-      { name: 'Biotechnology & Bioengineering', code: 'BIOTECH' },
-      { name: 'Mechanical Engineering', code: 'MECH' },
-      { name: 'Civil Engineering', code: 'CIVIL' },
-      { name: 'Chemical Engineering', code: 'CHEM' }
-    ]
+const SRM_ORGANIZATION_DATA = {
+  campus: {
+    code: 'KTR',
+    name: 'Kattankulathur',
+    location: 'SRM Nagar, Kattankulathur, Chengalpattu District, Tamil Nadu 603203',
+    status: 'ACTIVE',
   },
-  {
-    facultyName: 'Science & Humanities',
-    departments: [
-      { name: 'Physics & Nanotechnology', code: 'PHYS' },
-      { name: 'Chemistry & Materials Science', code: 'CHEMISTRY' },
-      { name: 'Mathematics & Actuarial Science', code: 'MATHS' }
-    ]
-  },
-  {
-    facultyName: 'Management',
-    departments: [
-      { name: 'School of Management (SOM)', code: 'SOM' }
-    ]
-  },
-  {
-    facultyName: 'Medical',
-    departments: [
-      { name: 'Health Sciences & Research', code: 'HEALTH' }
-    ]
-  },
-  {
-    facultyName: 'Law',
-    departments: []
-  }
-];
+  faculties: [
+    {
+      name: 'Faculty of Engineering & Technology',
+      legacyNames: ['Engineering & Technology'],
+      departments: [
+        { code: 'MCA', name: 'Computer Applications', description: 'Department of Computer Applications (MCA)' },
+        { code: 'CSE', name: 'Computing Technologies', description: 'Department of Computing Technologies (CSE)' },
+        { code: 'IT', name: 'Information Technology', description: 'Department of Information Technology' },
+        { code: 'AIML', name: 'Computational Intelligence', description: 'Department of Computational Intelligence (AIML)' },
+        { code: 'ECE', name: 'Electronics & Communication Engineering', description: 'Department of Electronics & Communication Engineering' },
+        { code: 'EEE', name: 'Electrical & Electronics Engineering', description: 'Department of Electrical & Electronics Engineering' },
+        { code: 'BIOTECH', name: 'Biotechnology', description: 'Department of Biotechnology' },
+        { code: 'MECH', name: 'Mechanical Engineering', description: 'Department of Mechanical Engineering' },
+        { code: 'CIVIL', name: 'Civil Engineering', description: 'Department of Civil Engineering' },
+        { code: 'CHEM', name: 'Chemical Engineering', description: 'Department of Chemical Engineering' },
+        { code: 'AERO', name: 'Aerospace Engineering', description: 'Department of Aerospace Engineering' },
+        { code: 'BME', name: 'Biomedical Engineering', description: 'Department of Biomedical Engineering' },
+      ],
+    },
+    {
+      name: 'Faculty of Science & Humanities',
+      legacyNames: ['Science & Humanities'],
+      departments: [
+        { code: 'PHYS', name: 'Physics & Nanotechnology', description: 'Department of Physics & Nanotechnology' },
+        { code: 'CHEMISTRY', name: 'Chemistry', description: 'Department of Chemistry' },
+        { code: 'MATHS', name: 'Mathematics', description: 'Department of Mathematics' },
+        { code: 'ENG', name: 'English & Foreign Languages', description: 'Department of English & Foreign Languages' },
+        { code: 'COMMERCE', name: 'Commerce & Economics', description: 'Department of Commerce & Economics' },
+      ],
+    },
+    {
+      name: 'Faculty of Management',
+      legacyNames: ['Management'],
+      departments: [
+        { code: 'SOM', name: 'Management Studies', description: 'Department of Management Studies' },
+      ],
+    },
+    {
+      name: 'Faculty of Law',
+      legacyNames: ['Law'],
+      departments: [
+        { code: 'LAW-CORP', name: 'Corporate Law & Governance', description: 'Department of Corporate Law' },
+        { code: 'LAW-IPR', name: 'Intellectual Property Rights', description: 'Department of IPR & Cyber Law' },
+      ],
+    },
+    {
+      name: 'Faculty of Medicine & Health Sciences',
+      legacyNames: ['Medical'],
+      departments: [
+        { code: 'HEALTH', name: 'Health Sciences & Clinical Research', description: 'Department of Health Sciences & Clinical Research' },
+        { code: 'COMM-MED', name: 'Community Medicine', description: 'Department of Community Medicine' },
+      ],
+    },
+    {
+      name: 'Faculty of Pharmacy',
+      legacyNames: [],
+      departments: [
+        { code: 'PHARM-CHEM', name: 'Pharmaceutical Chemistry & Analysis', description: 'Department of Pharmaceutical Chemistry' },
+        { code: 'PHARM-PRAC', name: 'Pharmacy Practice', description: 'Department of Pharmacy Practice' },
+      ],
+    },
+    {
+      name: 'Faculty of Nursing',
+      legacyNames: [],
+      departments: [
+        { code: 'NURS-COMM', name: 'Community Health Nursing', description: 'Department of Community Health Nursing' },
+      ],
+    },
+    {
+      name: 'Faculty of Physiotherapy',
+      legacyNames: [],
+      departments: [
+        { code: 'PHYSIO', name: 'Physiotherapy & Rehabilitation', description: 'Department of Physiotherapy' },
+      ],
+    },
+    {
+      name: 'Faculty of Occupational Therapy',
+      legacyNames: [],
+      departments: [
+        { code: 'OCC-THERAPY', name: 'Occupational Therapy', description: 'Department of Occupational Therapy' },
+      ],
+    },
+    {
+      name: 'Faculty of Public Health',
+      legacyNames: [],
+      departments: [
+        { code: 'PUB-HEALTH', name: 'Public Health & Epidemiology', description: 'Department of Public Health' },
+      ],
+    },
+    {
+      name: 'Faculty of Hotel Management',
+      legacyNames: [],
+      departments: [
+        { code: 'HOTEL-MGMT', name: 'Hotel Management & Catering', description: 'Department of Hotel Management' },
+      ],
+    },
+  ],
+};
 
 async function main() {
-  console.log('🌱 Starting database seeding...');
+  console.log('🌱 Starting safe, idempotent database seeding...');
 
-  // 1. Clean database in dependency order
-  await prisma.report.deleteMany({});
-  await prisma.publication.deleteMany({});
-  await prisma.workspaceAnnouncement.deleteMany({});
-  await prisma.workspaceFile.deleteMany({});
-  await prisma.workspaceMilestone.deleteMany({});
-  await prisma.workspaceMember.deleteMany({});
-  await prisma.workspace.deleteMany({});
-  await prisma.collaborationRequest.deleteMany({});
-  await prisma.userInterest.deleteMany({});
-  await prisma.comment.deleteMany({});
-  await prisma.thread.deleteMany({});
-  await prisma.opportunity.deleteMany({});
-  await prisma.researchInterest.deleteMany({});
-  await prisma.notificationToken.deleteMany({});
-  await prisma.notification.deleteMany({});
-  await prisma.scholarSupervisorRequest.deleteMany({});
-  await prisma.supervisorProfile.deleteMany({});
-  await prisma.scholarProfile.deleteMany({});
-  await prisma.user.deleteMany({});
-  await prisma.department.deleteMany({});
-  await prisma.faculty.deleteMany({});
+  // 1. Upsert Kattankulathur Campus
+  const campus = await prisma.campus.upsert({
+    where: { code: SRM_ORGANIZATION_DATA.campus.code },
+    update: {
+      name: SRM_ORGANIZATION_DATA.campus.name,
+      location: SRM_ORGANIZATION_DATA.campus.location,
+      status: SRM_ORGANIZATION_DATA.campus.status,
+    },
+    create: {
+      code: SRM_ORGANIZATION_DATA.campus.code,
+      name: SRM_ORGANIZATION_DATA.campus.name,
+      location: SRM_ORGANIZATION_DATA.campus.location,
+      status: SRM_ORGANIZATION_DATA.campus.status,
+    },
+  });
+  console.log(`✅ Campus verified: ${campus.name} (${campus.code})`);
 
-  console.log('🧹 Database cleaned.');
-
-  // 2. Seed Faculties and Departments
+  // 2. Upsert Faculties and Departments
   const facultyMap: Record<string, any> = {};
   const deptMap: Record<string, any> = {};
 
-  for (const item of FACULTIES_AND_DEPARTMENTS) {
-    const faculty = await prisma.faculty.create({
-      data: { name: item.facultyName }
-    });
-    facultyMap[item.facultyName] = faculty;
+  for (const item of SRM_ORGANIZATION_DATA.faculties) {
+    let faculty = await prisma.faculty.findUnique({ where: { name: item.name } });
+
+    if (!faculty && item.legacyNames.length > 0) {
+      for (const legacy of item.legacyNames) {
+        const found = await prisma.faculty.findUnique({ where: { name: legacy } });
+        if (found) {
+          faculty = await prisma.faculty.update({
+            where: { id: found.id },
+            data: { name: item.name, campusId: campus.id },
+          });
+          break;
+        }
+      }
+    }
+
+    if (!faculty) {
+      faculty = await prisma.faculty.create({
+        data: {
+          name: item.name,
+          campusId: campus.id,
+        },
+      });
+    } else {
+      faculty = await prisma.faculty.update({
+        where: { id: faculty.id },
+        data: { campusId: campus.id },
+      });
+    }
+
+    facultyMap[item.name] = faculty;
 
     for (const dept of item.departments) {
-      const d = await prisma.department.create({
-        data: {
+      const d = await prisma.department.upsert({
+        where: { code: dept.code },
+        update: {
+          name: dept.name,
+          facultyId: faculty.id,
+          description: dept.description,
+        },
+        create: {
           name: dept.name,
           code: dept.code,
           facultyId: faculty.id,
-          description: `${dept.name} department in Faculty of ${item.facultyName}.`
-        }
+          description: dept.description,
+        },
       });
+      deptMap[dept.code] = d;
       deptMap[dept.name] = d;
     }
   }
-  console.log('✅ Seeded faculties and departments.');
+  console.log(`✅ Seeded ${Object.keys(facultyMap).length} faculties and ${Object.keys(deptMap).length} departments.`);
 
-  // 3. Create Research Interests
+  // 3. Create Research Interests (Idempotent)
   const interestsData = [
     'Generative AI & LLMs',
     'Quantum Computing',
@@ -113,576 +202,202 @@ async function main() {
     'Reinforcement Learning',
     'Bioinformatics',
     'Structural Health Monitoring',
-    'Blockchains & Smart Contracts'
+    'Blockchains & Smart Contracts',
   ];
 
   const interestsMap: Record<string, any> = {};
   for (const name of interestsData) {
-    const interest = await prisma.researchInterest.create({
-      data: { name }
+    const interest = await prisma.researchInterest.upsert({
+      where: { name },
+      update: {},
+      create: { name },
     });
     interestsMap[name] = interest;
   }
-  console.log(`✅ Created ${Object.keys(interestsMap).length} research interests.`);
+  console.log(`✅ Created/verified ${Object.keys(interestsMap).length} research interests.`);
 
-  // 4. Create Users (Faculty, Scholars, and Admins)
-  // 4. Create Users (Faculty, Scholars, and Admins)
-  const users = [
+  // 4. Upsert Users (Faculty, Scholars, and Admins) safely
+  const seedUsers = [
     {
       name: 'Dr. SUDHA M R',
       email: 'dr.sudha@srmist.edu.in',
       image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
       role: Role.RESEARCH_SUPERVISOR,
-      facultyName: 'Engineering & Technology',
-      departmentName: 'Computer Applications',
+      facultyName: 'Faculty of Engineering & Technology',
+      departmentCode: 'MCA',
       designation: 'Assistant Professor grade I',
       employeeId: '600215',
       bio: 'Assistant Professor grade I. Focused on genomic sequencing algorithms, web applications, and data science.',
-      interests: ['Generative AI & LLMs', 'Reinforcement Learning', 'Blockchains & Smart Contracts']
+      interests: ['Generative AI & LLMs', 'Reinforcement Learning', 'Blockchains & Smart Contracts'],
     },
     {
       name: 'Dr. RAZIA BEGUM S',
       email: 'dr.razia@srmist.edu.in',
       image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
       role: Role.RESEARCH_SUPERVISOR,
-      facultyName: 'Engineering & Technology',
-      departmentName: 'Computer Applications',
+      facultyName: 'Faculty of Engineering & Technology',
+      departmentCode: 'MCA',
       designation: 'Associate Professor',
       employeeId: '600180',
       bio: 'Associate Professor in Computer Applications. Focus on computer networks, IoT and smart infrastructure.',
-      interests: ['Cancer Immunotherapy', 'Bioinformatics', 'Nanomaterials & Thin Films']
+      interests: ['Cancer Immunotherapy', 'Bioinformatics', 'Nanomaterials & Thin Films'],
     },
     {
       name: 'Dr. JAYANTHI D',
       email: 'dr.jayanthi@srmist.edu.in',
       image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
       role: Role.RESEARCH_SUPERVISOR,
-      facultyName: 'Engineering & Technology',
-      departmentName: 'Computer Applications',
+      facultyName: 'Faculty of Engineering & Technology',
+      departmentCode: 'MCA',
       designation: 'Assistant Professor',
       employeeId: '600183',
       bio: 'Assistant Professor in ECE. Researching silicon photonics and wireless body area networks.',
-      interests: ['Silicon Photonics', '5G/6G Wireless Networks', 'VLSI System Design']
+      interests: ['Silicon Photonics', '5G/6G Wireless Networks', 'VLSI System Design'],
     },
     {
       name: 'GAYATHRI R',
       email: 'gr2516@srmist.edu.in',
       image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
       role: Role.RESEARCH_SCHOLAR,
-      facultyName: 'Engineering & Technology',
-      departmentName: 'Computer Applications',
+      facultyName: 'Faculty of Engineering & Technology',
+      departmentCode: 'MCA',
       employeeId: '800180',
       researchArea: 'Generative AI and Cloud Architectures',
       bio: 'PhD Candidate working on parameter-efficient fine-tuning methods for cloud environments.',
-      interests: ['Generative AI & LLMs', 'Reinforcement Learning']
+      interests: ['Generative AI & LLMs', 'Reinforcement Learning'],
     },
     {
       name: 'SANTHOSHKUMAR S',
       email: 'santhosh.s@srmist.edu.in',
       image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
       role: Role.RESEARCH_SCHOLAR,
-      facultyName: 'Engineering & Technology',
-      departmentName: 'Computer Applications',
+      facultyName: 'Faculty of Engineering & Technology',
+      departmentCode: 'MCA',
       employeeId: '800217',
       researchArea: 'Bioinformatics and genomic target sequence analysis',
       bio: 'PhD Scholar researching nano-carriers in bioinformatics.',
-      interests: ['Bioinformatics', 'Cancer Immunotherapy', 'Nanomaterials & Thin Films']
+      interests: ['Bioinformatics', 'Cancer Immunotherapy', 'Nanomaterials & Thin Films'],
     },
     {
       name: 'REVATHI M',
       email: 'rm9040@srmist.edu.in',
       image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
       role: Role.RESEARCH_SCHOLAR,
-      facultyName: 'Engineering & Technology',
-      departmentName: 'Computer Applications',
+      facultyName: 'Faculty of Engineering & Technology',
+      departmentCode: 'MCA',
       employeeId: '800237',
       researchArea: 'Cryptography and distributed ledger systems',
       bio: 'Research scholar focusing on zero knowledge proof verification.',
-      interests: ['Blockchains & Smart Contracts', 'VLSI System Design']
+      interests: ['Blockchains & Smart Contracts', 'VLSI System Design'],
     },
     {
       name: 'CuriousBees Admin',
       email: 'admin@srmist.edu.in',
       image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
       role: Role.INSTITUTE_ADMIN,
-      facultyName: 'Engineering & Technology',
-      departmentName: 'Computer Applications',
+      facultyName: 'Faculty of Engineering & Technology',
+      departmentCode: 'MCA',
       bio: 'SRMIST System Administrator for CuriousBees platform.',
-      interests: []
-    }
+      interests: [],
+    },
   ];
 
-  const createdUsers: Record<string, any> = {};
-  for (const u of users) {
-    const deptRef = deptMap[u.departmentName];
-    const user = await prisma.user.create({
-      data: {
+  for (const u of seedUsers) {
+    const deptRef = deptMap[u.departmentCode];
+    const facultyRef = facultyMap[u.facultyName];
+
+    const user = await prisma.user.upsert({
+      where: { email: u.email },
+      update: {
+        name: u.name,
+        image: u.image,
+        role: u.role,
+        employeeId: u.employeeId || null,
+        department: deptRef ? deptRef.name : null,
+        departmentId: deptRef ? deptRef.id : null,
+        faculty: facultyRef ? facultyRef.name : null,
+        bio: u.bio,
+      },
+      create: {
         name: u.name,
         email: u.email,
         image: u.image,
         role: u.role,
         employeeId: u.employeeId || null,
-        department: u.departmentName,
+        department: deptRef ? deptRef.name : null,
         departmentId: deptRef ? deptRef.id : null,
+        faculty: facultyRef ? facultyRef.name : null,
         bio: u.bio,
         approved: true,
         status: UserStatus.ACTIVE,
-        onboardingCompleted: true
-      }
+        onboardingCompleted: true,
+      },
     });
-    createdUsers[u.email] = user;
 
-    // Create Profile structures
-    const facultyRef = facultyMap[u.facultyName];
     if (u.role === Role.RESEARCH_SUPERVISOR && facultyRef && deptRef) {
-      await prisma.supervisorProfile.create({
-        data: {
+      await prisma.supervisorProfile.upsert({
+        where: { userId: user.id },
+        update: {
+          facultyId: facultyRef.id,
+          departmentId: deptRef.id,
+          designation: u.designation || 'Faculty Member',
+          employeeId: u.employeeId || `EMP-${user.id.substring(0, 6)}`,
+          maxScholars: 5,
+        },
+        create: {
           userId: user.id,
           facultyId: facultyRef.id,
           departmentId: deptRef.id,
           designation: u.designation || 'Faculty Member',
           employeeId: u.employeeId || `EMP-${user.id.substring(0, 6)}`,
-          maxScholars: 5
-        }
+          maxScholars: 5,
+        },
       });
     } else if (u.role === Role.RESEARCH_SCHOLAR && facultyRef && deptRef) {
-      await prisma.scholarProfile.create({
-        data: {
+      await prisma.scholarProfile.upsert({
+        where: { userId: user.id },
+        update: {
+          facultyId: facultyRef.id,
+          departmentId: deptRef.id,
+          researchArea: (u as any).researchArea || 'Computer Science and Engineering',
+        },
+        create: {
           userId: user.id,
           facultyId: facultyRef.id,
           departmentId: deptRef.id,
-          researchArea: u.researchArea || 'General Research'
-        }
+          researchArea: (u as any).researchArea || 'Computer Science and Engineering',
+        },
       });
     }
 
-    // Link interests
-    for (const interestName of u.interests || []) {
-      const interest = interestsMap[interestName];
-      if (interest) {
-        await prisma.userInterest.create({
-          data: {
-            userId: user.id,
-            interestId: interest.id
-          }
-        });
+    if (u.interests && u.interests.length > 0) {
+      for (const interestName of u.interests) {
+        const intObj = interestsMap[interestName];
+        if (intObj) {
+          await prisma.userInterest.upsert({
+            where: {
+              userId_interestId: {
+                userId: user.id,
+                interestId: intObj.id,
+              },
+            },
+            update: {},
+            create: {
+              userId: user.id,
+              interestId: intObj.id,
+            },
+          });
+        }
       }
     }
   }
-  console.log(`... Created ${Object.keys(createdUsers).length} user profiles.`);
 
-  // Link supervisor relationship (legacy self-relation + new request sync)
-  const sudha = createdUsers['dr.sudha@srmist.edu.in'];
-  const razia = createdUsers['dr.razia@srmist.edu.in'];
-  const jayanthi = createdUsers['dr.jayanthi@srmist.edu.in'];
-  
-  const gayathri = createdUsers['gr2516@srmist.edu.in'];
-  const santhosh = createdUsers['santhosh.s@srmist.edu.in'];
-  const revathi = createdUsers['rm9040@srmist.edu.in'];
-
-  // Link Gayathri to Sudha
-  await prisma.user.update({
-    where: { id: gayathri.id },
-    data: {
-      supervisorId: sudha.id,
-      supervisorEmail: sudha.email
-    }
-  });
-  await prisma.scholarSupervisorRequest.create({
-    data: {
-      scholarId: gayathri.id,
-      supervisorId: sudha.id,
-      status: 'APPROVED'
-    }
-  });
-
-  // Link Santhosh to Razia
-  await prisma.user.update({
-    where: { id: santhosh.id },
-    data: {
-      supervisorId: razia.id,
-      supervisorEmail: razia.email
-    }
-  });
-  await prisma.scholarSupervisorRequest.create({
-    data: {
-      scholarId: santhosh.id,
-      supervisorId: razia.id,
-      status: 'APPROVED'
-    }
-  });
-
-  // Link Revathi to Jayanthi
-  await prisma.user.update({
-    where: { id: revathi.id },
-    data: {
-      supervisorId: jayanthi.id,
-      supervisorEmail: jayanthi.email
-    }
-  });
-  await prisma.scholarSupervisorRequest.create({
-    data: {
-      scholarId: revathi.id,
-      supervisorId: jayanthi.id,
-      status: 'APPROVED'
-    }
-  });
-  console.log('✅ Scholar supervisor associations resolved.');
-
-  // Aliases for compatibility with subsequent seed blocks
-  const anand = sudha;
-  const priya = razia;
-  const divya = gayathri;
-  const suresh = gayathri;
-  createdUsers['dr.ramesh@srmist.edu.in'] = jayanthi;
-
-  // 5. Create Threads
-  const t1 = await prisma.thread.create({
-    data: {
-      title: 'Call for Collaboration: GPGPU Resource Sharing for LLM Fine-Tuning',
-      content: 'Hello Colleagues, Our lab in the Computing Technologies department has set up a cluster of 4x NVIDIA H100 GPUs for fine-tuning custom models...',
-      authorId: anand.id,
-      tags: ['GPU Cluster', 'Generative AI', 'Bioinformatics']
-    }
-  });
-
-  const t2 = await prisma.thread.create({
-    data: {
-      title: 'Interdisciplinary Study on Silicon Photonics-based Genomic Sequencing Chips',
-      content: 'Hi everyone, I am drafting a proposal for the upcoming DST-SERB Core Research Grant...',
-      authorId: priya.id,
-      tags: ['Silicon Photonics', 'Bioinformatics', 'Research Grant']
-    }
-  });
-  console.log('✅ Created research discussion threads.');
-
-  // 6. Create Comments
-  await prisma.comment.create({
-    data: {
-      content: 'This is incredibly timely, Dr. Priya! Adaptations to silicon photonic ring modulators would be awesome.',
-      threadId: t2.id,
-      authorId: createdUsers['dr.ramesh@srmist.edu.in'].id
-    }
-  });
-
-  await prisma.comment.create({
-    data: {
-      content: 'Dr. Anand, my PhD scholar Divya Nambiar is currently running molecular modeling using GNNs, access to your H100 cluster would be a major accelerator.',
-      threadId: t1.id,
-      authorId: priya.id
-    }
-  });
-  console.log('✅ Created comments.');
-
-  // 7. Create Opportunities
-  await prisma.opportunity.createMany({
-    data: [
-      {
-        title: 'PhD Position: Reinforcement Learning for Smart Grid Optimization',
-        description: 'We are seeking an outstanding PhD candidate to join the EEE department. Funding is ₹38,000/month stipend + contingency grant.',
-        department: 'Electrical & Electronics Engineering (EEE)',
-        researchDomain: 'Reinforcement Learning',
-        authorId: anand.id
-      },
-      {
-        title: 'Research Assistant: LLM Fine-Tuning & RAG Systems for Medical Diagnostics',
-        description: 'Open position for Research Scholars in Computer Applications. Focus on domain adaptation of transformer models for clinical record processing.',
-        department: 'Computer Applications',
-        researchDomain: 'Artificial Intelligence',
-        authorId: createdUsers['dr.ramesh@srmist.edu.in'].id
-      },
-      {
-        title: 'JRF Slot: Quantum Key Distribution over Fiber Networks',
-        description: 'DST-SERB funded project looking for dedicated researchers. Hands-on work with single photon detectors and quantum optics instrumentation.',
-        department: 'Computer Applications',
-        researchDomain: 'Quantum Computing',
-        authorId: createdUsers['dr.ramesh@srmist.edu.in'].id
-      },
-      {
-        title: 'Postdoc Fellow: Silicon Photonics & Waveguide Biosensors',
-        description: 'Interdisciplinary research project on integrated optical sensor chips for point-of-care disease detection. Lab facilities fully funded.',
-        department: 'Electronics & Communication Engineering (ECE)',
-        researchDomain: 'Photonics & VLSI',
-        authorId: anand.id
-      },
-      {
-        title: 'PhD Slot: CRISPR Gene Editing & Bio-Nanomaterials',
-        description: 'Fully funded research position focusing on targeted nanocarriers for cancer gene therapy in collaboration with ICMR.',
-        department: 'Biotechnology',
-        researchDomain: 'Nanotechnology',
-        authorId: createdUsers['dr.ramesh@srmist.edu.in'].id
-      }
-    ]
-  });
-  console.log('✅ Created research opportunities across departments.');
-
-  // 8. Create Workspaces
-  const ws1 = await prisma.workspace.create({
-    data: {
-      title: 'Genomic Sequencing & Waveguide Photonic Modulators',
-      description: 'Collaborative interdisciplinary sandbox for silicon photonics bio-sensor research.'
-    }
-  });
-
-  // Workspace Members
-  await prisma.workspaceMember.createMany({
-    data: [
-      { workspaceId: ws1.id, userId: priya.id, role: 'OWNER' },
-      { workspaceId: ws1.id, userId: createdUsers['dr.ramesh@srmist.edu.in'].id, role: 'MEMBER' },
-      { workspaceId: ws1.id, userId: divya.id, role: 'MEMBER' }
-    ]
-  });
-
-  // Workspace File
-  await prisma.workspaceFile.create({
-    data: {
-      workspaceId: ws1.id,
-      name: 'DST_SERB_Grant_Draft.pdf',
-      url: 'https://example.com/files/dst_serb_draft.pdf',
-      size: 4096000,
-      uploadedById: priya.id
-    }
-  });
-
-  // Workspace Milestones
-  await prisma.workspaceMilestone.createMany({
-    data: [
-      { workspaceId: ws1.id, title: 'Draft Review Submission', completed: true, dueDate: new Date(Date.now() + 86400000 * 7) },
-      { workspaceId: ws1.id, title: 'Full Proposal Submission', completed: false, dueDate: new Date(Date.now() + 86400000 * 30) }
-    ]
-  });
-
-  // Workspace Announcement
-  await prisma.workspaceAnnouncement.create({
-    data: {
-      workspaceId: ws1.id,
-      title: 'Kickoff Proposal Sync',
-      content: 'Let us meet in ECE conference room next Tuesday at 10 AM to finalize the proposal draft.',
-      authorId: priya.id
-    }
-  });
-  console.log('✅ Created collaborative workspaces and sub-resources.');
-
-  // 9. Create Events
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth();
-
-  const eventsData = [
-    {
-      title: 'PhD Viva Defense: GPGPU Virtualization & LLM Tuning',
-      date: new Date(year, month, 11),
-      time: '10:00 AM',
-      venue: 'ECE Seminar Hall (PG Block)',
-      status: 'PUBLISHED',
-      eventType: 'Thesis Presentations',
-      priority: 'HIGH',
-      description: 'PhD candidate presentation on virtualization of GPGPU resources for large language model tuning.'
-    },
-    {
-      title: 'Seminar: DNA-functionalized Silicon Photonics Ring Resonators',
-      date: new Date(year, month, 12),
-      time: '02:30 PM',
-      venue: 'Biotech Conference Room',
-      status: 'PUBLISHED',
-      eventType: 'Research Seminars',
-      priority: 'MEDIUM',
-      description: 'Keynote seminar detailing biosensor technology using silicon photonics ring resonators.'
-    },
-    {
-      title: 'International Conference on Generative AI & Academic Collaboration',
-      date: new Date(year, month, 14),
-      time: '09:00 AM - 05:00 PM',
-      venue: 'Tech Park Auditorium',
-      status: 'PUBLISHED',
-      eventType: 'Conferences',
-      priority: 'HIGH',
-      description: 'Annual academic conference on generative models and tools for scholarly collaboration.'
-    },
-    {
-      title: 'Hands-on Workshop: Parameter-Efficient Fine-Tuning (PEFT) on GPU Clusters',
-      date: new Date(year, month, 15),
-      time: '11:00 AM - 01:30 PM',
-      venue: 'CSE Department Lab 3',
-      status: 'PUBLISHED',
-      eventType: 'Workshops',
-      priority: 'HIGH',
-      description: 'An interactive session demonstrating Lora and QLora optimizations for open-weight LLMs.'
-    },
-    {
-      title: 'Research Seminar: Waveguide Modulators in Silicon Photonics',
-      date: new Date(year, month, 18),
-      time: '03:00 PM - 04:30 PM',
-      venue: 'Nanotechnology Seminar Hall',
-      status: 'PUBLISHED',
-      eventType: 'Research Seminars',
-      priority: 'MEDIUM',
-      description: 'Dr. Ramesh Kumar presents recent breakthroughs in high-speed optical waveguides.'
-    },
-    {
-      title: 'PhD Thesis Defense: Graph Neural Networks in Bioinformatics',
-      date: new Date(year, month, 20),
-      time: '10:00 AM - 12:00 PM',
-      venue: 'PG Block Conference Hall',
-      status: 'PUBLISHED',
-      eventType: 'Thesis Presentations',
-      priority: 'CRITICAL',
-      description: 'PhD candidate Divya Nambiar defends her dissertation on oncology modeling.'
-    },
-    {
-      title: 'Research Seminar: Smart Grid Optimization using Deep Reinforcement Learning',
-      date: new Date(year, month, 22),
-      time: '02:00 PM - 03:30 PM',
-      venue: 'EEE Seminar Hall',
-      status: 'PUBLISHED',
-      eventType: 'Research Seminars',
-      priority: 'MEDIUM',
-      description: 'Analysis and optimization of energy distribution networks using reinforcement learning techniques.'
-    },
-    {
-      title: 'National Interdisciplinary Hackathon: CuriousBees Hack 2026',
-      date: new Date(year, month, 24),
-      time: '08:00 AM - 08:00 PM',
-      venue: 'University Central Library',
-      status: 'PUBLISHED',
-      eventType: 'Competitions',
-      priority: 'HIGH',
-      description: '24-hour hackathon targeting smart city, bio-sensors, and healthcare challenges.'
-    },
-    {
-      title: 'Workshop: Writing Successful DST-SERB Grant Proposals',
-      date: new Date(year, month, 26),
-      time: '10:00 AM - 01:00 PM',
-      venue: 'SOM Boardroom',
-      status: 'PUBLISHED',
-      eventType: 'Workshops',
-      priority: 'HIGH',
-      description: 'Guided workshop for drafting, structuring, and submitting core research proposals.'
-    },
-    {
-      title: 'Conference: Computational Oncology Modality Summit',
-      date: new Date(year, month, 28),
-      time: '09:30 AM - 04:00 PM',
-      venue: 'Biotech Conference Room',
-      status: 'PUBLISHED',
-      eventType: 'Conferences',
-      priority: 'HIGH',
-      description: 'Exploring molecular models and cancer immunotherapies with top computer scientists.'
-    },
-    {
-      title: 'Thesis Presentations: VLSI System Design & Transceiver Modulators',
-      date: new Date(year, month, 29),
-      time: '11:30 AM - 01:00 PM',
-      venue: 'ECE Seminar Hall (PG Block)',
-      status: 'PUBLISHED',
-      eventType: 'Thesis Presentations',
-      priority: 'MEDIUM',
-      description: 'Academic presentation by ECE scholars on transceiver circuit layouts.'
-    },
-    {
-      title: 'Competitions: Bioinformatics Design Contest',
-      date: new Date(year, month, 30),
-      time: '01:00 PM - 05:00 PM',
-      venue: 'Health Sciences Block',
-      status: 'PUBLISHED',
-      eventType: 'Competitions',
-      priority: 'MEDIUM',
-      description: 'Inter-departmental competition for molecular sequencing algorithms.'
-    }
-  ];
-
-  for (const e of eventsData) {
-    await prisma.event.create({
-      data: {
-        title: e.title,
-        date: e.date,
-        time: e.time,
-        venue: e.venue,
-        status: e.status as any,
-        eventType: e.eventType,
-        priority: e.priority as any,
-        description: e.description
-      }
-    });
-  }
-  console.log('✅ Created events.');
-
-  // 10. Notifications
-  await prisma.notification.create({
-    data: {
-      userId: suresh.id,
-      title: 'Welcome to CuriousBees',
-      body: 'Your supervisor Dr. Anand Ramachandran has approved your portal access.',
-      sentStatus: true
-    }
-  });
-
-  await prisma.notificationToken.create({
-    data: {
-      userId: suresh.id,
-      token: 'mock-fcm-token-suresh-123456789'
-    }
-  });
-  console.log('✅ Seeded notification items and push subscription logs.');
-
-  // 11. Publications
-  await prisma.publication.create({
-    data: {
-      title: 'Parameter-Efficient Fine-Tuning of Vision-Language Models in Resource-Constrained Environments',
-      authors: 'Suresh Karthik, Anand Ramachandran',
-      doi: '10.1109/CVPR.2026.00123',
-      publisher: 'IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)',
-      year: 2026,
-      status: 'PUBLISHED',
-      userId: suresh.id
-    }
-  });
-
-  await prisma.publication.create({
-    data: {
-      title: 'Graph Neural Networks for Molecular Modeling in Computational Oncology',
-      authors: 'Divya Nambiar, Priya Subramanian',
-      doi: '10.1093/bioinformatics/btac789',
-      publisher: 'Bioinformatics (Oxford Academic)',
-      year: 2025,
-      status: 'PUBLISHED',
-      userId: divya.id
-    }
-  });
-  console.log('✅ Seeded publications for scholars.');
-
-  // 12. Reports
-  await prisma.report.create({
-    data: {
-      title: 'Monthly Research Progress Report - May 2026',
-      description: 'Progress on Parameter-Efficient Fine-Tuning (PEFT) methods for vision-language models.',
-      status: 'APPROVED',
-      evidenceUrl: 'https://example.com/files/suresh_progress_report_may_2026.pdf',
-      feedback: 'Excellent progress on the PEFT comparisons.',
-      scholarId: suresh.id,
-      supervisorId: anand.id
-    }
-  });
-
-  await prisma.report.create({
-    data: {
-      title: 'Bi-Annual Research Seminar Status',
-      description: 'Progress report regarding nano-carriers in bioinformatics.',
-      status: 'PENDING',
-      evidenceUrl: 'https://example.com/files/divya_biannual_report.pdf',
-      feedback: null,
-      scholarId: divya.id,
-      supervisorId: priya.id
-    }
-  });
-  console.log('✅ Seeded research progress reports.');
-
-  console.log('🌟 Seeding completed successfully!');
+  console.log('✅ Safely seeded users and affiliations without data loss.');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error during seeding:', e);
+    console.error('Seed error:', e);
     process.exit(1);
   })
   .finally(async () => {

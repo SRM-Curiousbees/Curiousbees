@@ -9,8 +9,15 @@ export class PublicationsController {
   constructor(private readonly publicationsService: PublicationsService) {}
 
   @Get()
-  async findAll(@Query('userId') userId?: string) {
-    return this.publicationsService.findAll(userId);
+  async findAll(
+    @Query('userId') userId?: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: number,
+    @Query('search') search?: string,
+    @Query('departmentId') departmentId?: string,
+    @Query('facultyId') facultyId?: string,
+  ) {
+    return this.publicationsService.findAll(userId, cursor, limit, search, departmentId, facultyId);
   }
 
   @Get(':id')

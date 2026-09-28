@@ -1,21 +1,27 @@
 import { WinstonModuleOptions, utilities as nestWinstonModuleUtilities } from 'nest-winston';
 import * as winston from 'winston';
 
-export const winstonOptions: WinstonModuleOptions = {
-  transports: [
-    new winston.transports.Console({
-      level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-      format: winston.format.combine(
-        winston.format.timestamp(),
-        winston.format.ms(),
-        process.env.NODE_ENV === 'production'
-          ? winston.format.json()
-          : nestWinstonModuleUtilities.format.nestLike('CuriousBees', {
-              colors: true,
-              prettyPrint: true,
-            }),
-      ),
-    }),
+const isProduction = process.env.NODE_ENV === 'production';
+
+const transports: winston.transport[] = [
+  new winston.transports.Console({
+    level: isProduction ? 'info' : 'debug',
+    format: winston.format.combine(
+      winston.format.timestamp(),
+      winston.format.ms(),
+      isProduction
+        ? winston.format.json()
+        : nestWinstonModuleUtilities.format.nestLike('CuriousBees', {
+            colors: true,
+            prettyPrint: true,
+          }),
+    ),
+  }),
+];
+
+// Optional local file logging only if explicitly requested
+if (process.env.LOG_TO_FILE === 'true') {
+  transports.push(
     new winston.transports.File({
       filename: 'logs/error.log',
       level: 'error',
@@ -26,5 +32,9 @@ export const winstonOptions: WinstonModuleOptions = {
       level: 'info',
       format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
     }),
-  ],
+  );
+}
+
+export const winstonOptions: WinstonModuleOptions = {
+  transports,
 };

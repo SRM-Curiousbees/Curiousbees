@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useResearchers } from '@/hooks/useResearchers';
-import { SRM_DEPARTMENTS } from '@curiousbees/shared-utils';
 import { useStore } from '@/store/useStore';
+import { apiFetch } from '@/lib/api-client';
 import { 
   Users, 
   Search, 
@@ -22,13 +22,44 @@ import { getProfileImageUrl } from '@/lib/avatar';
 export default function ResearchersDiscoveryPage() {
   const { currentUser } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedDept, setSelectedDept] = useState('');
+  const [selectedFacultyId, setSelectedFacultyId] = useState('');
+  const [selectedDeptId, setSelectedDeptId] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
+  const [faculties, setFaculties] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
 
-  // Fetch from backend API
+  useEffect(() => {
+    async function loadMasterData() {
+      try {
+        const [deptRes, facRes] = await Promise.all([
+          apiFetch('/api/departments'),
+          apiFetch('/api/faculties'),
+        ]);
+        if (deptRes.ok) {
+          const deptData = await deptRes.json();
+          setDepartments(Array.isArray(deptData) ? deptData : []);
+        }
+        if (facRes.ok) {
+          const facData = await facRes.json();
+          setFaculties(Array.isArray(facData) ? facData : []);
+        }
+      } catch (err) {
+        console.error('Failed to load institutional master data', err);
+      }
+    }
+    loadMasterData();
+  }, []);
+
+  const availableDepartments = React.useMemo(() => {
+    if (!selectedFacultyId) return departments;
+    return departments.filter((d) => d.facultyId === selectedFacultyId);
+  }, [selectedFacultyId, departments]);
+
+  // Fetch from backend API using relational departmentId and facultyId
   const { data, isLoading, isError, error, refetch } = useResearchers({
     q: searchQuery,
-    department: selectedDept,
+    facultyId: selectedFacultyId || undefined,
+    departmentId: selectedDeptId || undefined,
     role: selectedRole,
     limit: 50
   });
@@ -112,7 +143,9 @@ export default function ResearchersDiscoveryPage() {
                       )}>
                         {peer.role === 'RESEARCH_SUPERVISOR' || peer.role === 'SUPERVISOR' ? 'Research Supervisor' : 'Research Scholar'}
                       </span>
-                      <p className="text-xs text-slate-500 truncate font-medium">{peer.department || 'SRMIST'}</p>
+                      <p className="text-xs text-slate-500 truncate font-medium">
+                        {peer.departmentRef?.name || peer.department || 'SRMIST'}
+                      </p>
                     </div>
                   </div>
 
@@ -150,11 +183,11 @@ export default function ResearchersDiscoveryPage() {
             />
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <select
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
-              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs md:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] focus:bg-white min-w-[170px] transition-all cursor-pointer"
+              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs md:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] focus:bg-white min-w-[150px] transition-all cursor-pointer"
             >
               <option value="">All Roles</option>
               <option value="RESEARCH_SUPERVISOR">Research Supervisors</option>
@@ -162,13 +195,33 @@ export default function ResearchersDiscoveryPage() {
             </select>
 
             <select
-              value={selectedDept}
-              onChange={(e) => setSelectedDept(e.target.value)}
-              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs md:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] focus:bg-white min-w-[180px] max-w-[240px] transition-all cursor-pointer"
+              value={selectedFacultyId}
+              onChange={(e) => {
+                const nextFacId = e.target.value;
+                setSelectedFacultyId(nextFacId);
+                if (nextFacId && selectedDeptId) {
+                  const isValid = departments.some((d) => d.id === selectedDeptId && d.facultyId === nextFacId);
+                  if (!isValid) setSelectedDeptId('');
+                }
+              }}
+              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs md:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] focus:bg-white min-w-[160px] max-w-[220px] transition-all cursor-pointer"
+            >
+              <option value="">All Faculties</option>
+              {faculties.map((f) => (
+                <option key={f.id} value={f.id}>{f.name}</option>
+              ))}
+            </select>
+
+            <select
+              value={selectedDeptId}
+              onChange={(e) => setSelectedDeptId(e.target.value)}
+              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs md:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] focus:bg-white min-w-[170px] max-w-[240px] transition-all cursor-pointer"
             >
               <option value="">All Departments</option>
-              {SRM_DEPARTMENTS.map(dept => (
-                <option key={dept} value={dept}>{dept}</option>
+              {availableDepartments.map((dept) => (
+                <option key={dept.id} value={dept.id}>
+                  {dept.code ? `${dept.code} - ` : ''}{dept.name}
+                </option>
               ))}
             </select>
           </div>
@@ -233,18 +286,41 @@ export default function ResearchersDiscoveryPage() {
                         <h3 className="font-extrabold text-slate-900 text-base truncate group-hover:text-[#0C4DA2] transition-colors">
                           {researcher.name}
                         </h3>
-                        <span className={cn(
-                          "inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full mb-1",
-                          researcher.role === 'RESEARCH_SUPERVISOR' || researcher.role === 'SUPERVISOR'
-                            ? "bg-amber-50 text-amber-700 border border-amber-200" 
-                            : "bg-blue-50 text-[#0C4DA2] border border-blue-100"
-                        )}>
-                          {researcher.role === 'RESEARCH_SUPERVISOR' || researcher.role === 'SUPERVISOR' ? 'Research Supervisor' : 'Research Scholar'}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap mb-1">
+                          <span className={cn(
+                            "inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full",
+                            researcher.role === 'RESEARCH_SUPERVISOR' || researcher.role === 'SUPERVISOR'
+                              ? "bg-amber-50 text-amber-700 border border-amber-200" 
+                              : "bg-blue-50 text-[#0C4DA2] border border-blue-100"
+                          )}>
+                            {researcher.role === 'RESEARCH_SUPERVISOR' || researcher.role === 'SUPERVISOR' ? 'Research Supervisor' : 'Research Scholar'}
+                          </span>
+                          {researcher.alignmentScore ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              {researcher.alignmentScore}% Match
+                            </span>
+                          ) : null}
+                        </div>
                         <div className="flex items-center gap-1 text-xs text-slate-500 truncate font-medium">
                           <MapPin className="w-3 h-3 flex-shrink-0 text-slate-400" />
-                          <span className="truncate">{researcher.department || 'SRMIST'}</span>
+                          <span className="truncate">
+                            {researcher.departmentRef?.name || researcher.department || 'SRMIST'}
+                            {researcher.departmentRef?.faculty?.name ? ` · ${researcher.departmentRef.faculty.name}` : ''}
+                          </span>
                         </div>
+                        {(researcher.role === 'RESEARCH_SUPERVISOR' || researcher.role === 'SUPERVISOR') && (
+                          <div className="mt-1">
+                            {researcher.isAtCapacity ? (
+                              <span className="inline-block text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-md">
+                                Capacity Full ({researcher.currentScholars}/{researcher.maxScholars})
+                              </span>
+                            ) : (
+                              <span className="inline-block text-[10px] font-bold text-emerald-600 bg-emerald-50/80 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                {researcher.capacityRemaining} Scholar Slot{researcher.capacityRemaining !== 1 ? 's' : ''} Open
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -252,6 +328,21 @@ export default function ResearchersDiscoveryPage() {
                       <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed font-normal">
                         {researcher.bio}
                       </p>
+                    )}
+
+                    {researcher.sharedInterests?.length > 0 && (
+                      <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-2.5 space-y-1">
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#0C4DA2] flex items-center gap-1">
+                          <BookOpen className="w-3 h-3" /> Shared Focus ({researcher.sharedInterestCount})
+                        </span>
+                        <div className="flex flex-wrap gap-1">
+                          {researcher.sharedInterests.slice(0, 3).map((item: string) => (
+                            <span key={item} className="px-1.5 py-0.5 bg-white border border-blue-200 text-[#0C4DA2] rounded text-[10px] font-bold truncate max-w-full">
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     )}
 
                     {researcher.researchInterests?.length > 0 && (
@@ -290,19 +381,19 @@ export default function ResearchersDiscoveryPage() {
             </div>
             <div className="space-y-1">
               <h3 className="text-lg font-extrabold text-slate-900">
-                {searchQuery || selectedDept || selectedRole ? 'No Researchers Found' : 'No Researchers Available'}
+                {searchQuery || selectedDeptId || selectedRole ? 'No Researchers Found' : 'No Researchers Available'}
               </h3>
               <p className="text-xs md:text-sm text-slate-500 max-w-md mx-auto font-medium">
-                {searchQuery || selectedDept || selectedRole
+                {searchQuery || selectedDeptId || selectedRole
                   ? 'No researchers match your current search or filters. Try adjusting your search criteria.'
                   : 'Research Supervisors and Scholars will appear here once they are available in CuriousBees.'}
               </p>
             </div>
-            {(searchQuery || selectedDept || selectedRole) && (
+            {(searchQuery || selectedDeptId || selectedRole) && (
               <button
                 onClick={() => {
                   setSearchQuery('');
-                  setSelectedDept('');
+                  setSelectedDeptId('');
                   setSelectedRole('');
                 }}
                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"

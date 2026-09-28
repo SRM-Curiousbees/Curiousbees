@@ -1,6 +1,10 @@
 import { z } from 'zod';
 
-// Constant list of SRM Institute Departments
+/**
+ * @deprecated Legacy constant list of SRM Institute Departments.
+ * Use the dynamic `/api/departments` backend API as the authoritative source of truth.
+ * Retained temporarily for backward compatibility with unmigrated UI components.
+ */
 export const SRM_DEPARTMENTS = [
   'Computing Technologies (CSE / IT / Swe)',
   'Electronics & Communication Engineering (ECE)',
@@ -16,9 +20,22 @@ export const SRM_DEPARTMENTS = [
   'Health Sciences & Research'
 ] as const;
 
-// Helper to validate SRMIST emails
+// Helper to validate SRMIST emails (legacy compatibility)
 export const isSrmEmail = (email: string): boolean => {
   return email.toLowerCase().endsWith('@srmist.edu.in');
+};
+
+/**
+ * Validates whether an email belongs to an allowed domain.
+ * Configurable via domain list (defaults to ['gmail.com']).
+ */
+export const isAllowedEmailDomain = (
+  email: string,
+  allowedDomains: string[] = ['gmail.com']
+): boolean => {
+  if (!email || !email.includes('@')) return false;
+  const normalized = email.toLowerCase().trim();
+  return allowedDomains.some((domain) => normalized.endsWith('@' + domain.trim().toLowerCase()));
 };
 
 // Zod Schemas shared between backend and frontend
@@ -71,6 +88,7 @@ export const CreateOpportunitySchema = z.object({
     .string()
     .min(15, 'Opportunity description must be at least 15 characters'),
   department: z.string().optional(),
+  departmentId: z.string().optional(),
   researchDomain: z
     .string()
     .min(2, 'Select or enter at least one research domain'),

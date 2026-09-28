@@ -11,12 +11,15 @@ export function AcademicBackgroundCard({ user }: AcademicBackgroundCardProps) {
   const isSupervisor = user?.role === 'RESEARCH_SUPERVISOR';
 
   const institution = 'SRM Institute of Science and Technology';
-  const department = user?.department || 'Computer Science & Engineering';
+  const faculty = user?.departmentRef?.faculty?.name || user?.faculty;
+  const department = user?.departmentRef?.name || user?.department || 'Department Not Specified';
   const designation = isSupervisor
-    ? (user?.supervisorProfile?.designation || 'Professor')
+    ? (user?.supervisorProfile?.designation || 'Faculty / Supervisor')
     : 'Ph.D. Scholar';
   const registrationId = user?.employeeId || user?.scholarProfile?.registrationNo || user?.id?.substring(0, 8);
-  const qualification = isSupervisor ? 'Ph.D. in Computer Science' : 'M.Tech / M.S. Research';
+  const qualification = isSupervisor
+    ? (user?.supervisorProfile?.qualification || 'Doctoral Supervisor')
+    : (user?.scholarProfile?.highestQualification || 'Research Scholar');
 
   return (
     <div className="bg-white border border-[#E4E9F2] rounded-2xl p-6 shadow-xs space-y-4">
@@ -32,8 +35,8 @@ export function AcademicBackgroundCard({ user }: AcademicBackgroundCardProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Institution</span>
-          <p className="text-xs font-extrabold text-[#17233D]">{institution}</p>
+          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">Faculty / College</span>
+          <p className="text-xs font-extrabold text-[#17233D]">{faculty || institution}</p>
         </div>
 
         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
@@ -43,9 +46,9 @@ export function AcademicBackgroundCard({ user }: AcademicBackgroundCardProps) {
 
         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">
           <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-            {isSupervisor ? 'Academic Role / Designation' : 'Degree / Program'}
+            {isSupervisor ? 'Academic Role / Designation' : 'Academic Standing'}
           </span>
-          <p className="text-xs font-extrabold text-[#0C4DA2]">{designation} ({qualification})</p>
+          <p className="text-xs font-extrabold text-[#0C4DA2]">{designation} {qualification ? `(${qualification})` : ''}</p>
         </div>
 
         <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-0.5">

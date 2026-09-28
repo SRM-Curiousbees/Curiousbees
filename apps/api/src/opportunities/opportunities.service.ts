@@ -11,7 +11,12 @@ export class OpportunitiesService {
    * Securely validates if the current user belongs to the same department as the resource.
    * Bypasses the validation check for INSTITUTE_ADMIN.
    */
-  private validateDepartmentAccess(currentUser: any, resourceDepartment: string) {
+  /**
+   * Securely validates if the current user belongs to the same department as the resource.
+   * Relational check on departmentId is primary, with legacy string comparison as fallback.
+   * Bypasses the validation check for INSTITUTE_ADMIN.
+   */
+  private validateDepartmentAccess(currentUser: any, resourceDepartment: string, resourceDepartmentId?: string | null) {
     if (!currentUser) {
       throw new ForbiddenException('Authentication required.');
     }
@@ -20,6 +25,15 @@ export class OpportunitiesService {
       return;
     }
 
+    // 1. Relational check if both have departmentId
+    if (currentUser.departmentId && resourceDepartmentId) {
+      if (currentUser.departmentId === resourceDepartmentId) {
+        return;
+      }
+      throw new ForbiddenException('Access denied. You do not have permission to access resources outside your department.');
+    }
+
+    // 2. Fallback to legacy string check
     const userDept = currentUser.department;
     if (!userDept || !resourceDepartment) {
       throw new ForbiddenException('Access denied. Department assignment required.');
@@ -34,14 +48,17 @@ export class OpportunitiesService {
     }
   }
 
-  async getOpportunities(currentUser: any, department?: string, researchDomain?: string) {
+  async getOpportunities(currentUser: any, department?: string, researchDomain?: string, departmentId?: string) {
     const deptQuery = department ? department.split('(')[0].trim() : undefined;
 
     return this.prisma.opportunity.findMany({
       where: {
-        ...(deptQuery && {
-          department: { contains: deptQuery, mode: 'insensitive' }
-        }),
+        ...(departmentId ? { departmentId } : deptQuery ? {
+          OR: [
+            { departmentId: deptQuery },
+            { department: { contains: deptQuery, mode: 'insensitive' } },
+          ],
+        } : {}),
         ...(researchDomain && {
           researchDomain: { contains: researchDomain, mode: 'insensitive' }
         })
@@ -54,9 +71,19 @@ export class OpportunitiesService {
             email: true,
             image: true,
             role: true,
+            departmentId: true,
             department: true
           }
-        }
+        },
+        departmentRef: {
+          include: {
+            faculty: {
+              include: {
+                campus: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc'
@@ -75,9 +102,19 @@ export class OpportunitiesService {
             email: true,
             image: true,
             role: true,
+            departmentId: true,
             department: true
           }
-        }
+        },
+        departmentRef: {
+          include: {
+            faculty: {
+              include: {
+                campus: true,
+              },
+            },
+          },
+        },
       }
     });
 
@@ -85,7 +122,7 @@ export class OpportunitiesService {
       throw new NotFoundException('Opportunity not found.');
     }
 
-    this.validateDepartmentAccess(currentUser, opportunity.department);
+    this.validateDepartmentAccess(currentUser, opportunity.department, opportunity.departmentId);
 
     return opportunity;
   }
@@ -113,7 +150,8 @@ export class OpportunitiesService {
     } = parsed.data;
 
     const author = await this.prisma.user.findUnique({
-      where: { id: currentUser.id }
+      where: { id: currentUser.id },
+      include: { departmentRef: true },
     });
 
     const allowedRoles = ['RESEARCH_SUPERVISOR', 'SUPERVISOR', 'RESEARCH_SCHOLAR', 'SCHOLAR', 'INSTITUTE_ADMIN'];
@@ -122,8 +160,9 @@ export class OpportunitiesService {
     }
 
     // Derive department strictly from database profile and ignore any frontend spoof attempts
-    const departmentToAssign = author.department;
-    if (!departmentToAssign) {
+    const departmentId = author.departmentId || null;
+    const departmentToAssign = author.departmentRef?.name || author.department;
+    if (!departmentToAssign && !departmentId) {
       throw new BadRequestException('You must have a department assigned by Institute Administration to post research opportunities.');
     }
 
@@ -131,7 +170,8 @@ export class OpportunitiesService {
       data: {
         title,
         description,
-        department: departmentToAssign,
+        department: departmentToAssign || 'General',
+        departmentId: departmentId,
         researchDomain,
         opportunityType: opportunityType || 'PhD Position',
         positionsCount: positionsCount || 1,
@@ -153,9 +193,19 @@ export class OpportunitiesService {
             email: true,
             image: true,
             role: true,
+            departmentId: true,
             department: true
           }
-        }
+        },
+        departmentRef: {
+          include: {
+            faculty: {
+              include: {
+                campus: true,
+              },
+            },
+          },
+        },
       }
     });
   }
@@ -173,7 +223,7 @@ export class OpportunitiesService {
       throw new ForbiddenException('You are not authorized to update this opportunity.');
     }
 
-    this.validateDepartmentAccess(currentUser, opportunity.department);
+    this.validateDepartmentAccess(currentUser, opportunity.department, opportunity.departmentId);
 
     return this.prisma.opportunity.update({
       where: { id },
@@ -208,7 +258,7 @@ export class OpportunitiesService {
       throw new ForbiddenException('You are not authorized to delete this opportunity.');
     }
 
-    this.validateDepartmentAccess(currentUser, opportunity.department);
+    this.validateDepartmentAccess(currentUser, opportunity.department, opportunity.departmentId);
 
     await this.prisma.opportunity.delete({
       where: { id }
@@ -241,7 +291,7 @@ export class OpportunitiesService {
     }
 
     // 3. Department boundary check
-    this.validateDepartmentAccess(currentUser, opportunity.department);
+    this.validateDepartmentAccess(currentUser, opportunity.department, opportunity.departmentId);
 
     // 4. Prevent duplicate requests
     const existing = await this.prisma.collaborationRequest.findFirst({
@@ -338,7 +388,7 @@ export class OpportunitiesService {
     }
 
     // Secure department boundary check
-    this.validateDepartmentAccess(currentUser, request.opportunity.department);
+    this.validateDepartmentAccess(currentUser, request.opportunity.department, request.opportunity.departmentId);
 
     const updated = await this.prisma.collaborationRequest.update({
       where: { id: requestId },

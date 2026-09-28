@@ -23,9 +23,11 @@ if (!result.success) {
 }
 
 const nextConfig = {
+  output: 'standalone',
   env: {
     NEXT_PUBLIC_AUTH_MODE: process.env.NEXT_PUBLIC_AUTH_MODE || '',
-    NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS: process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS || '',
+    ALLOWED_EMAIL_DOMAINS: process.env.ALLOWED_EMAIL_DOMAINS || process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS || 'gmail.com',
+    NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS: process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS || process.env.ALLOWED_EMAIL_DOMAINS || 'gmail.com',
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || '',
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
@@ -41,6 +43,20 @@ const nextConfig = {
       {
         source: '/api/:path*',
         destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/:path*`,
+      },
+    ];
+  },
+  async redirects() {
+    return [
+      {
+        source: '/sign-in',
+        destination: '/login',
+        permanent: true,
+      },
+      {
+        source: '/sign-up',
+        destination: '/login',
+        permanent: true,
       },
     ];
   },

@@ -32,7 +32,7 @@ export const DASHBOARD_ROUTES: Record<UserRole, string> = {
  * Defaults to '/login' for unauthenticated users.
  */
 export function getDashboardRoute(user?: { role: UserRole; approved?: boolean; status?: string }): string {
-  if (!user) return '/sign-in';
+  if (!user) return '/login';
   if (user.status === 'REJECTED') {
     return '/access-denied';
   }

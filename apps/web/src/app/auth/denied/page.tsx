@@ -50,13 +50,13 @@ export default function AccessDeniedPage() {
 
         <div className="my-5 p-4 rounded-xl bg-red-50/50 dark:bg-red-950/15 border border-red-150 dark:border-red-900/30 text-left">
           <p className="text-[11px] text-red-700 dark:text-red-400 font-bold leading-relaxed">
-            Only accounts ending with <strong className="underline text-slate-900 dark:text-white">@srmist.edu.in</strong> are permitted. Guest profiles, personal Gmail accounts, or external domains are automatically rejected by our firewall.
+            Only accounts from authorized email domains are permitted. Guest profiles and unauthorized external domains are automatically rejected by our firewall.
           </p>
         </div>
 
         <div className="space-y-3">
           <Link
-            href="/sign-in"
+            href="/login"
             className="block w-full py-3 px-4 rounded-xl text-xs font-black uppercase tracking-wider text-white bg-slate-900 hover:bg-srm-crimson transition-all text-center cursor-pointer shadow-sm"
           >
             Authenticate with Another Account

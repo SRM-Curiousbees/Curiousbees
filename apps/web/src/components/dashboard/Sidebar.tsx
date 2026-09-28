@@ -127,6 +127,8 @@ const getStandardNavItems = (role: UserRole) => {
   if (role === 'RESEARCH_SUPERVISOR') {
     return [
       { name: 'Research Feed', href: '/feed', icon: MessageSquare },
+      { name: 'Supervision Panel', href: '/my-scholars', icon: UserCheck },
+      { name: 'Research Workspaces', href: '/workspace', icon: FolderGit2 },
       { name: 'Publications', href: '/publications', icon: BookOpen },
       { name: 'Opportunities', href: '/opportunities', icon: Briefcase },
       { name: 'Curious Nexus', href: '/nexus', icon: Network },
@@ -139,9 +141,10 @@ const getStandardNavItems = (role: UserRole) => {
   // Default: Research Scholar
   return [
     { name: 'Research Feed', href: '/feed', icon: MessageSquare },
+    { name: 'My Research', href: '/my-research', icon: BookMarked },
+    { name: 'Research Workspaces', href: '/workspace', icon: FolderGit2 },
     { name: 'Publications', href: '/publications', icon: BookOpen },
     { name: 'Opportunities', href: '/opportunities', icon: Briefcase },
-    { name: 'My Research', href: '/my-research', icon: BookMarked },
     { name: 'Curious Nexus', href: '/nexus', icon: Network },
     { name: 'Events', href: '/events', icon: CalendarIcon },
     { name: 'Researchers', href: '/researchers', icon: Users },

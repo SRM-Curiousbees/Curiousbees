@@ -208,9 +208,18 @@ export class AdminScholarsService {
     if (!user) throw new BadRequestException('Scholar not found.');
 
     let departmentName = user.department;
+    let facultyName = user.faculty;
+    let resolvedFacultyId: string | null = null;
     if (data.departmentId) {
-      const dept = await this.prisma.department.findUnique({ where: { id: data.departmentId } });
-      if (dept) departmentName = dept.name;
+      const dept = await this.prisma.department.findUnique({ 
+        where: { id: data.departmentId },
+        include: { faculty: true }
+      });
+      if (dept) {
+        departmentName = dept.name;
+        facultyName = dept.faculty?.name || user.faculty;
+        resolvedFacultyId = dept.facultyId;
+      }
     }
 
     let supervisorEmail = user.supervisorEmail;
@@ -233,11 +242,22 @@ export class AdminScholarsService {
         email: data.email?.toLowerCase(),
         department: departmentName,
         departmentId: data.departmentId || null,
+        faculty: facultyName,
         supervisorId: data.supervisorId || null,
         supervisorEmail,
         employeeId,
       },
     });
+
+    if (resolvedFacultyId || data.departmentId) {
+      await this.prisma.scholarProfile.updateMany({
+        where: { userId: id },
+        data: {
+          ...(data.departmentId && { departmentId: data.departmentId }),
+          ...(resolvedFacultyId && { facultyId: resolvedFacultyId }),
+        },
+      });
+    }
 
     await this.logAudit(adminId, 'UPDATE_SCHOLAR', `Updated details for scholar ${user.email}`);
     return updated;

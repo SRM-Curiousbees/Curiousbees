@@ -14,21 +14,51 @@ export class PublicationsService {
     });
   }
 
-  async findAll(userId?: string) {
-    if (userId) {
-      return this.prisma.publication.findMany({
-        where: { userId },
-        orderBy: { createdAt: 'desc' },
-      });
-    }
+  async findAll(userId?: string, cursor?: string, limit?: number, search?: string, departmentId?: string, facultyId?: string) {
+    const take = Math.min(Math.max(Number(limit) || 20, 1), 50);
+
+    const where: any = {
+      hidden: false,
+      ...(userId ? { userId } : {}),
+      ...(search ? {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { authors: { contains: search, mode: 'insensitive' } },
+        ]
+      } : {}),
+      ...(departmentId ? {
+        user: { departmentId }
+      } : facultyId ? {
+        user: { departmentRef: { facultyId } }
+      } : {})
+    };
+
     return this.prisma.publication.findMany({
+      take,
+      ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+      where,
       include: {
         user: {
           select: {
             id: true,
             name: true,
             email: true,
+            role: true,
             department: true,
+            faculty: true,
+            departmentRef: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                faculty: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
           },
         },
       },

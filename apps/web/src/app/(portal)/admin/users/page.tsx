@@ -49,6 +49,7 @@ function AdminUsersContent() {
     currentUser,
     fetchAdminUsersPaginated,
     fetchAdminUserGovernanceProfile,
+    updateAdminUserAffiliation,
     suspendUser,
     reactivateUser,
     deactivateUser,
@@ -94,6 +95,27 @@ function AdminUsersContent() {
   const [newSupervisorId, setNewSupervisorId] = useState('');
   const [supervisorsList, setSupervisorsList] = useState<any[]>([]);
   const [actionSubmitting, setActionSubmitting] = useState(false);
+
+  // User Affiliation Modal State
+  const [affiliationUser, setAffiliationUser] = useState<any | null>(null);
+  const [modalFacultyId, setModalFacultyId] = useState('');
+  const [modalDeptId, setModalDeptId] = useState('');
+  const [modalAffiliationReason, setModalAffiliationReason] = useState('');
+  const [affiliationSubmitting, setAffiliationSubmitting] = useState(false);
+
+  // Filtered departments based on selected faculty filter
+  const availableFilterDepartments = useMemo(() => {
+    if (facultyFilter === 'ALL') return departments;
+    const selectedFac = faculties.find((f) => f.name === facultyFilter || f.id === facultyFilter);
+    if (!selectedFac) return departments;
+    return departments.filter((d) => d.facultyId === selectedFac.id);
+  }, [facultyFilter, departments, faculties]);
+
+  // Departments available in the Affiliation modal based on selected modal faculty
+  const availableModalDepartments = useMemo(() => {
+    if (!modalFacultyId) return [];
+    return departments.filter((d) => d.facultyId === modalFacultyId);
+  }, [modalFacultyId, departments]);
 
   // Sync tab with URL
   useEffect(() => {
@@ -219,6 +241,45 @@ function AdminUsersContent() {
     }
   };
 
+  // Open Affiliation Modal
+  const openAffiliationModal = (targetUser: any) => {
+    setAffiliationUser(targetUser);
+    const existingFacultyId =
+      targetUser.departmentRef?.facultyId ||
+      faculties.find((f) => f.name === targetUser.faculty || f.id === targetUser.faculty)?.id ||
+      '';
+    setModalFacultyId(existingFacultyId);
+    const existingDeptId = targetUser.departmentId || '';
+    setModalDeptId(existingDeptId);
+    setModalAffiliationReason('');
+  };
+
+  // Submit Affiliation Update Handler
+  const handleAffiliationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!affiliationUser || !modalFacultyId || !modalDeptId) return;
+
+    setAffiliationSubmitting(true);
+    try {
+      await updateAdminUserAffiliation(affiliationUser.id, {
+        facultyId: modalFacultyId,
+        departmentId: modalDeptId,
+        reason: modalAffiliationReason || 'Institutional reorganization / administrative correction',
+      });
+
+      if (selectedUserId === affiliationUser.id) {
+        await openUserDrawer(affiliationUser.id);
+      }
+
+      setAffiliationUser(null);
+      await loadUsers();
+    } catch (err) {
+      console.error('Failed to update user affiliation', err);
+    } finally {
+      setAffiliationSubmitting(false);
+    }
+  };
+
   return (
     <div className="space-y-5 max-w-7xl mx-auto py-2 select-none">
       {/* Header */}
@@ -283,8 +344,16 @@ function AdminUsersContent() {
           <select
             value={facultyFilter}
             onChange={(e) => {
-              setFacultyFilter(e.target.value);
+              const nextFaculty = e.target.value;
+              setFacultyFilter(nextFaculty);
               setPage(1);
+              if (nextFaculty !== 'ALL') {
+                const selectedFac = faculties.find((f) => f.name === nextFaculty || f.id === nextFaculty);
+                if (selectedFac && deptFilter !== 'ALL') {
+                  const stillValid = departments.some((d) => d.id === deptFilter && d.facultyId === selectedFac.id);
+                  if (!stillValid) setDeptFilter('ALL');
+                }
+              }
             }}
             className="bg-slate-50 dark:bg-[#0B1728] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-[#A7B3C5] focus:outline-none"
           >
@@ -306,9 +375,9 @@ function AdminUsersContent() {
             className="bg-slate-50 dark:bg-[#0B1728] border border-slate-200/80 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-bold text-slate-700 dark:text-[#A7B3C5] focus:outline-none max-w-[200px]"
           >
             <option value="ALL">All Departments</option>
-            {departments.map((d) => (
+            {availableFilterDepartments.map((d) => (
               <option key={d.id} value={d.id}>
-                {d.code} - {d.name}
+                {d.code ? `${d.code} - ` : ''}{d.name}
               </option>
             ))}
           </select>
@@ -420,14 +489,19 @@ function AdminUsersContent() {
                         </span>
                       </td>
 
-                      {/* Department */}
+                      {/* Department / Faculty */}
                       <td className="py-3 px-4">
                         <p className="text-slate-800 dark:text-[#F5F7FA] font-semibold truncate max-w-[180px]">
-                          {user.department || '—'}
+                          {user.departmentRef?.name || user.department || '—'}
                         </p>
                         <p className="text-[10px] text-slate-400 dark:text-[#718096] truncate">
-                          {user.faculty || 'SRMIST'}
+                          {user.departmentRef?.faculty?.name || user.faculty || '—'}
                         </p>
+                        {(user.role === 'RESEARCH_SCHOLAR' || user.role === 'RESEARCH_SUPERVISOR') && !user.departmentId && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 mt-1">
+                            Unassigned Affiliation
+                          </span>
+                        )}
                       </td>
 
                       {/* Status */}
@@ -487,6 +561,16 @@ function AdminUsersContent() {
                           >
                             <Eye className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
                             <span>View</span>
+                          </button>
+
+                          {/* Affiliation Button */}
+                          <button
+                            onClick={() => openAffiliationModal(user)}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors cursor-pointer border border-indigo-200/80 dark:border-indigo-800/50"
+                            title="Manage Faculty & Department Affiliation"
+                          >
+                            <Building className="w-3.5 h-3.5" />
+                            <span>Affiliation</span>
                           </button>
 
                           {/* Reassign Supervisor (Scholars only) */}
@@ -697,16 +781,21 @@ function AdminUsersContent() {
                       <div className="space-y-4 text-xs">
                         <div className="grid grid-cols-2 gap-3">
                           <div className="p-3 bg-white dark:bg-[#07111F] border border-slate-200/80 dark:border-white/[0.08] rounded-xl">
-                            <span className="text-[10px] font-bold text-slate-400 block uppercase">Faculty</span>
+                            <span className="text-[10px] font-bold text-slate-400 block uppercase">Faculty / College</span>
                             <span className="font-bold text-slate-800 dark:text-[#F5F7FA]">
-                              {userProfile.user.faculty || 'SRMIST'}
+                              {userProfile.user.departmentRef?.faculty?.name || userProfile.user.faculty || 'SRMIST'}
                             </span>
                           </div>
                           <div className="p-3 bg-white dark:bg-[#07111F] border border-slate-200/80 dark:border-white/[0.08] rounded-xl">
                             <span className="text-[10px] font-bold text-slate-400 block uppercase">Department</span>
                             <span className="font-bold text-slate-800 dark:text-[#F5F7FA]">
-                              {userProfile.user.department || '—'}
+                              {userProfile.user.departmentRef?.name || userProfile.user.department || '—'}
                             </span>
+                            {!userProfile.user.departmentId && (
+                              <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 mt-1">
+                                No Relational Affiliation
+                              </span>
+                            )}
                           </div>
                           <div className="p-3 bg-white dark:bg-[#07111F] border border-slate-200/80 dark:border-white/[0.08] rounded-xl">
                             <span className="text-[10px] font-bold text-slate-400 block uppercase">Employee / Reg ID</span>
@@ -728,6 +817,13 @@ function AdminUsersContent() {
                             Governance Interventions
                           </h4>
                           <div className="flex flex-wrap gap-2">
+                            <button
+                              onClick={() => openAffiliationModal(userProfile.user)}
+                              className="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 dark:text-indigo-300 dark:border-indigo-900/60 font-bold text-xs cursor-pointer flex items-center gap-1.5"
+                            >
+                              <Building className="w-3.5 h-3.5" />
+                              <span>Update Affiliation</span>
+                            </button>
                             {userProfile.user.role === 'RESEARCH_SCHOLAR' && (
                               <button
                                 onClick={() => openReassignSupervisorModal(userProfile.user)}
@@ -992,6 +1088,119 @@ function AdminUsersContent() {
                     : actionModal.type === 'DELETE'
                     ? 'Permanently Delete User'
                     : 'Confirm Action'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* USER AFFILIATION MANAGEMENT MODAL */}
+      {affiliationUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-[#07111F] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-2.5 text-slate-900 dark:text-[#F5F7FA]">
+              <div className="w-8 h-8 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <Building className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-base font-black">Manage Institutional Affiliation</h3>
+                <p className="text-[11px] text-slate-400 dark:text-[#718096]">
+                  Assign authoritative Faculty / College and Department
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-500 dark:text-[#A7B3C5] leading-relaxed">
+              Target User: <strong className="text-slate-900 dark:text-[#F5F7FA]">{affiliationUser.name || affiliationUser.email}</strong>
+              <br />
+              <span className="text-[11px] text-slate-400">
+                Current Affiliation: {affiliationUser.departmentRef?.faculty?.name || affiliationUser.faculty || 'Unassigned'} / {affiliationUser.departmentRef?.name || affiliationUser.department || 'Unassigned'}
+              </span>
+            </p>
+
+            <form onSubmit={handleAffiliationSubmit} className="space-y-3.5">
+              {/* Faculty Dropdown */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1">
+                  Faculty / College <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={modalFacultyId}
+                  onChange={(e) => {
+                    const newFacId = e.target.value;
+                    setModalFacultyId(newFacId);
+                    setModalDeptId(''); // Cascade reset on faculty change
+                  }}
+                  required
+                  className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-[#F5F7FA] focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                >
+                  <option value="">-- Choose Faculty / College --</option>
+                  {faculties.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Department Dropdown (Filtered by selected Faculty) */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1">
+                  Department <span className="text-rose-500">*</span>
+                </label>
+                <select
+                  value={modalDeptId}
+                  onChange={(e) => setModalDeptId(e.target.value)}
+                  disabled={!modalFacultyId}
+                  required
+                  className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-bold text-slate-800 dark:text-[#F5F7FA] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <option value="">
+                    {modalFacultyId ? '-- Choose Department --' : 'Select Faculty First'}
+                  </option>
+                  {availableModalDepartments.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.code ? `${d.code} - ` : ''}{d.name}
+                    </option>
+                  ))}
+                </select>
+                {modalFacultyId && availableModalDepartments.length === 0 && (
+                  <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1 font-semibold">
+                    No departments configured under this faculty yet.
+                  </p>
+                )}
+              </div>
+
+              {/* Reason for Audit Log */}
+              <div>
+                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1">
+                  Reason for Affiliation Change <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  required
+                  rows={2}
+                  placeholder="e.g., Departmental transfer, initial institutional onboarding, correction..."
+                  value={modalAffiliationReason}
+                  onChange={(e) => setModalAffiliationReason(e.target.value)}
+                  className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl p-2.5 text-xs font-medium text-slate-800 dark:text-[#F5F7FA] focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAffiliationUser(null)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#132238] transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={affiliationSubmitting || !modalFacultyId || !modalDeptId || !modalAffiliationReason.trim()}
+                  className="px-4 py-2 rounded-xl text-xs font-extrabold text-white bg-indigo-600 hover:bg-indigo-700 transition-all disabled:opacity-50 cursor-pointer"
+                >
+                  {affiliationSubmitting ? 'Saving...' : 'Save Affiliation'}
                 </button>
               </div>
             </form>

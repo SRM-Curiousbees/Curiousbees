@@ -13,9 +13,10 @@ export class OpportunitiesController {
   async getOpportunities(
     @Req() req: any,
     @Query('department') department?: string,
+    @Query('departmentId') departmentId?: string,
     @Query('researchDomain') researchDomain?: string
   ) {
-    return this.opportunitiesService.getOpportunities(req.user, department, researchDomain);
+    return this.opportunitiesService.getOpportunities(req.user, department, researchDomain, departmentId);
   }
 
   @Get(':id')

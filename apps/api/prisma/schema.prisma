@@ -35,7 +35,7 @@ model User {
   role          Role            @default(RESEARCH_SCHOLAR)
   department    String?
   departmentId  String?
-  departmentRef Department?     @relation(fields: [departmentId], references: [id])
+  departmentRef Department?     @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   faculty       String?
   bio           String?
   approved      Boolean         @default(false)
@@ -105,6 +105,11 @@ model User {
   researchActivities      ResearchActivity[]
   externalLinks           ResearcherExternalLink[]
 
+  // Research Domain & Topic relations
+  userDomains             UserDomain[]
+  userTopics              UserTopic[]
+  supervisorWorkspaces    Workspace[]               @relation("SupervisorWorkspaces")
+
   // Integrations & Meetings relations
   integrationConnections  IntegrationConnection[]
   meetingsCreated         ResearchMeeting[]         @relation("MeetingCreator")
@@ -112,6 +117,11 @@ model User {
 
   @@index([departmentId])
   @@index([supervisorId])
+  @@index([role, status])
+  @@index([role])
+  @@index([status])
+  @@index([createdAt])
+  @@index([department])
 }
 
 model UserFollow {
@@ -171,6 +181,54 @@ model UserInterest {
   @@id([userId, interestId])
 }
 
+model ResearchDomain {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  description String?         @db.Text
+  topics      ResearchTopic[]
+  workspaces  Workspace[]
+  userDomains UserDomain[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model ResearchTopic {
+  id          String          @id @default(cuid())
+  name        String
+  domainId    String
+  domain      ResearchDomain  @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  description String?         @db.Text
+  workspaces  Workspace[]
+  userTopics  UserTopic[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@unique([domainId, name])
+  @@index([domainId])
+}
+
+model UserDomain {
+  userId    String
+  domainId  String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  domain    ResearchDomain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+  @@id([userId, domainId])
+  @@index([userId])
+  @@index([domainId])
+}
+
+model UserTopic {
+  userId    String
+  topicId   String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic     ResearchTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([userId, topicId])
+  @@index([userId])
+  @@index([topicId])
+}
+
 enum ThreadType {
   TEXT
   RESEARCH_UPDATE
@@ -209,6 +267,9 @@ model Thread {
   updatedAt DateTime  @updatedAt
 
   @@index([authorId])
+  @@index([hidden, createdAt])
+  @@index([type, createdAt])
+  @@index([createdAt])
 }
 
 model Comment {
@@ -228,6 +289,7 @@ model Comment {
   @@index([threadId])
   @@index([authorId])
   @@index([parentId])
+  @@index([threadId, createdAt])
 }
 
 model CommentLike {
@@ -248,6 +310,8 @@ model Opportunity {
   title             String
   description       String    @db.Text
   department        String
+  departmentId      String?
+  departmentRef     Department?   @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   researchDomain    String
   opportunityType   String    @default("PhD Position")
   positionsCount    Int       @default(1)
@@ -267,6 +331,7 @@ model Opportunity {
   collaborationRequests CollaborationRequest[]
 
   @@index([authorId])
+  @@index([departmentId])
 }
 
 enum ApprovalStatus {
@@ -318,6 +383,8 @@ model Event {
   eventType         String
   speaker           String?
   department        String?
+  departmentId      String?
+  departmentRef     Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   date              DateTime
   time              String
   venue             String
@@ -341,6 +408,7 @@ model Event {
 
   notifications     Notification[]
 
+  @@index([departmentId])
 }
 
 model Notification {
@@ -362,6 +430,7 @@ model Notification {
 
   @@index([userId])
   @@index([eventId])
+  @@index([userId, createdAt])
 }
 
 model NotificationLog {
@@ -374,15 +443,19 @@ model NotificationLog {
 }
 
 model UserPreference {
-  id                   String   @id @default(cuid())
-  userId               String   @unique
+  id                   String      @id @default(cuid())
+  userId               String      @unique
   department           String?
+  departmentId         String?
+  departmentRef        Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   eventType            String?
   tags                 String[]
-  notificationsEnabled Boolean  @default(true)
-  createdAt            DateTime @default(now())
+  notificationsEnabled Boolean     @default(true)
+  createdAt            DateTime    @default(now())
   
-  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([departmentId])
 }
 
 
@@ -411,6 +484,14 @@ model Workspace {
   id                    String                  @id @default(cuid())
   title                 String
   description           String?                 @db.Text
+  researchDomainId      String?
+  researchDomainRef     ResearchDomain?         @relation(fields: [researchDomainId], references: [id], onDelete: SetNull)
+  researchDomain        String?
+  researchTopicId       String?
+  researchTopicRef      ResearchTopic?          @relation(fields: [researchTopicId], references: [id], onDelete: SetNull)
+  researchTopic         String?
+  supervisorId          String?
+  supervisor            User?                   @relation("SupervisorWorkspaces", fields: [supervisorId], references: [id], onDelete: SetNull)
   collaborationProvider IntegrationProvider     @default(GOOGLE_WORKSPACE)
   googleChatSpaceId     String?
   googleChatSpaceUrl    String?
@@ -426,6 +507,10 @@ model Workspace {
   announcements         WorkspaceAnnouncement[]
   researchCollaboration ResearchCollaboration?
   meetings              ResearchMeeting[]
+
+  @@index([supervisorId])
+  @@index([researchDomainId])
+  @@index([researchTopicId])
 }
 
 model WorkspaceMember {
@@ -527,23 +612,30 @@ model NotificationToken {
 model Faculty {
   id                String              @id @default(cuid())
   name              String              @unique
+  campusId          String?
+  campus            Campus?             @relation(fields: [campusId], references: [id], onDelete: SetNull)
   departments       Department[]
   supervisorProfiles SupervisorProfile[]
   scholarProfiles   ScholarProfile[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
+
+  @@index([campusId])
 }
 
 model Department {
   id                String              @id @default(cuid())
   facultyId         String
-  faculty           Faculty             @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  faculty           Faculty             @relation(fields: [facultyId], references: [id], onDelete: Restrict)
   name              String
   code              String              @unique
   description       String?             @db.Text
   users             User[]              // backward compatibility
   supervisorProfiles SupervisorProfile[]
   scholarProfiles   ScholarProfile[]
+  opportunities     Opportunity[]
+  events            Event[]
+  userPreferences   UserPreference[]
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
@@ -592,17 +684,20 @@ enum RequestStatus {
 }
 
 model ScholarSupervisorRequest {
-  id            String        @id @default(cuid())
-  scholarId     String
-  scholar       User          @relation("ScholarSupervisorRequests", fields: [scholarId], references: [id], onDelete: Cascade)
-  supervisorId  String
-  supervisor    User          @relation("SupervisorScholarRequests", fields: [supervisorId], references: [id], onDelete: Cascade)
-  status        RequestStatus @default(PENDING)
-  message       String?
+  id              String        @id @default(cuid())
+  scholarId       String
+  scholar         User          @relation("ScholarSupervisorRequests", fields: [scholarId], references: [id], onDelete: Cascade)
+  supervisorId    String
+  supervisor      User          @relation("SupervisorScholarRequests", fields: [supervisorId], references: [id], onDelete: Cascade)
+  status          RequestStatus @default(PENDING)
+  researchDomain  String?
+  researchTopic   String?
+  proposalTitle   String?
+  message         String?
   rejectionReason String?
-  respondedAt   DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  respondedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   @@index([scholarId])
   @@index([supervisorId])
@@ -628,6 +723,8 @@ model Publication {
   updatedAt   DateTime @updatedAt
 
   @@index([userId])
+  @@index([hidden, createdAt])
+  @@index([userId, createdAt])
 }
 
 model Report {
@@ -1029,13 +1126,14 @@ model ModerationReport {
 }
 
 model Campus {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  code        String   @unique
+  id          String    @id @default(cuid())
+  name        String    @unique
+  code        String    @unique
   location    String?
-  status      String   @default("ACTIVE") // "ACTIVE", "ARCHIVED"
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      String    @default("ACTIVE") // "ACTIVE", "ARCHIVED"
+  faculties   Faculty[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model SystemSetting {

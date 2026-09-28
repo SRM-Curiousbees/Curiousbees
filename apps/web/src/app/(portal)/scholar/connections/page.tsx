@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
-import { SRM_DEPARTMENTS } from '@curiousbees/shared-utils';
+import { apiFetch } from '@/lib/api-client';
 import { 
   Users, 
   Search, 
@@ -22,11 +22,43 @@ import { DashboardShell } from '@/components/shared/dashboard-shell';
 export default function ScholarConnectionsPage() {
   const { collaborators, currentUser, fetchCollaborators, isLoading } = useStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFaculty, setSelectedFaculty] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedInterest, setSelectedInterest] = useState('');
+  const [faculties, setFaculties] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [invitee, setInvitee] = useState<any | null>(null);
   const [inviteMessage, setInviteMessage] = useState('');
   const [inviteSubmitting, setInviteSubmitting] = useState(false);
+
+  useEffect(() => {
+    async function loadMasterData() {
+      try {
+        const [deptRes, facRes] = await Promise.all([
+          apiFetch('/api/departments'),
+          apiFetch('/api/faculties'),
+        ]);
+        if (deptRes.ok) {
+          const data = await deptRes.json();
+          setDepartments(Array.isArray(data) ? data : []);
+        }
+        if (facRes.ok) {
+          const facData = await facRes.json();
+          setFaculties(Array.isArray(facData) ? facData : []);
+        }
+      } catch (err) {
+        console.error('Failed to load institutional master data', err);
+      }
+    }
+    loadMasterData();
+  }, []);
+
+  const availableDepartments = React.useMemo(() => {
+    if (!selectedFaculty) return departments;
+    const selectedFacObj = faculties.find((f) => f.name === selectedFaculty || f.id === selectedFaculty);
+    if (!selectedFacObj) return departments;
+    return departments.filter((d) => d.facultyId === selectedFacObj.id);
+  }, [selectedFaculty, departments, faculties]);
 
   useEffect(() => {
     fetchCollaborators(searchQuery, selectedDept);
@@ -59,11 +91,20 @@ export default function ScholarConnectionsPage() {
     const matchesSearch = 
       r.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
       (r.bio && r.bio.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesDept = !selectedDept || r.department === selectedDept;
+    const matchesFaculty =
+      !selectedFaculty ||
+      r.departmentRef?.faculty?.name === selectedFaculty ||
+      r.departmentRef?.facultyId === selectedFaculty ||
+      r.faculty === selectedFaculty;
+    const matchesDept =
+      !selectedDept ||
+      r.departmentRef?.name === selectedDept ||
+      r.departmentId === selectedDept ||
+      r.department === selectedDept;
     const researcherInterests = r.interests?.map((i: any) => i.interest?.name || '') || [];
     const matchesInterest = !selectedInterest || researcherInterests.includes(selectedInterest);
     
-    return matchesSearch && matchesDept && matchesInterest;
+    return matchesSearch && matchesFaculty && matchesDept && matchesInterest;
   });
 
   const handleSendInvite = (e: React.FormEvent) => {
@@ -125,6 +166,30 @@ export default function ScholarConnectionsPage() {
             />
           </div>
 
+          {/* Faculty Select */}
+          <div className="relative min-w-[180px]">
+            <select
+              value={selectedFaculty}
+              onChange={(e) => {
+                const nextFac = e.target.value;
+                setSelectedFaculty(nextFac);
+                if (nextFac && selectedDept) {
+                  const selectedFacObj = faculties.find((f) => f.name === nextFac || f.id === nextFac);
+                  if (selectedFacObj) {
+                    const isValid = departments.some((d) => d.name === selectedDept && d.facultyId === selectedFacObj.id);
+                    if (!isValid) setSelectedDept('');
+                  }
+                }
+              }}
+              className="w-full bg-transparent border-0 border-b border-slate-200 dark:border-white/[0.08] focus:border-primary dark:focus:border-[#3B82F6] focus:ring-0 pb-2 pt-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA] transition-colors cursor-pointer pr-8"
+            >
+              <option value="" className="dark:bg-[#101D30]">All Faculties</option>
+              {faculties.map((fac) => (
+                <option key={fac.id} value={fac.name} className="dark:bg-[#101D30]">{fac.name}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Department Select */}
           <div className="relative min-w-[180px]">
             <select
@@ -133,8 +198,10 @@ export default function ScholarConnectionsPage() {
               className="w-full bg-transparent border-0 border-b border-slate-200 dark:border-white/[0.08] focus:border-primary dark:focus:border-[#3B82F6] focus:ring-0 pb-2 pt-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA] transition-colors cursor-pointer pr-8"
             >
               <option value="" className="dark:bg-[#101D30]">All Departments</option>
-              {SRM_DEPARTMENTS.map((dept) => (
-                <option key={dept} value={dept} className="dark:bg-[#101D30]">{dept.split('(')[0]}</option>
+              {availableDepartments.map((dept) => (
+                <option key={dept.id} value={dept.name} className="dark:bg-[#101D30]">
+                  {dept.code ? `${dept.code} - ` : ''}{dept.name}
+                </option>
               ))}
             </select>
           </div>
@@ -155,9 +222,9 @@ export default function ScholarConnectionsPage() {
         </div>
 
         {/* Clear Filters Button */}
-        {(searchQuery || selectedDept || selectedInterest) && (
+        {(searchQuery || selectedFaculty || selectedDept || selectedInterest) && (
           <button
-            onClick={() => { setSearchQuery(''); setSelectedDept(''); setSelectedInterest(''); }}
+            onClick={() => { setSearchQuery(''); setSelectedFaculty(''); setSelectedDept(''); setSelectedInterest(''); }}
             className="text-primary dark:text-[#3B82F6] hover:text-primary/80 dark:hover:text-[#60A5FA] text-xs font-semibold flex items-center gap-1 shrink-0 self-end md:self-auto cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
@@ -222,7 +289,7 @@ export default function ScholarConnectionsPage() {
                             </span>
                             <span className="text-[10px] text-slate-400 dark:text-[#718096] font-medium flex items-center shrink-0">
                               <MapPin className="w-3 h-3 mr-0.5 text-slate-400 dark:text-[#718096]" />
-                              KTR Campus
+                              {researcher.departmentRef?.faculty?.campus?.name || researcher.campus || 'SRMIST Main Campus'}
                             </span>
                           </div>
                         </div>
@@ -241,7 +308,8 @@ export default function ScholarConnectionsPage() {
                     <div>
                       <p className="text-[9px] font-bold text-slate-400 dark:text-[#718096] uppercase tracking-wider leading-none">Academic Department</p>
                       <p className="text-xs text-slate-700 dark:text-[#E2E8F0] font-semibold leading-normal mt-1 max-w-sm truncate">
-                        🏫 {researcher.department || 'Department of Computing Technologies'}
+                        🏫 {researcher.departmentRef?.name || researcher.department || 'Academic Department Not Specified'}
+                        {researcher.departmentRef?.faculty?.name ? ` · ${researcher.departmentRef.faculty.name}` : ''}
                       </p>
                     </div>
 
@@ -328,7 +396,8 @@ export default function ScholarConnectionsPage() {
                   <div>
                     <h4 className="text-xs font-bold text-slate-800 dark:text-[#F5F7FA] leading-none">{invitee.name}</h4>
                     <p className="text-[10px] text-slate-500 dark:text-[#A7B3C5] font-medium mt-1 truncate max-w-[320px]">
-                      🏫 {invitee.department || 'Department of Computing Technologies'}
+                      🏫 {invitee.departmentRef?.name || invitee.department || 'Academic Department Not Specified'}
+                      {invitee.departmentRef?.faculty?.name ? ` · ${invitee.departmentRef.faculty.name}` : ''}
                     </p>
                   </div>
                 </div>

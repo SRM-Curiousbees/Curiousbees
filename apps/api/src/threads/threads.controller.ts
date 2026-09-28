@@ -15,9 +15,11 @@ export class ThreadsController {
     @Query('search') search?: string, 
     @Query('tag') tag?: string, 
     @Query('type') type?: string,
-    @Query('sort') sort?: 'latest' | 'top'
+    @Query('sort') sort?: 'latest' | 'top',
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: number,
   ) {
-    return this.threadsService.getThreads(search, tag, type, req.user?.id, sort);
+    return this.threadsService.getThreads(search, tag, type, req.user?.id, sort, cursor, limit);
   }
 
   @Get('counts')

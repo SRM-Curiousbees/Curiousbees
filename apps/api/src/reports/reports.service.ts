@@ -27,7 +27,7 @@ export class ReportsService {
   }
 
   async findAll(userId: string, role: string) {
-    if (role === 'SCHOLAR') {
+    if (role === 'SCHOLAR' || role === 'RESEARCH_SCHOLAR') {
       return this.prisma.report.findMany({
         where: { scholarId: userId },
         include: {
@@ -37,7 +37,7 @@ export class ReportsService {
         },
         orderBy: { createdAt: 'desc' },
       });
-    } else if (role === 'SUPERVISOR') {
+    } else if (role === 'SUPERVISOR' || role === 'RESEARCH_SUPERVISOR') {
       return this.prisma.report.findMany({
         where: { supervisorId: userId },
         include: {

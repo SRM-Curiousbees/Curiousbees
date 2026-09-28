@@ -152,7 +152,7 @@ interface AppState {
   fetchOpportunities: () => Promise<Opportunity[]>;
   createOpportunity: (titleOrPayload: string | any, description?: string, department?: string, researchDomain?: string, extraData?: any) => Promise<Opportunity>;
   fetchProfile: () => Promise<any>;
-  updateProfile: (data: { name?: string; department?: string; bio?: string; role?: UserRole; interests?: string[] }) => Promise<User>;
+  updateProfile: (data: { name?: string; department?: string; departmentId?: string; bio?: string; role?: UserRole; interests?: string[] }) => Promise<User>;
   fetchEvents: (showIndicator?: boolean) => Promise<Event[]>;
 
   createEvent: (title: string, date: string, time: string, venue: string, description?: string, eventType?: string, registrationLink?: string) => Promise<Event>;
@@ -168,7 +168,7 @@ interface AppState {
   approveScholar: (id: string) => Promise<any>;
   declineScholar: (id: string) => Promise<any>;
   reassignScholar: (scholarId: string, newSupervisorId: string, notes?: string) => Promise<any>;
-  requestSupervisor: (supervisorId: string, message?: string) => Promise<any>;
+  requestSupervisor: (supervisorId: string, message?: string, context?: { researchDomain?: string; researchTopic?: string; proposalTitle?: string }) => Promise<any>;
 
   // Admin Supervisor Approvals
   fetchPendingSupervisors: () => Promise<User[]>;
@@ -182,8 +182,18 @@ interface AppState {
 
   // Workspaces
   fetchWorkspaces: () => Promise<Workspace[]>;
+  createWorkspace: (data: {
+    title: string;
+    description?: string;
+    researchDomain?: string;
+    researchDomainId?: string;
+    researchTopic?: string;
+    researchTopicId?: string;
+    scholarIds?: string[];
+  }) => Promise<Workspace>;
   fetchWorkspaceDetails: (workspaceId: string) => Promise<Workspace>;
   addWorkspaceFile: (workspaceId: string, name: string, url: string, size: number) => Promise<WorkspaceFile>;
+  uploadResearchFileToS3: (file: File, prefix?: string) => Promise<{ fileUrl: string; objectKey: string; name: string; size: number }>;
   addWorkspaceMilestone: (workspaceId: string, title: string, description?: string, dueDate?: string) => Promise<WorkspaceMilestone>;
   toggleWorkspaceMilestone: (workspaceId: string, milestoneId: string, completed: boolean) => Promise<WorkspaceMilestone>;
   addWorkspaceAnnouncement: (workspaceId: string, title: string, content: string) => Promise<WorkspaceAnnouncement>;
@@ -224,6 +234,7 @@ interface AppState {
   createAdminUser: (data: { name: string; email: string; role: UserRole; departmentId?: string; supervisorId?: string }) => Promise<User>;
   updateAdminUser: (id: string, data: { name?: string; email?: string; role?: UserRole; status?: string; departmentId?: string; supervisorId?: string }) => Promise<User>;
   deleteAdminUser: (id: string, reason?: string) => Promise<void>;
+  updateAdminUserAffiliation: (userId: string, data: { facultyId: string; departmentId: string; reason?: string }) => Promise<any>;
   importAdminUsers: (formData: FormData) => Promise<any>;
 
   // Comprehensive Governance Actions
@@ -248,9 +259,11 @@ interface AppState {
   fetchAdminFaculties: () => Promise<any[]>;
   createAdminFaculty: (name: string) => Promise<any>;
   updateAdminFaculty: (id: string, name: string) => Promise<any>;
+  deleteAdminFaculty: (id: string) => Promise<any>;
   fetchAdminDepartments: () => Promise<any[]>;
   createAdminDepartment: (data: any) => Promise<any>;
   updateAdminDepartment: (id: string, data: any) => Promise<any>;
+  deleteAdminDepartment: (id: string) => Promise<any>;
   fetchAdminCampuses: () => Promise<any[]>;
   createAdminCampus: (data: any) => Promise<any>;
   updateAdminCampus: (id: string, data: any) => Promise<any>;
@@ -1334,6 +1347,10 @@ export const useStore = create<AppState>((set, get) => ({
           ...r.scholar,
           _requestId: r.id,
           _requestCreatedAt: r.createdAt,
+          _researchDomain: r.researchDomain,
+          _researchTopic: r.researchTopic,
+          _proposalTitle: r.proposalTitle,
+          _requestMessage: r.message,
         }));
         set({ pendingApprovals: scholars });
         return scholars;
@@ -1418,12 +1435,12 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  requestSupervisor: async (supervisorId: string, message?: string) => {
+  requestSupervisor: async (supervisorId: string, message?: string, context?: { researchDomain?: string; researchTopic?: string; proposalTitle?: string }) => {
     set({ isLoading: true });
     try {
       const res = await apiFetch('/api/supervisor-requests', {
         method: 'POST',
-        body: JSON.stringify({ supervisorId, message }),
+        body: JSON.stringify({ supervisorId, message, ...context }),
       });
       if (!res.ok) throw new Error(await readApiError(res));
       // Refresh the current user to reflect PENDING_SUPERVISOR_APPROVAL status
@@ -1577,6 +1594,34 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
+  createWorkspace: async (data: {
+    title: string;
+    description?: string;
+    researchDomain?: string;
+    researchDomainId?: string;
+    researchTopic?: string;
+    researchTopicId?: string;
+    scholarIds?: string[];
+  }) => {
+    set({ isLoading: true });
+    try {
+      const res = await apiFetch('/api/workspaces', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error(await readApiError(res));
+      const ws = await res.json();
+      set((state) => ({ workspaces: [ws, ...state.workspaces] }));
+      get().addToast('Research workspace created successfully.', 'success');
+      return ws;
+    } catch (err: any) {
+      get().addToast(err.message, 'error');
+      throw err;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   fetchWorkspaceDetails: async (workspaceId: string) => {
     set({ isLoading: true });
     try {
@@ -1616,6 +1661,52 @@ export const useStore = create<AppState>((set, get) => ({
         return fileData;
       }
       throw new Error('Failed to add file.');
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  uploadResearchFileToS3: async (file: File, prefix: string = 'research-documents') => {
+    set({ isLoading: true });
+    try {
+      // 1. Request presigned upload URL from NestJS API
+      const presignedRes = await apiFetch('/api/files/presigned-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: file.name,
+          contentType: file.type || 'application/octet-stream',
+          sizeBytes: file.size,
+          prefix,
+        }),
+      });
+
+      if (!presignedRes.ok) {
+        const err = await presignedRes.json().catch(() => ({}));
+        throw new Error(err.message || 'Failed to initialize secure AWS S3 upload.');
+      }
+
+      const { uploadUrl, objectKey, fileUrl } = await presignedRes.json();
+
+      // 2. Direct browser-to-S3 PUT upload (bypassing backend server to preserve ALB/NestJS capacity)
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+        },
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error(`S3 direct upload failed with status: ${uploadRes.status}`);
+      }
+
+      return {
+        fileUrl,
+        objectKey,
+        name: file.name,
+        size: file.size,
+      };
     } finally {
       set({ isLoading: false });
     }
@@ -2212,6 +2303,23 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
+  updateAdminUserAffiliation: async (userId: string, data: { facultyId: string; departmentId: string; reason?: string }) => {
+    try {
+      const res = await apiFetch(`/api/admin/users/${userId}/affiliation`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error(await readApiError(res));
+      const updated = await res.json();
+      get().addToast('User affiliation updated', 'success');
+      return updated;
+    } catch (err: any) {
+      get().addToast(err.message, 'error');
+      throw err;
+    }
+  },
+
   importAdminUsers: async (formData) => {
     set({ isLoading: true });
     try {
@@ -2585,6 +2693,20 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
+  deleteAdminFaculty: async (id: string) => {
+    try {
+      const res = await apiFetch(`/api/admin/institution/faculties/${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error(await readApiError(res));
+      get().addToast('Faculty deleted', 'success');
+      return await res.json();
+    } catch (e: any) {
+      get().addToast(e.message, 'error');
+      throw e;
+    }
+  },
+
   fetchAdminDepartments: async () => {
     try {
       const res = await apiFetch('/api/admin/institution/departments');
@@ -2621,6 +2743,20 @@ export const useStore = create<AppState>((set, get) => ({
       });
       if (!res.ok) throw new Error(await readApiError(res));
       get().addToast('Department updated', 'success');
+      return await res.json();
+    } catch (e: any) {
+      get().addToast(e.message, 'error');
+      throw e;
+    }
+  },
+
+  deleteAdminDepartment: async (id: string) => {
+    try {
+      const res = await apiFetch(`/api/admin/institution/departments/${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error(await readApiError(res));
+      get().addToast('Department deleted', 'success');
       return await res.json();
     } catch (e: any) {
       get().addToast(e.message, 'error');

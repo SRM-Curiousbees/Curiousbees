@@ -1,0 +1,111 @@
+name: CuriousBees V2 CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, staging]
+  pull_request:
+    branches: [main, staging]
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+jobs:
+  validate:
+    name: Lint, Typecheck, Test & Production Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install Monorepo Dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
+      - name: Lint Codebase
+        run: npm run lint
+
+      - name: TypeScript Typecheck
+        run: npm run typecheck
+
+      - name: Execute Automated Unit & Integration Tests
+        run: npm test
+
+      - name: Build Production Bundles (Web & API)
+        run: npm run build
+        env:
+          NODE_ENV: production
+          PORT: 4000
+          DEVELOPMENT_MODE: "false"
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/srm_curiousbees_db?schema=public"
+          DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/srm_curiousbees_db?schema=public"
+          FRONTEND_URL: "http://localhost:3000"
+          NEXT_PUBLIC_API_URL: "http://localhost:4000"
+          NEXT_PUBLIC_SUPABASE_URL: "https://mockup-project.supabase.co"
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: "mockup-anon-key"
+          SUPABASE_SERVICE_ROLE_KEY: "mockup-service-role-key"
+
+  docker-staging:
+    name: Build Docker Images & Push to ECR (Staging)
+    needs: validate
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # If AWS Credentials are configured in repository secrets, authenticate to AWS ECR
+      - name: Configure AWS Credentials
+        if: env.AWS_ROLE_ARN != ''
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION || 'ap-south-1' }}
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+
+      - name: Build API Docker Image
+        run: |
+          docker build \
+            -t curiousbees-api:${{ github.sha }} \
+            -t curiousbees-api:staging-latest \
+            -f Dockerfile.api .
+
+      - name: Build Web Docker Image
+        run: |
+          docker build \
+            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.STAGING_API_URL || 'https://api-staging.curiousbees.srmist.edu.in' }} \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL || 'https://staging-supabase.curiousbees.srmist.edu.in' }} \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || 'staging-anon-key' }} \
+            -t curiousbees-web:${{ github.sha }} \
+            -t curiousbees-web:staging-latest \
+            -f Dockerfile.web .
+
+  deploy-production:
+    name: Deploy to Production (Manual Approval Gate)
+    needs: docker-staging
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production # Requires manual approval in GitHub repo environments
+
+    steps:
+      - name: Production Deployment Notification
+        run: |
+          echo "Production deployment gate approved."
+          echo "Targeting AWS Application Load Balancer target groups for rolling blue/green release."
+          echo "Release commit: ${{ github.sha }}"

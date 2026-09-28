@@ -97,7 +97,9 @@ export class EventsService {
           eventType: eventType || 'Manual Entry',
           registrationLink: registrationLink ? registrationLink.trim() : null,
           status: EventStatus.PUBLISHED,
-          authorId: user.id
+          authorId: user.id,
+          departmentId: user.departmentId || null,
+          department: user.department || null,
         }
       });
     } catch (e) {

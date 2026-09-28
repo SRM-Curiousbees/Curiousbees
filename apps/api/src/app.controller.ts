@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Res } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
 import * as os from 'os';
 
@@ -18,19 +18,46 @@ export class AppController {
     };
   }
 
-  @Get(['health', 'api/health'])
-  async health() {
+  @Get(['health/live', 'api/health/live'])
+  live() {
+    return {
+      status: 'ok',
+      process: 'alive',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+    };
+  }
+
+  @Get(['health/ready', 'api/health/ready', 'health', 'api/health'])
+  async ready(@Res({ passthrough: true }) res: any) {
     let databaseConnected = false;
+    let dbLatencyMs = 0;
+    const start = Date.now();
+
     try {
       await this.prisma.$queryRaw`SELECT 1`;
       databaseConnected = true;
+      dbLatencyMs = Date.now() - start;
     } catch (err: any) {
-      // Database offline
+      databaseConnected = false;
+    }
+
+    if (!databaseConnected) {
+      if (res && typeof res.status === 'function') {
+        res.status(503);
+      }
+      return {
+        status: 'unhealthy',
+        database: 'disconnected',
+        error: 'Database connection check failed',
+        timestamp: new Date().toISOString(),
+      };
     }
 
     return {
-      status: databaseConnected ? 'ok' : 'unhealthy',
-      database: databaseConnected ? 'connected' : 'disconnected',
+      status: 'ok',
+      database: 'connected',
+      dbLatencyMs,
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'production',
     };

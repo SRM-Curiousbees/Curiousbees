@@ -11,7 +11,7 @@ export default function AccountRejectedPage() {
 
   const handleSignOut = () => {
     logout();
-    router.push('/sign-in');
+    router.push('/login');
   };
 
   return (

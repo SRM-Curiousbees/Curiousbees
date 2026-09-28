@@ -28,6 +28,11 @@ import { FeedModule } from './feed/feed.module';
 import { CollaborationsModule } from './collaborations/collaborations.module';
 import { MyResearchModule } from './my-research/my-research.module';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { ResearchDomainsModule } from './research-domains/research-domains.module';
+
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { FilesModule } from './files/files.module';
 
 @Module({
   imports: [
@@ -41,6 +46,13 @@ import { IntegrationsModule } from './integrations/integrations.module';
       ].find((p) => fs.existsSync(p)) || '../../.env',
       validate: validateEnv,
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60000,
+        limit: 120, // 120 requests per minute baseline
+      },
+    ]),
 
     PrismaModule,
     AuthModule,
@@ -64,9 +76,16 @@ import { IntegrationsModule } from './integrations/integrations.module';
     CollaborationsModule,
     MyResearchModule,
     IntegrationsModule,
+    ResearchDomainsModule,
+    FilesModule,
   ],
   controllers: [AppController],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

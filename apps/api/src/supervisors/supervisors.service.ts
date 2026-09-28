@@ -28,11 +28,10 @@ export class SupervisorsService {
       status: 'ACTIVE',
     };
 
-    if (departmentId || deptName) {
+    if (departmentId) {
       where.OR = [
-        ...(departmentId ? [{ departmentId }] : []),
-        ...(departmentId ? [{ supervisorProfile: { departmentId } }] : []),
-        ...(deptName ? [{ department: { equals: deptName, mode: 'insensitive' } }] : []),
+        { departmentId },
+        { supervisorProfile: { departmentId } },
       ];
     } else if (effectiveFacultyId) {
       where.OR = [
@@ -64,6 +63,15 @@ export class SupervisorsService {
       where,
       include: {
         supervisorProfile: true,
+        departmentRef: {
+          include: {
+            faculty: {
+              include: {
+                campus: true,
+              },
+            },
+          },
+        },
         _count: {
           select: {
             scholars: {
@@ -86,9 +94,13 @@ export class SupervisorsService {
         name: sup.name,
         email: sup.email,
         image: sup.image,
-        department: sup.department,
-        faculty: sup.faculty,
+        departmentId: sup.departmentId || sup.supervisorProfile?.departmentId,
+        department: sup.departmentRef?.name || sup.department,
+        faculty: sup.departmentRef?.faculty?.name || sup.faculty,
+        campus: sup.departmentRef?.faculty?.campus?.name || 'Kattankulathur',
+        campusCode: sup.departmentRef?.faculty?.campus?.code || 'KTR',
         designation: sup.supervisorProfile?.designation || 'Faculty',
+        researchArea: sup.supervisorProfile?.researchArea,
         currentScholars,
         maxScholars,
         isAtCapacity: currentScholars >= maxScholars,

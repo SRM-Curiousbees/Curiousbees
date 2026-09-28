@@ -11,7 +11,16 @@ export class RequestsService {
     private mailService: MailService,
   ) {}
 
-  async createRequest(scholarId: string, supervisorId: string, message?: string) {
+  async createRequest(
+    scholarId: string,
+    supervisorId: string,
+    message?: string,
+    researchContext?: {
+      researchDomain?: string;
+      researchTopic?: string;
+      proposalTitle?: string;
+    }
+  ) {
     if (!supervisorId) {
       throw new BadRequestException('Supervisor ID is required.');
     }
@@ -87,6 +96,9 @@ export class RequestsService {
           scholarId,
           supervisorId,
           message: message?.trim() || null,
+          researchDomain: researchContext?.researchDomain?.trim() || null,
+          researchTopic: researchContext?.researchTopic?.trim() || null,
+          proposalTitle: researchContext?.proposalTitle?.trim() || null,
           status: RequestStatus.PENDING,
         }
       });
@@ -143,11 +155,35 @@ export class RequestsService {
       return this.prisma.scholarSupervisorRequest.findMany({
         include: {
           scholar: {
-            select: { id: true, name: true, email: true, department: true, image: true, scholarProfile: true }
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              department: true,
+              faculty: true,
+              departmentId: true,
+              departmentRef: {
+                select: { id: true, name: true, code: true, faculty: { select: { id: true, name: true } } },
+              },
+              image: true,
+              scholarProfile: true,
+            },
           },
           supervisor: {
-            select: { id: true, name: true, email: true, department: true, image: true, supervisorProfile: true }
-          }
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              department: true,
+              faculty: true,
+              departmentId: true,
+              departmentRef: {
+                select: { id: true, name: true, code: true, faculty: { select: { id: true, name: true } } },
+              },
+              image: true,
+              supervisorProfile: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -164,11 +200,15 @@ export class RequestsService {
               email: true,
               department: true,
               faculty: true,
+              departmentId: true,
+              departmentRef: {
+                select: { id: true, name: true, code: true, faculty: { select: { id: true, name: true } } },
+              },
               image: true,
               bio: true,
-              scholarProfile: true
-            }
-          }
+              scholarProfile: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
       });
@@ -185,11 +225,15 @@ export class RequestsService {
               email: true,
               department: true,
               faculty: true,
+              departmentId: true,
+              departmentRef: {
+                select: { id: true, name: true, code: true, faculty: { select: { id: true, name: true } } },
+              },
               image: true,
               bio: true,
-              supervisorProfile: true
-            }
-          }
+              supervisorProfile: true,
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
       });

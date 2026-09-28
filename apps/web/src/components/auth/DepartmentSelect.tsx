@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDown } from 'lucide-react';
-import { SRM_DEPARTMENTS } from '@curiousbees/shared-utils';
+import { ChevronDown, Loader2 } from 'lucide-react';
+import { apiFetch } from '@/lib/api-client';
 
 interface DepartmentSelectProps {
   facultyValue: string;
@@ -12,40 +12,36 @@ interface DepartmentSelectProps {
   error?: string;
 }
 
-export const FACULTY_TO_DEPARTMENTS: Record<string, string[]> = {
-  'eng-tech': [
-    'Computing Technologies (CSE / IT / Swe)',
-    'Electronics & Communication Engineering (ECE)',
-    'Electrical & Electronics Engineering (EEE)',
-    'Biotechnology & Bioengineering',
-    'Mechanical Engineering',
-    'Civil Engineering',
-    'Chemical Engineering'
-  ],
-  'sci-hum': [
-    'Physics & Nanotechnology',
-    'Chemistry & Materials Science',
-    'Mathematics & Actuarial Science'
-  ],
-  'mgmt': [
-    'School of Management (SOM)'
-  ],
-  'health-sci': [
-    'Health Sciences & Research'
-  ],
-  'law': [] // General / empty placeholder
-};
-
 export default function DepartmentSelect({ 
   facultyValue, 
   value, 
   onChange, 
   error 
 }: DepartmentSelectProps) {
-  // Filter departments based on selected faculty
-  const filteredDepartments = facultyValue 
-    ? FACULTY_TO_DEPARTMENTS[facultyValue] || [] 
-    : [];
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!facultyValue) {
+      setDepartments([]);
+      return;
+    }
+    async function loadDepts() {
+      setLoading(true);
+      try {
+        const res = await apiFetch(`/api/departments?facultyId=${encodeURIComponent(facultyValue)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setDepartments(Array.isArray(data) ? data : []);
+        }
+      } catch (e) {
+        console.error('Failed to load departments', e);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadDepts();
+  }, [facultyValue]);
 
   return (
     <div className="relative pt-6 text-left">
@@ -64,27 +60,33 @@ export default function DepartmentSelect({
           name="department"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          disabled={!facultyValue || filteredDepartments.length === 0}
+          disabled={!facultyValue || (!loading && departments.length === 0)}
           className={cn(
             "w-full input-underline text-on-surface font-body-md bg-transparent appearance-none cursor-pointer pr-8",
             error && "border-error focus:border-error"
           )}
         >
           <option value="" disabled className="bg-white text-outline">
-            {!facultyValue 
-              ? 'Select Faculty First' 
-              : filteredDepartments.length === 0 
-                ? 'No Departments Registered' 
-                : 'Select Department'}
+            {loading 
+              ? 'Loading Departments...' 
+              : !facultyValue 
+                ? 'Select Faculty First' 
+                : departments.length === 0 
+                  ? 'No Departments Registered' 
+                  : 'Select Department'}
           </option>
-          {filteredDepartments.map((dept) => (
-            <option key={dept} value={dept} className="bg-white text-on-surface">
-              {dept}
+          {departments.map((dept) => (
+            <option key={dept.id} value={dept.id} className="bg-white text-on-surface">
+              {dept.name}
             </option>
           ))}
         </select>
         <div className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 text-on-surface-variant flex items-center">
-          <ChevronDown className="w-4 h-4 text-outline" />
+          {loading ? (
+            <Loader2 className="w-4 h-4 text-outline animate-spin" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-outline" />
+          )}
         </div>
       </div>
       {error && (

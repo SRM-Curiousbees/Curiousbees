@@ -73,9 +73,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    // 5. Enforce SRMIST & Gmail allowed domain restriction
+    // 5. Enforce allowed domain restriction
     const email = user.email?.toLowerCase().trim() || '';
-    const allowedDomains = (process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS || 'srmist.edu.in,gmail.com')
+    const allowedDomains = (
+      process.env.ALLOWED_EMAIL_DOMAINS ||
+      process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS ||
+      'gmail.com'
+    )
       .split(',')
       .map((d) => d.trim().toLowerCase())
       .filter(Boolean);

@@ -189,9 +189,18 @@ export class AdminSupervisorsService {
     if (!user) throw new BadRequestException('Supervisor not found.');
 
     let departmentName = user.department;
+    let facultyName = user.faculty;
+    let resolvedFacultyId: string | null = null;
     if (data.departmentId) {
-      const dept = await this.prisma.department.findUnique({ where: { id: data.departmentId } });
-      if (dept) departmentName = dept.name;
+      const dept = await this.prisma.department.findUnique({ 
+        where: { id: data.departmentId },
+        include: { faculty: true }
+      });
+      if (dept) {
+        departmentName = dept.name;
+        facultyName = dept.faculty?.name || user.faculty;
+        resolvedFacultyId = dept.facultyId;
+      }
     }
 
     // Extract employeeId from email prefix
@@ -208,16 +217,19 @@ export class AdminSupervisorsService {
         email: data.email?.toLowerCase(),
         department: departmentName,
         departmentId: data.departmentId || null,
+        faculty: facultyName,
         employeeId,
       },
     });
 
-    if (data.designation) {
+    if (data.designation || resolvedFacultyId || data.departmentId) {
       await this.prisma.supervisorProfile.updateMany({
         where: { userId: id },
         data: {
-          designation: data.designation,
-          employeeId: employeeId || undefined,
+          ...(data.designation && { designation: data.designation }),
+          ...(employeeId && { employeeId }),
+          ...(data.departmentId && { departmentId: data.departmentId }),
+          ...(resolvedFacultyId && { facultyId: resolvedFacultyId }),
         },
       });
     }

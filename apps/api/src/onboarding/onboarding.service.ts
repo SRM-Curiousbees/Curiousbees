@@ -78,17 +78,12 @@ export class OnboardingService {
     }
 
     if (!effectiveDepartmentId) {
-      const fallbackDept = await this.prisma.department.findFirst();
-      if (fallbackDept) {
-        effectiveDepartmentId = fallbackDept.id;
-      } else {
-        throw new BadRequestException('Department selection is required.');
-      }
+      throw new BadRequestException('Department selection is required.');
     }
 
     const dept = await this.prisma.department.findUnique({
       where: { id: effectiveDepartmentId },
-      include: { faculty: true }
+      include: { faculty: { include: { campus: true } } }
     });
     if (!dept) {
       throw new BadRequestException('Invalid department selection.');
@@ -96,7 +91,7 @@ export class OnboardingService {
 
     const effectiveFacultyId = user.supervisorProfile?.facultyId || data.facultyId || dept.facultyId;
     if (dept.facultyId !== effectiveFacultyId) {
-      throw new BadRequestException('Invalid department/faculty selection.');
+      throw new BadRequestException('Invalid department/faculty combination: The selected department does not belong to the selected faculty.');
     }
 
     const effectiveDesignation = user.supervisorProfile?.designation || data.designation || 'Supervisor';
@@ -137,6 +132,20 @@ export class OnboardingService {
 
       await this.syncInterests(tx, userId, data.researchArea, (data as any).interests);
 
+      await tx.auditLog.create({
+        data: {
+          userId,
+          action: 'SUPERVISOR_ONBOARDING_COMPLETED',
+          details: JSON.stringify({
+            facultyId: dept.facultyId,
+            departmentId: dept.id,
+            facultyName: dept.faculty.name,
+            departmentName: dept.name,
+            campus: dept.faculty.campus?.name,
+          }),
+        },
+      });
+
       return tx.user.update({
         where: { id: userId },
         data: {
@@ -151,6 +160,7 @@ export class OnboardingService {
         },
         include: {
           supervisorProfile: true,
+          departmentRef: { include: { faculty: { include: { campus: true } } } },
           interests: { include: { interest: true } },
         },
       });
@@ -181,13 +191,16 @@ export class OnboardingService {
       throw new BadRequestException('User has already completed onboarding and has a supervisor assigned.');
     }
 
-    // Verify faculty and department
+    // Verify faculty and department relationally
     const dept = await this.prisma.department.findUnique({
       where: { id: data.departmentId },
-      include: { faculty: true }
+      include: { faculty: { include: { campus: true } } }
     });
-    if (!dept || dept.facultyId !== data.facultyId) {
-      throw new BadRequestException('Invalid department/faculty selection.');
+    if (!dept) {
+      throw new BadRequestException('Selected department not found.');
+    }
+    if (dept.facultyId !== data.facultyId) {
+      throw new BadRequestException('Invalid department/faculty selection: The selected department does not belong to the selected faculty.');
     }
 
     let supervisor: any = null;
@@ -297,7 +310,14 @@ export class OnboardingService {
         data: {
           userId,
           action: data.supervisorId ? 'SCHOLAR_SUPERVISION_REQUEST_CREATED' : 'SCHOLAR_ONBOARDING_COMPLETED',
-          details: JSON.stringify({ supervisorId: data.supervisorId || null, facultyId: data.facultyId, departmentId: data.departmentId }),
+          details: JSON.stringify({
+            supervisorId: data.supervisorId || null,
+            facultyId: dept.facultyId,
+            departmentId: dept.id,
+            facultyName: dept.faculty.name,
+            departmentName: dept.name,
+            campus: dept.faculty.campus?.name,
+          }),
         }
       });
 

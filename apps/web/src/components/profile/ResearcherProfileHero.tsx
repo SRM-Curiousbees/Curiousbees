@@ -35,7 +35,11 @@ export function ResearcherProfileHero({
   const isSupervisor = user?.role === 'RESEARCH_SUPERVISOR';
   const name = user?.name || (isAdmin ? 'Institute Administrator' : 'Academic Scholar');
   const roleLabel = isAdmin ? 'Institute Administrator' : isSupervisor ? 'Research Supervisor' : 'Research Scholar';
-  const department = user?.department || (isAdmin ? 'Research & Academic Governance' : 'Computer Science & Engineering');
+  const department =
+    user?.departmentRef?.name ||
+    user?.department ||
+    (isAdmin ? 'Research & Academic Governance' : 'Institutional Department Not Specified');
+  const faculty = user?.departmentRef?.faculty?.name || user?.faculty;
   const institution = 'SRM Institute of Science and Technology';
 
   // Email and ID details
@@ -115,7 +119,9 @@ export function ResearcherProfileHero({
                 {roleLabel} · {department}
               </p>
 
-              <p className="text-xs text-slate-500 font-semibold">{institution}</p>
+              <p className="text-xs text-slate-500 font-semibold">
+                {faculty ? `${faculty} · ` : ''}{institution}
+              </p>
 
               {/* Email & ID Metadata */}
               <div className="flex items-center gap-4 text-xs text-slate-500 pt-1 flex-wrap font-medium">

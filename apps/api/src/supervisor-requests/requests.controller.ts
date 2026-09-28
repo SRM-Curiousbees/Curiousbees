@@ -26,11 +26,18 @@ export class RequestsController {
     @Req() req: any,
     @Body('supervisorId') supervisorId: string,
     @Body('message') message?: string,
+    @Body('researchDomain') researchDomain?: string,
+    @Body('researchTopic') researchTopic?: string,
+    @Body('proposalTitle') proposalTitle?: string,
   ) {
     if (!supervisorId) {
       throw new BadRequestException('supervisorId is required.');
     }
-    return this.requestsService.createRequest(req.user.id, supervisorId, message);
+    return this.requestsService.createRequest(req.user.id, supervisorId, message, {
+      researchDomain,
+      researchTopic,
+      proposalTitle,
+    });
   }
 
   @Delete(':id')
@@ -52,7 +59,7 @@ export class RequestsController {
     @Param('id') requestId: string,
     @Body('rejectionReason') rejectionReason?: string,
   ) {
-    return this.requestsService.rejectRequest(req.user.id, req.user.role, rejectionReason);
+    return this.requestsService.rejectRequest(req.user.id, requestId, rejectionReason);
   }
 
   @Put('reassign')

@@ -22,11 +22,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
       ? (rawResponse as any).message
       : rawResponse;
 
+    const requestId = (request as any).id || (request.headers['x-request-id'] as string) || 'unknown';
+
     // Log detail using console.error which is hooked into Winston logs
     const errMessage = exception instanceof Error ? exception.message : String(exception);
     const errStack = exception instanceof Error ? exception.stack : '';
     
-    console.error(`[Exception] ${request.method} ${request.url} - Status: ${status} - Message: ${JSON.stringify(message)} - Error: ${errMessage}`, errStack);
+    console.error(`[Exception] [${requestId}] ${request.method} ${request.url} - Status: ${status} - Message: ${JSON.stringify(message)} - Error: ${errMessage}`, errStack);
 
     // Sanitize response details in production to avoid stack trace leaks
     const isProd = process.env.NODE_ENV === 'production';
@@ -36,6 +38,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     response.status(status).json({
       statusCode: status,
+      requestId,
       timestamp: new Date().toISOString(),
       path: request.url,
       message: cleanMessage,

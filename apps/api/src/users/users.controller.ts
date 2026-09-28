@@ -100,16 +100,16 @@ export class UsersController {
 
   @Get('approvals')
   async getApprovals(@Req() req: any) {
-    if (req.user.role !== 'SUPERVISOR' && req.user.role !== 'RESEARCH_SUPERVISOR' && req.user.role !== 'ADMIN' && req.user.role !== 'INSTITUTE_ADMIN') {
-      throw new BadRequestException('Only faculty supervisors can fetch pending approvals.');
+    if (req.user.role !== 'SUPERVISOR' && req.user.role !== 'RESEARCH_SUPERVISOR') {
+      throw new BadRequestException('Only research supervisors can fetch pending approvals.');
     }
     return this.usersService.getApprovals(req.user.id);
   }
 
   @Put('approve-scholar')
   async approveScholar(@Req() req: any, @Body('scholarId') scholarId: string) {
-    if (req.user.role !== 'SUPERVISOR' && req.user.role !== 'RESEARCH_SUPERVISOR' && req.user.role !== 'ADMIN' && req.user.role !== 'INSTITUTE_ADMIN') {
-      throw new BadRequestException('Only faculty supervisors can approve scholars.');
+    if (req.user.role !== 'SUPERVISOR' && req.user.role !== 'RESEARCH_SUPERVISOR') {
+      throw new BadRequestException('Only research supervisors can approve scholars.');
     }
     if (!scholarId) {
       throw new BadRequestException('scholarId is required.');
@@ -119,30 +119,24 @@ export class UsersController {
 
   @Put('approve-supervisor')
   async approveSupervisor(@Req() req: any, @Body('supervisorId') supervisorId: string) {
-    if (req.user.role !== 'ADMIN' && req.user.role !== 'INSTITUTE_ADMIN') {
-      throw new BadRequestException('Only administrators can approve supervisors.');
-    }
-    if (!supervisorId) {
-      throw new BadRequestException('supervisorId is required.');
-    }
-    return this.usersService.approveSupervisor(req.user.id, supervisorId);
+    return {
+      message: 'Research Supervisors join directly and do not require administrative approval.',
+      supervisorId,
+    };
   }
 
   @Put('decline-supervisor')
   async declineSupervisor(@Req() req: any, @Body('supervisorId') supervisorId: string) {
-    if (req.user.role !== 'ADMIN' && req.user.role !== 'INSTITUTE_ADMIN') {
-      throw new BadRequestException('Only administrators can decline supervisors.');
-    }
-    if (!supervisorId) {
-      throw new BadRequestException('supervisorId is required.');
-    }
-    return this.usersService.declineSupervisor(req.user.id, supervisorId);
+    return {
+      message: 'Research Supervisors join directly and do not require administrative approval.',
+      supervisorId,
+    };
   }
 
   @Put('decline-scholar')
   async declineScholar(@Req() req: any, @Body('scholarId') scholarId: string) {
-    if (req.user.role !== 'SUPERVISOR' && req.user.role !== 'RESEARCH_SUPERVISOR' && req.user.role !== 'ADMIN' && req.user.role !== 'INSTITUTE_ADMIN') {
-      throw new BadRequestException('Only faculty supervisors can decline scholars.');
+    if (req.user.role !== 'SUPERVISOR' && req.user.role !== 'RESEARCH_SUPERVISOR') {
+      throw new BadRequestException('Only research supervisors can decline scholars.');
     }
     if (!scholarId) {
       throw new BadRequestException('scholarId is required.');
@@ -151,8 +145,14 @@ export class UsersController {
   }
 
   @Get('all')
-  async getAllUsers(@Req() req: any) {
-    return this.usersService.getAllUsers(req.user.id);
+  async getAllUsers(
+    @Req() req: any,
+    @Query('limit') limit?: number,
+    @Query('page') page?: number,
+    @Query('search') search?: string,
+    @Query('role') role?: string,
+  ) {
+    return this.usersService.getAllUsers(req.user.id, limit, page, search, role);
   }
 
   @Public()
@@ -224,6 +224,9 @@ export class UsersController {
     @Query('q') q?: string,
     @Query('role') role?: string,
     @Query('department') department?: string,
+    @Query('departmentId') departmentId?: string,
+    @Query('facultyId') facultyId?: string,
+    @Query('campusId') campusId?: string,
     @Query('interest') interest?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string
@@ -232,6 +235,9 @@ export class UsersController {
       q,
       role,
       department,
+      departmentId,
+      facultyId,
+      campusId,
       interest,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20

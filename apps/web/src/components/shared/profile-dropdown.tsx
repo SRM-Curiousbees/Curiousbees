@@ -44,7 +44,7 @@ export function ProfileDropdown() {
   const handleLogout = async () => {
     setIsOpen(false);
     await logout();
-    router.push('/sign-in');
+    router.push('/login');
   };
 
   return (
