@@ -18,7 +18,6 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
-  ExternalLink,
   Eye,
   GraduationCap,
   History,
@@ -33,7 +32,7 @@ import {
 import { cn } from '@/lib/utils';
 import { getProfileImageUrl } from '@/lib/avatar';
 import { PageHeader } from '@/components/ui/page-header';
-import { Button, IconButton, buttonVariants } from '@/components/ui/button';
+import { Button, IconButton } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge, StatusBadge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -676,16 +675,6 @@ function AdminUsersContent() {
                   <StatusBadge status={drawerSuspended ? 'SUSPENDED' : drawerUser.status} />
                 </div>
               </div>
-              <a
-                href={`/researchers/${drawerUser.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'shrink-0')}
-              >
-                Profile
-                <ExternalLink aria-hidden />
-                <span className="sr-only">(opens in a new tab)</span>
-              </a>
             </div>
 
             <div role="tablist" aria-label="User details" className="flex gap-1 border-b border-line">

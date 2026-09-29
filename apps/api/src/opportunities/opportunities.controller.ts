@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Body, Query, UseGuards, Req, Param, BadRequestException } from '@nestjs/common';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
+import { ResearchParticipantGuard } from '../auth/guards/research-participant.guard';
 import { ApprovedGuard } from '../auth/approved.guard';
 import { OpportunitiesService } from './opportunities.service';
 import { CreateOpportunityInput } from '@curiousbees/types';
@@ -35,6 +36,7 @@ export class OpportunitiesController {
   }
 
   @Post()
+  @UseGuards(ResearchParticipantGuard)
   async createOpportunity(@Req() req: any, @Body() body: CreateOpportunityInput) {
     return this.opportunitiesService.createOpportunity(req.user, body);
   }
@@ -50,6 +52,7 @@ export class OpportunitiesController {
   }
 
   @Post(':id/request')
+  @UseGuards(ResearchParticipantGuard)
   async createCollaborationRequest(
     @Req() req: any,
     @Param('id') opportunityId: string,
@@ -59,6 +62,7 @@ export class OpportunitiesController {
   }
 
   @Put('requests/:id')
+  @UseGuards(ResearchParticipantGuard)
   async updateRequestStatus(
     @Req() req: any,
     @Param('id') requestId: string,

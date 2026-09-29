@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Body, Query, Param, UseGuards, Req, Put, Delete, NotFoundException } from '@nestjs/common';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
+import { ResearchParticipantGuard } from '../auth/guards/research-participant.guard';
 import { ApprovedGuard } from '../auth/approved.guard';
 import { ThreadsService } from './threads.service';
 import { CreateThreadInput } from '@curiousbees/types';
@@ -38,41 +39,49 @@ export class ThreadsController {
   }
 
   @Post()
+  @UseGuards(ResearchParticipantGuard)
   async createThread(@Req() req: any, @Body() body: CreateThreadInput) {
     return this.threadsService.createThread(req.user.id, body);
   }
 
   @Delete(':id')
+  @UseGuards(ResearchParticipantGuard)
   async deleteThread(@Req() req: any, @Param('id') id: string) {
     return this.threadsService.deleteThread(id, req.user.id);
   }
 
   @Put(':id')
+  @UseGuards(ResearchParticipantGuard)
   async updateThread(@Req() req: any, @Param('id') id: string, @Body() body: Partial<CreateThreadInput>) {
     return this.threadsService.updateThread(id, req.user.id, body);
   }
 
   @Post(':id/like')
+  @UseGuards(ResearchParticipantGuard)
   async toggleLike(@Req() req: any, @Param('id') id: string) {
     return this.threadsService.toggleLike(id, req.user.id);
   }
 
   @Post(':id/save')
+  @UseGuards(ResearchParticipantGuard)
   async toggleSave(@Req() req: any, @Param('id') id: string) {
     return this.threadsService.toggleSave(id, req.user.id);
   }
 
   @Post(':id/share')
+  @UseGuards(ResearchParticipantGuard)
   async shareThread(@Req() req: any, @Param('id') id: string, @Body('platform') platform?: string) {
     return this.threadsService.shareThread(id, req.user.id, platform);
   }
 
   @Post(':id/report')
+  @UseGuards(ResearchParticipantGuard)
   async reportThread(@Req() req: any, @Param('id') id: string, @Body('reason') reason: string, @Body('description') description?: string) {
     return this.threadsService.reportThread(id, req.user.id, reason, description);
   }
 
   @Post(':id/collaborate')
+  @UseGuards(ResearchParticipantGuard)
   async requestCollaboration(@Req() req: any, @Param('id') id: string, @Body('message') message?: string) {
     return this.threadsService.requestCollaboration(id, req.user.id, message);
   }

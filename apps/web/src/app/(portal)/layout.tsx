@@ -129,13 +129,20 @@ export default function PortalLayout({
 
     // Role-based path authorization check
     if (!isRouteAllowedForRole(activeUser.role, pathname)) {
+      // Admins who land on a research page (e.g. the post-sign-in default /feed)
+      // go to their own dashboard; anything else is a genuine unauthorized visit.
+      if (activeUser.role === 'INSTITUTE_ADMIN' && !pathname.startsWith('/admin')) {
+        router.replace('/admin/dashboard');
+        return;
+      }
       console.warn(`[PortalLayout] Access unauthorized for role ${activeUser.role} on path ${pathname}`);
       router.push('/unauthorized');
       return;
     }
   }, [isAuthVerifying, currentUser, pathname, router]);
 
-  if (isAuthVerifying || !currentUser) {
+  // Never render a page the role may not use, even for the moment before the redirect.
+  if (isAuthVerifying || !currentUser || !isRouteAllowedForRole(currentUser.role, pathname)) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-canvas px-6">
         {authTimedOut ? (

@@ -290,10 +290,20 @@ function UnifiedSettingsContent() {
   const isSupervisor = currentUser?.role === 'RESEARCH_SUPERVISOR';
   const isAdmin = currentUser?.role === 'INSTITUTE_ADMIN';
 
+  // A deep link to a research-only tab falls back to Identity for admins.
+  useEffect(() => {
+    if (isAdmin && (activeTab === 'domains' || activeTab === 'integrations')) setActiveTab('identity');
+  }, [isAdmin, activeTab]);
+
   const tabs = [
     { id: 'identity', label: 'Identity & Bio', icon: User, desc: 'Personal & academic profile metadata' },
-    { id: 'domains', label: 'Research Focus', icon: Tag, desc: 'Domains, tags & matchmaking index' },
-    { id: 'integrations', label: 'Connected Apps', icon: Layers, desc: 'Google Workspace & Zoom meetings' },
+    // Research focus and meeting integrations serve research collaboration, which admins don't take part in.
+    ...(!isAdmin
+      ? [
+          { id: 'domains', label: 'Research Focus', icon: Tag, desc: 'Domains, tags & matchmaking index' },
+          { id: 'integrations', label: 'Connected Apps', icon: Layers, desc: 'Google Workspace & Zoom meetings' },
+        ]
+      : []),
     { id: 'appearance', label: 'Appearance & UI', icon: Palette, desc: 'Themes, feed sorting & density' },
     { id: 'notifications', label: 'Notifications', icon: Bell, desc: 'Email digests, channels & alert rules' },
     ...(isSupervisor ? [{ id: 'supervision', label: 'Advisory Panel', icon: GraduationCap, desc: 'Scholar intake capacity & lab settings' }] : [])
@@ -332,13 +342,15 @@ function UnifiedSettingsContent() {
         </div>
 
         <div className="flex items-center gap-2 self-start md:self-auto">
-          <Link
-            href="/profile"
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
-          >
-            <User className="w-3.5 h-3.5 text-slate-500" />
-            <span>View Public Profile</span>
-          </Link>
+          {!isAdmin && (
+            <Link
+              href="/profile"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
+            >
+              <User className="w-3.5 h-3.5 text-slate-500" />
+              <span>View Public Profile</span>
+            </Link>
+          )}
           {isAdmin && (
             <Link
               href="/admin/settings"
@@ -556,7 +568,7 @@ function UnifiedSettingsContent() {
             {/* ═══════════════════════════════════════════════════════════════════ */}
             {/* TAB 2: RESEARCH FOCUS & DOMAINS */}
             {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeTab === 'domains' && (
+            {activeTab === 'domains' && !isAdmin && (
               <motion.div
                 key="tab-domains"
                 initial={{ opacity: 0, y: 8 }}
@@ -672,7 +684,7 @@ function UnifiedSettingsContent() {
             {/* ═══════════════════════════════════════════════════════════════════ */}
             {/* TAB 3: CONNECTED APPS & INTEGRATIONS */}
             {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeTab === 'integrations' && (
+            {activeTab === 'integrations' && !isAdmin && (
               <motion.div
                 key="tab-integrations"
                 initial={{ opacity: 0, y: 8 }}
@@ -947,6 +959,9 @@ function UnifiedSettingsContent() {
                     </div>
                   </div>
 
+                  {/* Feed and reading preferences apply to research content only */}
+                  {!isAdmin && (
+                  <>
                   {/* Research Feed Sorting Preference */}
                   <div className="space-y-3 pt-4 border-t border-slate-100">
                     <label className="text-xs font-medium text-slate-700 capitalize block">
@@ -1048,6 +1063,8 @@ function UnifiedSettingsContent() {
                       </div>
                     </div>
                   </div>
+                  </>
+                  )}
                 </div>
               </motion.div>
             )}

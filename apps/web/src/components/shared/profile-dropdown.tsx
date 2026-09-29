@@ -41,7 +41,8 @@ export function ProfileDropdown() {
     ...(currentUser.role === 'RESEARCH_SUPERVISOR'
       ? [{ label: 'Supervision Panel', href: '/my-scholars', icon: GraduationCap }]
       : []),
-    { label: 'My profile', href: '/profile', icon: User },
+    // Admins have no research profile; their account lives in Settings.
+    ...(currentUser.role !== 'INSTITUTE_ADMIN' ? [{ label: 'My profile', href: '/profile', icon: User }] : []),
     { label: 'Settings', href: '/settings', icon: Settings },
   ];
 

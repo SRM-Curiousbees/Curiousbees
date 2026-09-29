@@ -20,12 +20,15 @@ import type { UserRole } from '@curiousbees/types';
  * Rules are prefix-matched: '/dashboard' covers '/dashboard', '/dashboard/...', etc.
  */
 export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
+  // Institute admins govern the platform (accounts, institution, moderation,
+  // audit). They do not take part in research: no feed, researchers, events,
+  // opportunities, workspaces, Nexus or research profile. The API enforces the
+  // same rule (ResearchParticipantGuard).
   INSTITUTE_ADMIN: [
     '/',
     '/admin',
     '/institute-admin',
     '/settings',
-    '/profile',
     '/notifications',
   ],
   RESEARCH_SUPERVISOR: [
@@ -92,9 +95,13 @@ export const PUBLIC_ROUTES: string[] = [
  * @param pathname The Next.js pathname being accessed (e.g. '/admin')
  */
 export function isRouteAllowedForRole(role: UserRole, pathname: string): boolean {
-  if (role === 'INSTITUTE_ADMIN') return true;
   const allowed = ROLE_PERMISSIONS[role] ?? [];
   return allowed.some((prefix) => pathname === prefix || pathname.startsWith(prefix + '/'));
+}
+
+/** Scholars and supervisors take part in research; institute admins only govern. */
+export function isResearchParticipant(role?: UserRole | string | null): boolean {
+  return role === 'RESEARCH_SCHOLAR' || role === 'RESEARCH_SUPERVISOR';
 }
 
 /**

@@ -407,6 +407,46 @@ describe('CuriousBees API (integration)', () => {
     });
   });
 
+  describe('institute admins govern and do not take part in research', () => {
+    const post = { title: 'Chapter 2 draft', content: 'Related work chapter is ready for review.', tags: ['thesis'] };
+
+    it('admins cannot post, comment, react, follow, collaborate or author publications', async () => {
+      const admin = as('admin@srmist.edu.in');
+      const denied = [
+        await admin.post('/api/threads').send(post),
+        await admin.post('/api/comments').send({ threadId: 'any', content: 'Looks good' }),
+        await admin.post('/api/threads/any/like'),
+        await admin.post(`/api/users/${scholar.id}/follow`),
+        await admin.post('/api/users/follow-topic').send({ topic: 'Federated Learning' }),
+        await admin.post('/api/collaborations/request').send({ targetUserId: scholar.id }),
+        await admin.post('/api/opportunities').send({ title: 'Call for scholars' }),
+        await admin.post('/api/publications').send({ title: 'Paper' }),
+        await admin.post('/api/workspaces').send({ title: 'Lab workspace' }),
+      ];
+      for (const res of denied) {
+        expect(res.status).toBe(403);
+        expect(res.body.message).toMatch(/cannot take part in research/);
+      }
+    });
+
+    it('admins keep read access for governance, and their admin tools', async () => {
+      await as('admin@srmist.edu.in').get('/api/threads').expect(200);
+      await as('admin@srmist.edu.in').get('/api/admin/content/posts').expect(200);
+    });
+
+    it('scholars and supervisors still take part', async () => {
+      const created = await as('scholar.one@gmail.com').post('/api/threads').send(post).expect(201);
+      await as('dr.srm@srmist.edu.in').post(`/api/threads/${created.body.id}/like`).expect(201);
+    });
+
+    it("nobody can edit or delete another person's post, including one written by an admin", async () => {
+      const admin = await prisma.user.findUniqueOrThrow({ where: { email: 'admin@srmist.edu.in' } });
+      const adminPost = await prisma.thread.create({ data: { title: 'Notice', content: 'Institutional notice', tags: [], authorId: admin.id } });
+      await as('scholar.one@gmail.com').put(`/api/threads/${adminPost.id}`).send({ title: 'Changed' }).expect(400);
+      expect(await prisma.thread.findUnique({ where: { id: adminPost.id } })).toMatchObject({ title: 'Notice' });
+    });
+  });
+
   // ─── CORS / proxy / rate limiting / errors ─────────────────────────────────
   describe('edge behaviour', () => {
     it('CORS allows the production origin and nothing else', async () => {

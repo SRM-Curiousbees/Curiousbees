@@ -451,9 +451,11 @@ export class ThreadsService {
   }
 
   async deleteThread(threadId: string, userId: string) {
-    const thread = await this.prisma.thread.findUnique({ where: { id: threadId }, include: { author: true }});
-    // Check if user is author or admin
-    if (!thread || (thread.authorId !== userId && thread.author.role !== 'INSTITUTE_ADMIN')) {
+    const thread = await this.prisma.thread.findUnique({ where: { id: threadId } });
+    // Only the author may delete through this endpoint. (The previous check read the
+    // *author's* role, which let anyone delete an admin's post.) Moderators remove
+    // posts through /admin/content, which records the moderation in the audit log.
+    if (!thread || thread.authorId !== userId) {
       throw new BadRequestException('Unauthorized or thread not found');
     }
     await this.prisma.thread.delete({ where: { id: threadId } });
@@ -464,8 +466,8 @@ export class ThreadsService {
   }
 
   async updateThread(threadId: string, userId: string, data: Partial<CreateThreadInput>) {
-    const thread = await this.prisma.thread.findUnique({ where: { id: threadId }, include: { author: true }});
-    if (!thread || (thread.authorId !== userId && thread.author.role !== 'INSTITUTE_ADMIN')) {
+    const thread = await this.prisma.thread.findUnique({ where: { id: threadId } });
+    if (!thread || thread.authorId !== userId) {
       throw new BadRequestException('Unauthorized or thread not found');
     }
 

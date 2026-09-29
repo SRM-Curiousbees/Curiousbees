@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { PublicationsService } from './publications.service';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
+import { ResearchParticipantGuard } from '../auth/guards/research-participant.guard';
 import { ApprovedGuard } from '../auth/approved.guard';
 
 @Controller('publications')
@@ -26,6 +27,7 @@ export class PublicationsController {
   }
 
   @Post()
+  @UseGuards(ResearchParticipantGuard)
   async create(
     @Req() req: any,
     @Body() body: { title: string; authors: string; doi?: string; publisher?: string; year: number; status: string }

@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Put, Body, UseGuards, Req, Param, BadRequestException } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
+import { ResearchParticipantGuard } from '../auth/guards/research-participant.guard';
 import { ApprovedGuard } from '../auth/approved.guard';
 import { WorkspacesService } from './workspaces.service';
 import { AddWorkspaceFileDto, RequestFileUploadDto } from './dto/workspace-file.dto';
@@ -16,6 +17,7 @@ export class WorkspacesController {
   }
 
   @Post()
+  @UseGuards(ResearchParticipantGuard)
   async createWorkspace(
     @Req() req: any,
     @Body('title') title: string,
@@ -47,6 +49,7 @@ export class WorkspacesController {
 
   /** Step 1 of an upload: a short-lived presigned PUT URL for a workspace member. */
   @Post(':id/files/upload-url')
+  @UseGuards(ResearchParticipantGuard)
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   async requestFileUpload(
     @Req() req: any,
@@ -58,6 +61,7 @@ export class WorkspacesController {
 
   /** Step 2: register the uploaded object (or an external link) on the workspace. */
   @Post(':id/files')
+  @UseGuards(ResearchParticipantGuard)
   async addFile(
     @Req() req: any,
     @Param('id') workspaceId: string,
@@ -78,6 +82,7 @@ export class WorkspacesController {
   }
 
   @Post(':id/milestones')
+  @UseGuards(ResearchParticipantGuard)
   async addMilestone(
     @Req() req: any,
     @Param('id') workspaceId: string,
@@ -92,6 +97,7 @@ export class WorkspacesController {
   }
 
   @Put(':id/milestones/:milestoneId')
+  @UseGuards(ResearchParticipantGuard)
   async toggleMilestone(
     @Req() req: any,
     @Param('id') workspaceId: string,
@@ -105,6 +111,7 @@ export class WorkspacesController {
   }
 
   @Post(':id/announcements')
+  @UseGuards(ResearchParticipantGuard)
   async addAnnouncement(
     @Req() req: any,
     @Param('id') workspaceId: string,

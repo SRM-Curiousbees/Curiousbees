@@ -10,6 +10,7 @@ import { Menu, Search } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { findNavContext } from '@/lib/navigation';
 import SpotlightSearch from '../SpotlightSearch';
+import { isResearchParticipant } from '@/lib/auth/permissions';
 import Logo from '@/components/Logo';
 import { IconButton } from '@/components/ui/button';
 import { NotificationDropdown } from '../shared/notification-dropdown';
@@ -21,8 +22,11 @@ export default function Navbar() {
   const { currentUser, setMobileSidebar } = useStore();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { section, item } = findNavContext(currentUser?.role, pathname, tab);
+  // Search covers research content (posts, people, events), which admins don't use.
+  const canSearch = isResearchParticipant(currentUser?.role);
 
   useEffect(() => {
+    if (!canSearch) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
@@ -31,7 +35,7 @@ export default function Navbar() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [canSearch]);
 
   return (
     <>
@@ -49,24 +53,26 @@ export default function Navbar() {
         </p>
 
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-          <button
-            type="button"
-            onClick={() => setIsSearchOpen(true)}
-            aria-label="Search CuriousBees"
-            className="flex h-9 items-center gap-2 rounded-lg border border-line bg-surface-muted px-2.5 text-sm text-ink-muted transition-colors duration-fast hover:border-line-strong hover:bg-surface sm:w-64"
-          >
-            <Search className="size-4 shrink-0" aria-hidden />
-            <span className="hidden flex-1 truncate text-left sm:inline">Search researchers, research…</span>
-            <kbd className="hidden h-5 items-center rounded border border-line bg-surface px-1.5 font-mono text-2xs text-ink-muted sm:inline-flex">
-              ⌘K
-            </kbd>
-          </button>
+          {canSearch && (
+            <button
+              type="button"
+              onClick={() => setIsSearchOpen(true)}
+              aria-label="Search CuriousBees"
+              className="flex h-9 items-center gap-2 rounded-lg border border-line bg-surface-muted px-2.5 text-sm text-ink-muted transition-colors duration-fast hover:border-line-strong hover:bg-surface sm:w-64"
+            >
+              <Search className="size-4 shrink-0" aria-hidden />
+              <span className="hidden flex-1 truncate text-left sm:inline">Search researchers, research…</span>
+              <kbd className="hidden h-5 items-center rounded border border-line bg-surface px-1.5 font-mono text-2xs text-ink-muted sm:inline-flex">
+                ⌘K
+              </kbd>
+            </button>
+          )}
           <NotificationDropdown />
           <ProfileDropdown />
         </div>
       </header>
 
-      <SpotlightSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
+      {canSearch && <SpotlightSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />}
     </>
   );
 }

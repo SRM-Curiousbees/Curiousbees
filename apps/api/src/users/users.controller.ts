@@ -1,5 +1,6 @@
 import { Controller, Get, Put, Patch, Post, Body, Query, UseGuards, Req, BadRequestException, Param, Delete } from '@nestjs/common';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
+import { ResearchParticipantGuard } from '../auth/guards/research-participant.guard';
 import { UsersService } from './users.service';
 import { UpdateProfileInput } from '@curiousbees/types';
 import { Public } from '../auth/public.decorator';
@@ -81,6 +82,7 @@ export class UsersController {
   }
 
   @Post(':id/connect')
+  @UseGuards(ResearchParticipantGuard)
   async toggleConnection(@Req() req: any, @Param('id') targetUserId: string) {
     return this.usersService.toggleConnection(req.user.id, targetUserId);
   }
@@ -91,6 +93,7 @@ export class UsersController {
   }
 
   @Put('request-supervisor')
+  @UseGuards(ResearchParticipantGuard)
   async requestSupervisor(@Req() req: any, @Body('supervisorId') supervisorId: string) {
     if (!supervisorId) {
       throw new BadRequestException('supervisorId is required.');
@@ -245,16 +248,19 @@ export class UsersController {
   }
 
   @Post(':id/follow')
+  @UseGuards(ResearchParticipantGuard)
   async followUser(@Req() req: any, @Param('id') targetId: string) {
     return this.usersService.followUser(req.user.id, targetId);
   }
 
   @Delete(':id/follow')
+  @UseGuards(ResearchParticipantGuard)
   async unfollowUser(@Req() req: any, @Param('id') targetId: string) {
     return this.usersService.unfollowUser(req.user.id, targetId);
   }
 
   @Put(':id/follow-notifications')
+  @UseGuards(ResearchParticipantGuard)
   async setFollowNotifications(
     @Req() req: any, 
     @Param('id') targetId: string, 
@@ -293,11 +299,13 @@ export class UsersController {
 
   // --- DOMAIN FOLLOW ROUTES ---
   @Post('follow-domain')
+  @UseGuards(ResearchParticipantGuard)
   async followDomain(@Req() req: any, @Body('domain') domain: string) {
     return this.usersService.followDomain(req.user.id, domain);
   }
 
   @Delete('follow-domain')
+  @UseGuards(ResearchParticipantGuard)
   async unfollowDomain(@Req() req: any, @Body('domain') domain: string) {
     return this.usersService.unfollowDomain(req.user.id, domain);
   }
@@ -309,11 +317,13 @@ export class UsersController {
 
   // --- TOPIC / HASHTAG FOLLOW ROUTES ---
   @Post('follow-topic')
+  @UseGuards(ResearchParticipantGuard)
   async followTopic(@Req() req: any, @Body('topic') topic: string) {
     return this.usersService.followTopic(req.user.id, topic);
   }
 
   @Delete('follow-topic')
+  @UseGuards(ResearchParticipantGuard)
   async unfollowTopic(@Req() req: any, @Body('topic') topic: string) {
     return this.usersService.unfollowTopic(req.user.id, topic);
   }

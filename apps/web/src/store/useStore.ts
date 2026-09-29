@@ -682,6 +682,11 @@ export const useStore = create<AppState>((set, get) => ({
 
   // 2. Fetch live Threads, Opportunities, and Events concurrently
   fetchData: async (skipThreads?: boolean) => {
+    // Institute admins govern and don't use research content; load only their notifications.
+    if (get().currentUser?.role === 'INSTITUTE_ADMIN') {
+      get().fetchNotifications().catch(() => {});
+      return;
+    }
     set({ isLoading: true });
     try {
       const oppsPromise = apiFetch('/api/opportunities');

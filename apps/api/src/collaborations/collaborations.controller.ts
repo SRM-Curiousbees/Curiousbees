@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Req, Query } from '@nestjs/common';
 import { CollaborationsService } from './collaborations.service';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
+import { ResearchParticipantGuard } from '../auth/guards/research-participant.guard';
 import { ApprovedGuard } from '../auth/approved.guard';
 
 @Controller('collaborations')
@@ -9,6 +10,7 @@ export class CollaborationsController {
   constructor(private readonly collaborationsService: CollaborationsService) {}
 
   @Post('request')
+  @UseGuards(ResearchParticipantGuard)
   async sendRequest(
     @Req() req: any,
     @Body('recipientId') recipientId: string,
@@ -24,11 +26,13 @@ export class CollaborationsController {
   }
 
   @Post('requests/:id/cancel')
+  @UseGuards(ResearchParticipantGuard)
   async cancelRequest(@Req() req: any, @Param('id') id: string) {
     return this.collaborationsService.cancelRequest(id, req.user.id);
   }
 
   @Post('requests/:id/accept')
+  @UseGuards(ResearchParticipantGuard)
   async acceptRequest(
     @Req() req: any,
     @Param('id') id: string,
@@ -38,6 +42,7 @@ export class CollaborationsController {
   }
 
   @Post('requests/:id/decline')
+  @UseGuards(ResearchParticipantGuard)
   async declineRequest(@Req() req: any, @Param('id') id: string) {
     return this.collaborationsService.declineRequest(id, req.user.id);
   }
@@ -62,6 +67,7 @@ export class CollaborationsController {
   }
 
   @Post(':id/messages')
+  @UseGuards(ResearchParticipantGuard)
   async sendMessage(
     @Req() req: any,
     @Param('id') id: string,
@@ -80,6 +86,7 @@ export class CollaborationsController {
   }
 
   @Post(':id/close')
+  @UseGuards(ResearchParticipantGuard)
   async closeCollaboration(@Req() req: any, @Param('id') id: string) {
     return this.collaborationsService.closeCollaboration(id, req.user.id);
   }
