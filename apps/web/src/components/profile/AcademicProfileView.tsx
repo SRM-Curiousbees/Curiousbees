@@ -138,7 +138,7 @@ export function AcademicProfileView({
   }));
 
   return (
-    <div className="min-h-screen bg-[#F5F7FC] text-[#17233D] font-sans pb-32">
+    <div className="min-h-screen bg-canvas text-slate-900 font-sans pb-32">
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 pt-6 space-y-6">
         {/* Full-Width Institutional Hero Header */}
         <ResearcherProfileHero

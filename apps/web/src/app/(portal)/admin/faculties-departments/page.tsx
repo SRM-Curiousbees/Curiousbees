@@ -153,17 +153,17 @@ export default function FacultiesDepartmentsPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto py-2 select-none">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 dark:border-white/[0.08] pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300 border border-teal-200">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-teal-50 text-teal-700 border border-teal-200">
               Institutional Structure
             </span>
           </div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-[#F5F7FA] tracking-tight mt-1">
+          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
             Faculties & Academic Departments
           </h1>
-          <p className="text-xs text-slate-500 dark:text-[#A7B3C5] font-semibold mt-0.5">
+          <p className="text-xs text-slate-500 font-semibold mt-0.5">
             Configure faculties, department codes, and organizational structures.
           </p>
         </div>
@@ -171,7 +171,7 @@ export default function FacultiesDepartmentsPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setFacultyModal({ name: '' })}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-white dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] text-slate-700 dark:text-[#F5F7FA] hover:bg-slate-50 transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-surface border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Faculty</span>
@@ -185,7 +185,7 @@ export default function FacultiesDepartmentsPage() {
                 description: '',
               })
             }
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold bg-[#0C4DA2] hover:bg-[#042654] text-white transition-all shadow-sm cursor-pointer"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-brand hover:bg-brand-strong text-white transition-all shadow-sm cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Add Department</span>
@@ -196,10 +196,10 @@ export default function FacultiesDepartmentsPage() {
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Faculties List Card */}
-        <div className="bg-white dark:bg-[#07111F] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3">
-            <h3 className="text-sm font-black text-slate-900 dark:text-[#F5F7FA] flex items-center gap-2">
-              <Building className="w-4 h-4 text-[#0C4DA2]" />
+        <div className="bg-surface border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+              <Building className="w-4 h-4 text-brand" />
               <span>Faculties ({faculties.length})</span>
             </h3>
           </div>
@@ -208,11 +208,11 @@ export default function FacultiesDepartmentsPage() {
             {faculties.map((f) => (
               <div
                 key={f.id}
-                className="p-3 bg-slate-50 dark:bg-[#0B1728] border border-slate-200/80 dark:border-white/[0.08] rounded-xl flex items-center justify-between"
+                className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between"
               >
                 <div>
-                  <h4 className="font-bold text-slate-900 dark:text-[#F5F7FA] text-xs">{f.name}</h4>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
+                  <h4 className="font-bold text-slate-900 text-xs">{f.name}</h4>
+                  <p className="text-2xs text-slate-400 mt-0.5">
                     {f._count?.departments ?? f.departments?.length ?? 0} Departments •{' '}
                     {f._count?.scholarProfiles ?? 0} Scholars • {f._count?.supervisorProfiles ?? 0} Supervisors
                   </p>
@@ -220,7 +220,7 @@ export default function FacultiesDepartmentsPage() {
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setFacultyModal({ id: f.id, name: f.name })}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
                     title="Edit Faculty"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -239,9 +239,9 @@ export default function FacultiesDepartmentsPage() {
         </div>
 
         {/* Departments List Card */}
-        <div className="bg-white dark:bg-[#07111F] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 shadow-2xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3">
-            <h3 className="text-sm font-black text-slate-900 dark:text-[#F5F7FA] flex items-center gap-2">
+        <div className="bg-surface border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
               <Building className="w-4 h-4 text-teal-600" />
               <span>Departments ({departments.length})</span>
             </h3>
@@ -251,7 +251,7 @@ export default function FacultiesDepartmentsPage() {
                 placeholder="Filter..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-lg pl-6 pr-2 py-1 text-[11px] font-semibold"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-6 pr-2 py-1 text-2xs font-semibold"
               />
               <Search className="w-3 h-3 text-slate-400 absolute left-2 top-2" />
             </div>
@@ -261,16 +261,16 @@ export default function FacultiesDepartmentsPage() {
             {filteredDepts.map((d) => (
               <div
                 key={d.id}
-                className="p-3 bg-slate-50 dark:bg-[#0B1728] border border-slate-200/80 dark:border-white/[0.08] rounded-xl flex items-center justify-between"
+                className="p-3 bg-slate-50 border border-slate-200/80 rounded-xl flex items-center justify-between"
               >
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-700 border border-teal-200">
+                    <span className="px-1.5 py-0.5 rounded text-xs font-medium capitalize bg-teal-50 text-teal-700 border border-teal-200">
                       {d.code}
                     </span>
-                    <h4 className="font-bold text-slate-900 dark:text-[#F5F7FA] text-xs">{d.name}</h4>
+                    <h4 className="font-bold text-slate-900 text-xs">{d.name}</h4>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1">
+                  <p className="text-2xs text-slate-400 mt-1">
                     Faculty: {d.faculty?.name || 'SRMIST'} • {d._count?.users ?? 0} Users
                   </p>
                 </div>
@@ -285,7 +285,7 @@ export default function FacultiesDepartmentsPage() {
                         description: d.description || '',
                       })
                     }
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
                     title="Edit Department"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -306,21 +306,21 @@ export default function FacultiesDepartmentsPage() {
 
       {/* Faculty Modal */}
       {facultyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-[#07111F] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="text-base font-black text-slate-900 dark:text-[#F5F7FA]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-surface border border-slate-200/80 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+            <h3 className="text-base font-semibold text-slate-900">
               {facultyModal.id ? 'Edit Faculty' : 'Create New Faculty'}
             </h3>
             <form onSubmit={handleFacultySubmit} className="space-y-3">
               <div>
-                <label className="text-[11px] font-bold text-slate-600 block mb-1">Faculty Name</label>
+                <label className="text-2xs font-bold text-slate-600 block mb-1">Faculty Name</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Faculty of Engineering and Technology"
                   value={facultyModal.name}
                   onChange={(e) => setFacultyModal({ ...facultyModal, name: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold"
                 />
               </div>
               <div className="flex items-center justify-end gap-2 pt-2">
@@ -334,7 +334,7 @@ export default function FacultiesDepartmentsPage() {
                 <button
                   type="submit"
                   disabled={submitting || !facultyModal.name.trim()}
-                  className="px-4 py-2 rounded-xl text-xs font-extrabold bg-[#0C4DA2] text-white cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-brand text-white cursor-pointer"
                 >
                   {submitting ? 'Saving...' : 'Save Faculty'}
                 </button>
@@ -346,43 +346,43 @@ export default function FacultiesDepartmentsPage() {
 
       {/* Department Modal */}
       {deptModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-[#07111F] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
-            <h3 className="text-base font-black text-slate-900 dark:text-[#F5F7FA]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-surface border border-slate-200/80 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+            <h3 className="text-base font-semibold text-slate-900">
               {deptModal.id ? 'Edit Department' : 'Create New Department'}
             </h3>
             <form onSubmit={handleDeptSubmit} className="space-y-3">
               <div>
-                <label className="text-[11px] font-bold text-slate-600 block mb-1">Department Name</label>
+                <label className="text-2xs font-bold text-slate-600 block mb-1">Department Name</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Department of Computer Science and Engineering"
                   value={deptModal.name}
                   onChange={(e) => setDeptModal({ ...deptModal, name: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-600 block mb-1">Department Code</label>
+                <label className="text-2xs font-bold text-slate-600 block mb-1">Department Code</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. CSE"
                   value={deptModal.code}
                   onChange={(e) => setDeptModal({ ...deptModal, code: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-semibold uppercase"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold uppercase"
                 />
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-600 block mb-1">Parent Faculty</label>
+                <label className="text-2xs font-bold text-slate-600 block mb-1">Parent Faculty</label>
                 <select
                   value={deptModal.facultyId}
                   onChange={(e) => setDeptModal({ ...deptModal, facultyId: e.target.value })}
                   required
-                  className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-semibold"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold"
                 >
                   {faculties.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -403,7 +403,7 @@ export default function FacultiesDepartmentsPage() {
                 <button
                   type="submit"
                   disabled={submitting || !deptModal.name.trim() || !deptModal.code.trim()}
-                  className="px-4 py-2 rounded-xl text-xs font-extrabold bg-[#0C4DA2] text-white cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-brand text-white cursor-pointer"
                 >
                   {submitting ? 'Saving...' : 'Save Department'}
                 </button>

@@ -14,8 +14,9 @@ export class SupabaseService implements OnModuleInit {
   }
 
   onModuleInit() {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    // Server-only key. Never fall back to the public anon key: it cannot perform admin operations.
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !serviceRoleKey) {
       this.logger.error('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing from environment variables.');
@@ -39,7 +40,7 @@ export class SupabaseService implements OnModuleInit {
   /**
    * Verify the Supabase JWT Access Token via supabase.auth.getUser(token)
    */
-  async verifyToken(token: string): Promise<{ id: string; email: string; user_metadata?: any; app_metadata?: any }> {
+  async verifyToken(token: string): Promise<{ id: string; email: string; emailVerified: boolean; user_metadata?: any; app_metadata?: any }> {
     if (!this.supabaseAdmin) {
       throw new Error('Supabase Client is not initialized due to missing environment variables.');
     }
@@ -61,6 +62,7 @@ export class SupabaseService implements OnModuleInit {
       return {
         id: data.user.id,
         email,
+        emailVerified: Boolean(data.user.email_confirmed_at),
         user_metadata: data.user.user_metadata,
         app_metadata: data.user.app_metadata,
       };

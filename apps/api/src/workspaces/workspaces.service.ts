@@ -1,9 +1,14 @@
-import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FilesService } from '../files/files.service';
+import { AddWorkspaceFileDto, RequestFileUploadDto } from './dto/workspace-file.dto';
 
 @Injectable()
 export class WorkspacesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private files: FilesService,
+  ) {}
 
   // Check if a user is a member of the workspace
   private async checkMembership(userId: string, workspaceId: string) {
@@ -208,15 +213,42 @@ export class WorkspacesService {
     return workspace;
   }
 
-  async addFile(userId: string, workspaceId: string, name: string, url: string, size: number) {
+  async createFileUpload(userId: string, workspaceId: string, input: RequestFileUploadDto) {
     await this.checkMembership(userId, workspaceId);
+    const safeName = this.files.validateUpload(input.filename, input.contentType, input.sizeBytes);
+    const storageKey = this.files.buildObjectKey('workspaces', workspaceId, userId, safeName);
+    return this.files.createPresignedUpload(storageKey, input.contentType.toLowerCase(), input.sizeBytes);
+  }
+
+  async addFile(userId: string, workspaceId: string, input: AddWorkspaceFileDto) {
+    await this.checkMembership(userId, workspaceId);
+
+    if (Boolean(input.storageKey) === Boolean(input.url)) {
+      throw new BadRequestException('Provide exactly one of storageKey (uploaded file) or url (external link).');
+    }
+
+    let data: { url?: string; storageKey?: string; contentType?: string; size: number };
+    if (input.storageKey) {
+      // Only objects this user uploaded into this workspace's prefix can be attached.
+      const expectedPrefix = `workspaces/${workspaceId}/${userId}/`;
+      if (!input.storageKey.startsWith(expectedPrefix) || !this.files.isWellFormedKey(input.storageKey)) {
+        throw new ForbiddenException('This file was not uploaded to this workspace by you.');
+      }
+      const existing = await this.prisma.workspaceFile.findUnique({ where: { storageKey: input.storageKey } });
+      if (existing) {
+        throw new BadRequestException('This upload has already been attached.');
+      }
+      const verified = await this.files.verifyUploadedObject(input.storageKey);
+      data = { storageKey: input.storageKey, contentType: verified.contentType, size: verified.size };
+    } else {
+      data = { url: input.url, size: input.size || 0 };
+    }
 
     const file = await this.prisma.workspaceFile.create({
       data: {
         workspaceId,
-        name,
-        url,
-        size,
+        name: input.name.trim(),
+        ...data,
         uploadedById: userId
       },
       include: {
@@ -234,11 +266,27 @@ export class WorkspacesService {
       data: {
         userId,
         action: 'WORKSPACE_ADD_FILE',
-        details: `User uploaded file "${name}" to workspace ${workspaceId}`
+        details: `User added file "${file.name}" to workspace ${workspaceId}`
       }
     });
 
     return file;
+  }
+
+  async getFileDownload(userId: string, workspaceId: string, fileId: string) {
+    await this.checkMembership(userId, workspaceId);
+    const file = await this.prisma.workspaceFile.findFirst({ where: { id: fileId, workspaceId } });
+    if (!file) {
+      throw new NotFoundException('File not found in this workspace.');
+    }
+    if (file.storageKey) {
+      const extension = file.storageKey.split('.').pop()?.toLowerCase() || '';
+      const downloadName = extension && !file.name.toLowerCase().endsWith(`.${extension}`)
+        ? `${file.name}.${extension}`
+        : file.name;
+      return this.files.createPresignedDownload(file.storageKey, downloadName);
+    }
+    return { downloadUrl: file.url, expiresIn: null };
   }
 
   async addMilestone(userId: string, workspaceId: string, title: string, description?: string, dueDate?: string) {

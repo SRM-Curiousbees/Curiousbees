@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { PrismaService } from './prisma/prisma.service';
+import { SupabaseService } from './auth/supabase.service';
 
 describe('AppController (ALB Health Checks)', () => {
   let controller: AppController;
@@ -18,6 +19,7 @@ describe('AppController (ALB Health Checks)', () => {
           provide: PrismaService,
           useValue: mockPrisma,
         },
+        { provide: SupabaseService, useValue: { verifyToken: jest.fn() } },
       ],
     }).compile();
 

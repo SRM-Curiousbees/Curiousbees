@@ -1,144 +1,72 @@
 'use client';
 
 /**
- * Navbar.tsx — Top navigation bar with floating glassmorphic container, dynamic breadcrumbs, and integrated dropdowns.
+ * Top bar: location context, global search (⌘K), notifications and account menu.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { Menu, Search } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { Search, Sparkles, MessageSquare, AlertTriangle, X, Menu, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { findNavContext } from '@/lib/navigation';
 import SpotlightSearch from '../SpotlightSearch';
-import { cn } from '@/lib/utils';
+import Logo from '@/components/Logo';
+import { IconButton } from '@/components/ui/button';
 import { NotificationDropdown } from '../shared/notification-dropdown';
 import { ProfileDropdown } from '../shared/profile-dropdown';
 
-
-
-const PATH_MAP: Record<string, string> = {
-  'dashboard': 'Dashboard',
-  'threads': 'Research Feed',
-  'researchers': 'Researchers',
-  'opportunities': 'Opportunities',
-  'workspace': 'Workspaces',
-  'events': 'Events',
-  'search': 'AI Search',
-  'pipeline': 'AI Pipeline',
-  'analytics': 'Analytics',
-  'copilot': 'Ask Copilot',
-  'profile': 'My Profile',
-  'admin': 'Admin Panel',
-  'create': 'New Proposal',
-  'supervisor': 'Scholar Management',
-};
-
 export default function Navbar() {
   const pathname = usePathname();
-  const { currentUser, showMobileSidebar, setMobileSidebar, dashboardRoute } = useStore();
+  const tab = useSearchParams().get('tab');
+  const { currentUser, setMobileSidebar } = useStore();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { section, item } = findNavContext(currentUser?.role, pathname, tab);
 
-  // Listen for global keyboard shortcut (CMD+K or CTRL+K)
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const onKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setIsSearchOpen((prev) => !prev);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
-
-  // Generate dynamic breadcrumbs
-  const getBreadcrumbs = () => {
-    const segments = pathname.split('/').filter(Boolean);
-    const breadcrumbs = [{ name: 'CuriousBees', href: dashboardRoute }];
-
-    let currentHref = '';
-    segments.forEach((segment, index) => {
-      currentHref += `/${segment}`;
-      
-      // Attempt to map segment to display name
-      let name = PATH_MAP[segment.toLowerCase()];
-      
-      if (!name) {
-        // Fallback for UUID/dynamic parameters
-        const prevSegment = segments[index - 1]?.toLowerCase();
-        if (prevSegment === 'workspace') {
-          name = 'Workspace Details';
-        } else if (prevSegment === 'threads' || prevSegment === 'feed') {
-          name = 'Publication';
-        } else if (prevSegment === 'researchers') {
-          name = 'Researcher Profile';
-        } else if (prevSegment === 'profile') {
-          name = 'Profile View';
-        } else {
-          name = segment.charAt(0).toUpperCase() + segment.slice(1);
-        }
-      }
-      
-      breadcrumbs.push({ name, href: currentHref });
-    });
-
-    return breadcrumbs;
-  };
-
-  const breadcrumbs = getBreadcrumbs();
 
   return (
     <>
-      {/* ─── MAIN NAVBAR ─────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-30 h-16 w-full bg-white/80 dark:bg-[#07111F]/85 backdrop-blur-md border-b border-borderStroke dark:border-white/[0.07] flex items-center justify-between px-4 md:px-8 gap-3 font-sans transition-colors">
-        
-        {/* Leading section: Mobile Menu & Breadcrumbs */}
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Mobile hamburger */}
-          <button
-            onClick={() => setMobileSidebar(!showMobileSidebar)}
-            className="md:hidden p-2 rounded-lg text-textSecondary dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#132238] transition-colors shrink-0 cursor-pointer"
-            aria-label="Open navigation"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
-        </div>
+      <header className="sticky top-0 z-header flex h-header w-full shrink-0 items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-surface/85 sm:px-6">
+        <IconButton label="Open navigation" onClick={() => setMobileSidebar(true)} className="-ml-1.5 lg:hidden">
+          <Menu />
+        </IconButton>
+        <span className="lg:hidden">
+          <Logo size={26} />
+        </span>
 
-        {/* Trailing actions */}
-        <div className="flex items-center gap-2 md:gap-4 shrink-0 text-textSecondary dark:text-slate-300">
-          
-          {/* Global Search Clickable Zone */}
+        <p className="hidden min-w-0 truncate text-sm lg:block" aria-live="polite">
+          {section && <span className="text-ink-muted">{section} / </span>}
+          <span className="font-medium text-ink">{item?.name ?? ''}</span>
+        </p>
+
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
           <button
+            type="button"
             onClick={() => setIsSearchOpen(true)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-borderStroke/70 dark:border-white/[0.08] hover:border-borderStroke dark:hover:border-white/[0.16] bg-transparent dark:bg-[#0B1728] hover:bg-slate-50 dark:hover:bg-[#101D30] transition-all text-[12.5px] cursor-pointer text-left w-36 md:w-56"
+            aria-label="Search CuriousBees"
+            className="flex h-9 items-center gap-2 rounded-lg border border-line bg-surface-muted px-2.5 text-sm text-ink-muted transition-colors duration-fast hover:border-line-strong hover:bg-surface sm:w-64"
           >
-            <Search className="w-3.5 h-3.5 text-textSecondary dark:text-slate-400 shrink-0" />
-            <span className="truncate text-textSecondary/60 dark:text-[#A7B3C5] flex-1 font-medium">Search...</span>
-            <kbd className="hidden md:inline-flex h-4 select-none items-center gap-0.5 rounded border border-borderStroke/55 dark:border-white/[0.12] bg-white dark:bg-[#101D30] px-1.5 font-mono text-[9px] font-bold text-textSecondary/60 dark:text-[#A7B3C5] shadow-sm leading-none">
+            <Search className="size-4 shrink-0" aria-hidden />
+            <span className="hidden flex-1 truncate text-left sm:inline">Search researchers, research…</span>
+            <kbd className="hidden h-5 items-center rounded border border-line bg-surface px-1.5 font-mono text-2xs text-ink-muted sm:inline-flex">
               ⌘K
             </kbd>
           </button>
-
-          {/* Discussions feed shortcut */}
-          <Link
-            href="/feed"
-            className="p-2 rounded-full hover:bg-slate-50 dark:hover:bg-[#132238] hover:text-primary dark:hover:text-[#3B82F6] text-slate-600 dark:text-[#A7B3C5] transition-colors flex items-center justify-center"
-            title="Research Feed"
-          >
-            <MessageSquare className="w-4.5 h-4.5" />
-          </Link>
-
-          {/* Notifications Dropdown */}
           <NotificationDropdown />
-
-          {/* User Profile Menu */}
           <ProfileDropdown />
-
         </div>
       </header>
 
-      {/* Spotlight Search overlay */}
       <SpotlightSearch isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );
 }
-

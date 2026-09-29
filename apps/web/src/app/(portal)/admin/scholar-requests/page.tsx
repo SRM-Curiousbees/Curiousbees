@@ -11,20 +11,20 @@ import AvatarRing from '@/components/AvatarRing';
 function StatusBadge({ status }: { status: string }) {
   if (status === 'APPROVED') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
         <Check className="w-2.5 h-2.5" /> Approved
       </span>
     );
   }
   if (status === 'REJECTED') {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-red-50 text-red-700 border border-red-200">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold uppercase bg-red-50 text-red-700 border border-red-200">
         <X className="w-2.5 h-2.5" /> Rejected
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-amber-50 text-amber-700 border border-amber-200">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold uppercase bg-amber-50 text-amber-700 border border-amber-200">
       <Clock className="w-2.5 h-2.5" /> Pending
     </span>
   );
@@ -92,7 +92,7 @@ export default function AdminScholarRequestsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5 gap-4">
         <div>
-          <span className="text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-1.5">
+          <span className="text-xs font-medium text-primary capitalize flex items-center gap-1.5">
             <GitMerge className="w-4 h-4 text-primary" />
             <span>Scholar-Supervisor Mapping Audit</span>
           </span>
@@ -104,7 +104,7 @@ export default function AdminScholarRequestsPage() {
         <button
           onClick={fetchRequests}
           disabled={loading}
-          className="px-4 py-2.5 border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-600 text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+          className="px-4 py-2.5 border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-600 text-xs font-medium capitalize flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh</span>
@@ -113,37 +113,37 @@ export default function AdminScholarRequestsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
-        <div className="cb-card p-4 bg-white/95 backdrop-blur-md flex items-center gap-3">
+        <div className="cb-card p-4 bg-surface/95 backdrop-blur-md flex items-center gap-3">
           <div className="p-2.5 bg-amber-50 rounded-lg text-amber-600 border border-amber-100">
             <Clock className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Pending</p>
-            <p className="text-lg font-black text-slate-800">{pendingCount}</p>
+            <p className="text-xs text-slate-400 font-medium capitalize">Pending</p>
+            <p className="text-lg font-semibold text-slate-800">{pendingCount}</p>
           </div>
         </div>
-        <div className="cb-card p-4 bg-white/95 backdrop-blur-md flex items-center gap-3">
+        <div className="cb-card p-4 bg-surface/95 backdrop-blur-md flex items-center gap-3">
           <div className="p-2.5 bg-emerald-50 rounded-lg text-emerald-600 border border-emerald-100">
             <CheckCircle2 className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Approved</p>
-            <p className="text-lg font-black text-slate-800">{approvedCount}</p>
+            <p className="text-xs text-slate-400 font-medium capitalize">Approved</p>
+            <p className="text-lg font-semibold text-slate-800">{approvedCount}</p>
           </div>
         </div>
-        <div className="cb-card p-4 bg-white/95 backdrop-blur-md flex items-center gap-3">
+        <div className="cb-card p-4 bg-surface/95 backdrop-blur-md flex items-center gap-3">
           <div className="p-2.5 bg-red-50 rounded-lg text-red-600 border border-red-100">
             <XCircle className="w-4 h-4" />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-wider">Rejected</p>
-            <p className="text-lg font-black text-slate-800">{rejectedCount}</p>
+            <p className="text-xs text-slate-400 font-medium capitalize">Rejected</p>
+            <p className="text-lg font-semibold text-slate-800">{rejectedCount}</p>
           </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="cb-card p-4 bg-white/95 backdrop-blur-md grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="cb-card p-4 bg-surface/95 backdrop-blur-md grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="relative">
           <input
             type="text"
@@ -157,7 +157,7 @@ export default function AdminScholarRequestsPage() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-full px-3 h-[42px] text-xs font-semibold rounded-lg bg-white border border-slate-200 focus:outline-none transition-all cursor-pointer"
+          className="w-full px-3 h-[42px] text-xs font-semibold rounded-lg bg-surface border border-slate-200 focus:outline-none transition-all cursor-pointer"
         >
           <option value="">All Statuses</option>
           <option value="PENDING">Pending</option>
@@ -172,7 +172,7 @@ export default function AdminScholarRequestsPage() {
           <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="cb-card p-12 text-center bg-white/95 backdrop-blur-md">
+        <div className="cb-card p-12 text-center bg-surface/95 backdrop-blur-md">
           <GitMerge className="w-8 h-8 text-slate-300 mx-auto mb-3" />
           <p className="text-sm font-bold text-slate-700">No Requests Found</p>
           <p className="text-xs text-slate-400 mt-1">
@@ -184,11 +184,11 @@ export default function AdminScholarRequestsPage() {
       ) : (
         <>
           {/* Desktop Table */}
-          <div className="hidden md:block cb-card overflow-hidden bg-white/95 backdrop-blur-md border border-slate-100 shadow-sm">
-            <div className="overflow-x-auto">
+          <div className="hidden md:block cb-card overflow-hidden bg-surface/95 backdrop-blur-md border border-slate-100 shadow-sm">
+            <div className="relative overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="cb-table-header text-[10px] uppercase tracking-wider text-slate-450 border-b border-slate-100 bg-slate-50/50">
+                  <tr className="cb-table-header text-xs capitalize text-slate-450 border-b border-slate-100 bg-slate-50/50">
                     <th className="p-4 pl-6">Scholar</th>
                     <th className="p-4">Supervisor</th>
                     <th className="p-4">Scholar Dept.</th>
@@ -209,7 +209,7 @@ export default function AdminScholarRequestsPage() {
                           />
                           <div>
                             <h4 className="font-bold text-slate-900 leading-snug">{req.scholar?.name || 'N/A'}</h4>
-                            <p className="text-[10px] text-slate-400 font-semibold">{req.scholar?.email}</p>
+                            <p className="text-2xs text-slate-400 font-semibold">{req.scholar?.email}</p>
                           </div>
                         </div>
                       </td>
@@ -223,7 +223,7 @@ export default function AdminScholarRequestsPage() {
                           />
                           <div>
                             <h4 className="font-bold text-slate-900 leading-snug">{req.supervisor?.name || 'N/A'}</h4>
-                            <p className="text-[10px] text-slate-400 font-semibold">{req.supervisor?.email}</p>
+                            <p className="text-2xs text-slate-400 font-semibold">{req.supervisor?.email}</p>
                           </div>
                         </div>
                       </td>
@@ -231,7 +231,7 @@ export default function AdminScholarRequestsPage() {
                       <td className="p-4">
                         <StatusBadge status={req.status} />
                       </td>
-                      <td className="p-4 pr-6 text-slate-500 font-semibold text-[10px]">
+                      <td className="p-4 pr-6 text-slate-500 font-semibold text-2xs">
                         {new Date(req.createdAt).toLocaleDateString('en-IN', {
                           day: '2-digit', month: 'short', year: 'numeric'
                         })}
@@ -246,24 +246,24 @@ export default function AdminScholarRequestsPage() {
           {/* Mobile Cards */}
           <div className="grid grid-cols-1 gap-4 md:hidden">
             {filtered.map((req) => (
-              <div key={req.id} className="cb-card p-5 bg-white/95 backdrop-blur-md border border-slate-100 space-y-3">
+              <div key={req.id} className="cb-card p-5 bg-surface/95 backdrop-blur-md border border-slate-100 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Scholar → Supervisor</span>
+                  <span className="text-xs text-slate-400 font-medium capitalize">Scholar → Supervisor</span>
                   <StatusBadge status={req.status} />
                 </div>
                 <div className="flex items-center gap-3">
                   <AvatarRing src={req.scholar?.image} name={req.scholar?.name} role="RESEARCH_SCHOLAR" size="sm" />
                   <div>
                     <p className="font-bold text-xs text-slate-900">{req.scholar?.name || 'N/A'}</p>
-                    <p className="text-[10px] text-slate-400">{req.scholar?.email}</p>
+                    <p className="text-2xs text-slate-400">{req.scholar?.email}</p>
                   </div>
                 </div>
-                <div className="text-[10px] text-slate-400 font-semibold flex items-center gap-1">
+                <div className="text-2xs text-slate-400 font-semibold flex items-center gap-1">
                   <span>→</span>
                   <span className="font-bold text-slate-700">{req.supervisor?.name || 'N/A'}</span>
                   <span className="text-slate-400">({req.supervisor?.email})</span>
                 </div>
-                <p className="text-[10px] text-slate-400 font-semibold">
+                <p className="text-2xs text-slate-400 font-semibold">
                   {new Date(req.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </p>
               </div>

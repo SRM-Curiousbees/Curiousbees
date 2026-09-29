@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../auth/supabase.service';
 import { Role, UserStatus } from '@prisma/client';
 import * as xlsx from 'xlsx';
-import { SUPERADMIN_EMAIL } from './admin.constants';
+import { assertKeepsAnActiveAdmin, assertNotRootAdmin, assertNotSelf, assertProvisionableEmail, isEmailAllowedForImport, parseUserStatus } from './admin-safety';
 
 @Injectable()
 export class AdminAdminsService {
@@ -67,7 +67,8 @@ export class AdminAdminsService {
   }
 
   async createAdmin(adminId: string, data: any) {
-    const email = data.email.toLowerCase();
+    const email = String(data.email).trim().toLowerCase();
+    assertProvisionableEmail(email);
     
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -102,8 +103,11 @@ export class AdminAdminsService {
   async updateAdminStatus(adminId: string, id: string, status: UserStatus) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Admin not found.');
-    if (user.email.toLowerCase() === SUPERADMIN_EMAIL) {
-      throw new ForbiddenException('The protected superadmin account cannot be suspended or modified.');
+    assertNotRootAdmin(user.email, 'suspended or deactivated');
+    status = parseUserStatus(status);
+    if (status !== user.status) {
+      assertNotSelf(adminId, id, 'change the status of');
+      await assertKeepsAnActiveAdmin(this.prisma, user, { status });
     }
 
     const updated = await this.prisma.user.update({
@@ -122,8 +126,10 @@ export class AdminAdminsService {
   async updateAdmin(adminId: string, id: string, data: any) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Admin not found.');
-    if (user.email.toLowerCase() === SUPERADMIN_EMAIL) {
-      throw new ForbiddenException('The protected superadmin account cannot be modified.');
+    assertNotRootAdmin(user.email, 'modified');
+    if (data.email) {
+      assertProvisionableEmail(data.email);
+      assertNotRootAdmin(data.email, 'reassigned to root email');
     }
 
     // Extract employeeId from email prefix
@@ -153,6 +159,8 @@ export class AdminAdminsService {
 
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Admin user not found.');
+    assertNotRootAdmin(user.email, 'deleted');
+    await assertKeepsAnActiveAdmin(this.prisma, user, { deleted: true });
 
     await this.prisma.user.updateMany({
       where: { supervisorId: id },
@@ -205,6 +213,7 @@ export class AdminAdminsService {
       const name = String(row.name || row.Name || '').trim();
 
       if (!email) { report.failedCount++; report.errors.push({ row: rowNum, message: 'Missing email' }); continue; }
+      if (!isEmailAllowedForImport(email)) { report.failedCount++; report.errors.push({ row: rowNum, email, message: 'Email domain is not in ALLOWED_EMAIL_DOMAINS' }); continue; }
       if (!name) { report.failedCount++; report.errors.push({ row: rowNum, email, message: 'Missing name' }); continue; }
       if (userEmails.has(email)) { report.failedCount++; report.errors.push({ row: rowNum, email, message: 'User already exists' }); continue; }
 

@@ -11,6 +11,8 @@ import {
 import Link from 'next/link';
 import { useStore } from '@/store/useStore';
 import { getProfileImageUrl } from '@/lib/avatar';
+import { ROLE_LABEL } from '@/lib/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface ResearchDiscoverySidebarProps {
   onSearchChange?: (query: string) => void;
@@ -33,151 +35,108 @@ export default function ResearchDiscoverySidebar({
 
   const [peers, setPeers] = useState<any[]>([]);
   const [trendingTags, setTrendingTags] = useState<Array<{ tag: string; count: number }>>([]);
+  const [peersLoaded, setPeersLoaded] = useState(false);
+  const [topicsLoaded, setTopicsLoaded] = useState(false);
 
   useEffect(() => {
     fetchSuggestedPeers().then(data => {
       setPeers(data || []);
+      setPeersLoaded(true);
     });
 
     fetchTrendingResearch().then(tags => {
-      if (tags && tags.length > 0) {
-        setTrendingTags(tags);
-      } else {
-        // Default high-quality research topics
-        setTrendingTags([
-          { tag: 'GenerativeAI', count: 142 },
-          { tag: 'Bioinformatics', count: 98 },
-          { tag: 'QuantumComputing', count: 76 },
-          { tag: 'Cybersecurity', count: 64 },
-          { tag: 'CleanEnergy', count: 45 }
-        ]);
-      }
+      setTrendingTags(tags || []);
+      setTopicsLoaded(true);
     });
   }, [fetchSuggestedPeers, fetchTrendingResearch]);
 
   return (
-    <aside className="w-full space-y-6 text-left pt-2 select-none">
-
-      {/* ─── 1. RESEARCHERS YOU MAY KNOW ─── */}
-      <div className="bg-white/90 dark:bg-[#132238] backdrop-blur-xl rounded-[28px] border border-slate-200/80 dark:border-white/[0.08] p-5 shadow-[0_8px_30px_rgb(0,0,0,0.25)]">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-sm font-extrabold text-slate-900 dark:text-[#F5F7FA] leading-tight">
-              Researchers You May Know
-            </h3>
-            <p className="text-[10px] font-semibold text-slate-400 dark:text-[#718096] mt-0.5">
-              Based on your research domain & interests
-            </p>
-          </div>
-          <Link href="/scholar/connections" className="text-[11px] font-bold text-[#0C4DA2] dark:text-[#3B82F6] hover:underline shrink-0">
-            View All
-          </Link>
+    <div className="space-y-6 text-left">
+      <section aria-labelledby="discover-people" className="rounded-2xl border border-line bg-surface shadow-xs">
+        <div className="flex items-baseline justify-between gap-3 px-4 pb-2 pt-4">
+          <h2 id="discover-people" className="text-sm font-semibold text-ink">Researchers to follow</h2>
+          <Link href="/researchers" className="text-sm font-medium text-brand hover:underline">View all</Link>
         </div>
-
-        <div className="space-y-3">
-          {peers.length === 0 ? (
-            <p className="text-xs font-medium text-slate-400 dark:text-[#718096] italic py-2">
-              Discovering relevant institutional researchers...
-            </p>
-          ) : (
-            peers.slice(0, 5).map((peer) => {
-              const name = peer.name || 'Scholar';
-              const dept = peer.department || 'SRMIST';
-              const roleLabel = peer.role || (peer.role === 'RESEARCH_SUPERVISOR' ? 'Research Supervisor' : 'Research Scholar');
-              const avatar = getProfileImageUrl(peer);
-              const domainsList: string[] = peer.domains || peer.researchInterests || [];
-
-              return (
-                <Link 
-                  key={peer.id} 
-                  href={`/researchers/${peer.id}`}
-                  className="p-3 rounded-2xl bg-slate-50/70 dark:bg-[#0B1728] border border-slate-100 dark:border-white/[0.06] hover:border-slate-200 dark:hover:border-white/[0.12] hover:bg-slate-100/60 dark:hover:bg-[#101D30] transition-all flex flex-col gap-2 group block"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-full overflow-hidden border border-white dark:border-slate-700 shadow-2xs shrink-0 bg-slate-200 dark:bg-slate-800 ring-1 ring-slate-200 dark:ring-slate-700 group-hover:ring-[#0C4DA2]/40 transition-all">
-                      <img src={avatar} alt={name} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="truncate min-w-0 flex-1">
-                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-[#F5F7FA] truncate leading-tight group-hover:text-[#0C4DA2] dark:group-hover:text-[#3B82F6] transition-colors">
-                        {name}
-                      </h4>
-                      <p className="text-[10px] font-bold text-slate-500 dark:text-[#A7B3C5] truncate mt-0.5">
-                        {roleLabel} · {dept}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Domains Pill Tags */}
-                  {domainsList.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-0.5">
-                      {domainsList.slice(0, 3).map((domain, idx) => (
-                        <span key={idx} className="text-[9px] font-bold bg-white dark:bg-[#101D30] text-[#0C4DA2] dark:text-[#38BDF8] border border-slate-200 dark:border-white/[0.08] px-2 py-0.5 rounded-md">
-                          {domain}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </Link>
-              );
-            })
-          )}
-        </div>
-      </div>
-
-      {/* ─── 2. TRENDING RESEARCH TOPICS (#TAGS) ─── */}
-      <div className="bg-white/90 dark:bg-[#132238] backdrop-blur-xl rounded-[28px] border border-slate-200/80 dark:border-white/[0.08] p-5 shadow-[0_8px_30px_rgb(0,0,0,0.25)]">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-sm font-extrabold text-slate-900 dark:text-[#F5F7FA] leading-tight">
-              Trending Research Topics
-            </h3>
-            <p className="text-[10px] font-semibold text-slate-400 dark:text-[#718096] mt-0.5">
-              Follow topics to personalize your feed
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          {trendingTags.slice(0, 5).map((item) => {
-            const cleanKey = item.tag.trim().toLowerCase().replace(/^#/, '');
-            const isTopicFollowed = !!followedTopics[cleanKey];
-
-            return (
-              <div
-                key={item.tag}
-                className="flex items-center justify-between hover:bg-slate-50/80 dark:hover:bg-[#101D30] p-2.5 rounded-2xl border border-transparent hover:border-slate-100 dark:hover:border-white/[0.06] transition-all group"
-              >
-                <div 
-                  onClick={() => onTagClick?.(item.tag)}
-                  className="cursor-pointer min-w-0 flex-1 pr-2"
-                >
-                  <p className="text-xs font-black text-slate-900 dark:text-[#F5F7FA] group-hover:text-[#0C4DA2] dark:group-hover:text-[#3B82F6] truncate transition-colors">
-                    #{item.tag}
-                  </p>
-                  <p className="text-[10px] font-semibold text-slate-400 dark:text-[#718096] mt-0.5">
-                    {item.count} research interactions
-                  </p>
-                </div>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleFollowTopic(item.tag);
-                  }}
-                  className={`px-3 py-1 rounded-xl text-[10px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
-                    isTopicFollowed
-                      ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700/40 hover:bg-amber-100'
-                      : 'bg-slate-100 dark:bg-[#0B1728] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/[0.08] hover:bg-[#0C4DA2] dark:hover:bg-[#2563EB] hover:text-white hover:border-[#0C4DA2]'
-                  }`}
-                >
-                  {isTopicFollowed ? 'Following' : '+ Follow'}
-                </button>
+        {!peersLoaded ? (
+          <div className="space-y-3 px-4 pb-4 pt-1" aria-hidden>
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex items-center gap-3">
+                <Skeleton className="size-9 rounded-full" />
+                <div className="flex-1 space-y-1.5"><Skeleton className="h-3 w-2/3" /><Skeleton className="h-3 w-1/2" /></div>
               </div>
-            );
-          })}
-        </div>
-      </div>
+            ))}
+          </div>
+        ) : peers.length === 0 ? (
+          <p className="px-4 pb-4 text-sm text-ink-muted">Suggestions appear once your research areas are set in your profile.</p>
+        ) : (
+          <ul className="pb-2">
+            {peers.slice(0, 5).map((peer) => {
+              const name = peer.name || 'Researcher';
+              const domainsList: string[] = peer.domains || peer.researchInterests || [];
+              return (
+                <li key={peer.id}>
+                  <Link href={`/researchers/${peer.id}`} className="group flex items-start gap-3 px-4 py-2.5 transition-colors hover:bg-surface-muted">
+                    <img src={getProfileImageUrl(peer)} alt="" className="size-9 shrink-0 rounded-full bg-neutral-100 object-cover ring-1 ring-line" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm font-medium text-ink group-hover:text-brand">{name}</span>
+                      <span className="block truncate text-xs text-ink-muted">
+                        {ROLE_LABEL[peer.role] || 'Researcher'}{peer.department && ` · ${peer.department}`}
+                      </span>
+                      {domainsList.length > 0 && (
+                        <span className="mt-1 block truncate text-xs text-ink-secondary">{domainsList.slice(0, 2).join(', ')}</span>
+                      )}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
-    </aside>
+      <section aria-labelledby="discover-topics" className="rounded-2xl border border-line bg-surface shadow-xs">
+        <div className="px-4 pb-2 pt-4">
+          <h2 id="discover-topics" className="text-sm font-semibold text-ink">Active topics</h2>
+          <p className="mt-0.5 text-xs text-ink-muted">Follow a topic to see more of it in your feed.</p>
+        </div>
+        {!topicsLoaded ? (
+          <div className="space-y-2.5 px-4 pb-4 pt-1" aria-hidden>
+            {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-4 w-3/4" />)}
+          </div>
+        ) : trendingTags.length === 0 ? (
+          <p className="px-4 pb-4 text-sm text-ink-muted">Topics will appear here as researchers tag their posts.</p>
+        ) : (
+          <ul className="pb-2">
+            {trendingTags.slice(0, 6).map((item) => {
+              const cleanKey = item.tag.trim().toLowerCase().replace(/^#/, '');
+              const isTopicFollowed = !!followedTopics[cleanKey];
+              return (
+                <li key={item.tag} className="flex items-center gap-2 px-4 py-2">
+                  <button
+                    type="button"
+                    onClick={() => onTagClick?.(item.tag)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <span className="block truncate text-sm font-medium text-ink hover:text-brand">{item.tag.replace(/^#/, '')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleFollowTopic(item.tag)}
+                    aria-pressed={isTopicFollowed}
+                    className={`h-7 shrink-0 rounded-md border px-2.5 text-xs font-medium transition-colors ${
+                      isTopicFollowed
+                        ? 'border-brand-200 bg-brand-50 text-brand-800'
+                        : 'border-line-strong bg-surface text-ink hover:bg-surface-muted'
+                    }`}
+                  >
+                    {isTopicFollowed ? 'Following' : 'Follow'}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

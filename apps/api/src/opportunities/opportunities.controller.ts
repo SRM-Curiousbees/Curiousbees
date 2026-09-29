@@ -19,6 +19,16 @@ export class OpportunitiesController {
     return this.opportunitiesService.getOpportunities(req.user, department, researchDomain, departmentId);
   }
 
+  // Static routes must be declared before ':id', or Nest matches 'requests' as an id.
+  @Get('requests')
+  async getCollaborationRequests(@Req() req: any) {
+    if (req.user.role === 'SUPERVISOR' || req.user.role === 'RESEARCH_SUPERVISOR' || req.user.role === 'INSTITUTE_ADMIN') {
+      return this.opportunitiesService.getRequestsForSupervisor(req.user);
+    } else {
+      return this.opportunitiesService.getRequestsForScholar(req.user);
+    }
+  }
+
   @Get(':id')
   async getOpportunityById(@Req() req: any, @Param('id') id: string) {
     return this.opportunitiesService.getOpportunityById(req.user, id);
@@ -46,15 +56,6 @@ export class OpportunitiesController {
     @Body('message') message?: string
   ) {
     return this.opportunitiesService.createCollaborationRequest(req.user, opportunityId, message);
-  }
-
-  @Get('requests')
-  async getCollaborationRequests(@Req() req: any) {
-    if (req.user.role === 'SUPERVISOR' || req.user.role === 'RESEARCH_SUPERVISOR' || req.user.role === 'INSTITUTE_ADMIN') {
-      return this.opportunitiesService.getRequestsForSupervisor(req.user);
-    } else {
-      return this.opportunitiesService.getRequestsForScholar(req.user);
-    }
   }
 
   @Put('requests/:id')

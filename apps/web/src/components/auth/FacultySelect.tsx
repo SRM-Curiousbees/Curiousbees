@@ -55,11 +55,11 @@ export default function FacultySelect({ value, onChange, error }: FacultySelectP
             error && "border-error focus:border-error"
           )}
         >
-          <option value="" disabled className="bg-white text-outline">
+          <option value="" disabled className="bg-surface text-outline">
             {loading ? 'Loading Faculties...' : 'Select Faculty'}
           </option>
           {faculties.map((fac) => (
-            <option key={fac.id} value={fac.id} className="bg-white text-on-surface">
+            <option key={fac.id} value={fac.id} className="bg-surface text-on-surface">
               {fac.name}
             </option>
           ))}
@@ -73,7 +73,7 @@ export default function FacultySelect({ value, onChange, error }: FacultySelectP
         </div>
       </div>
       {error && (
-        <p className="text-[11px] text-error font-semibold mt-1">{error}</p>
+        <p className="text-2xs text-error font-semibold mt-1">{error}</p>
       )}
     </div>
   );

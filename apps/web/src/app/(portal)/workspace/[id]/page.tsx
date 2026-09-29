@@ -36,6 +36,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MeetingProvider, IntegrationProvider } from '@curiousbees/types';
+import { WorkspaceFileDownloadButton, formatWorkspaceFileSize } from '@/components/workspace/WorkspaceFileDownloadButton';
 
 export default function WorkspacePage() {
   const params = useParams();
@@ -48,7 +49,7 @@ export default function WorkspacePage() {
     activeWorkspace, 
     fetchWorkspaceDetails, 
     addWorkspaceFile, 
-    uploadResearchFileToS3,
+    uploadWorkspaceFile,
     addWorkspaceMilestone, 
     toggleWorkspaceMilestone, 
     addWorkspaceAnnouncement, 
@@ -115,7 +116,7 @@ export default function WorkspacePage() {
           <Sparkles className="w-5 h-5 text-primary absolute inset-0 m-auto animate-pulse" />
         </div>
         <div className="space-y-1 text-center">
-          <p className="text-xs text-primary font-bold uppercase tracking-wider font-mono">Secure Node Handshake</p>
+          <p className="text-xs text-primary font-medium capitalize font-mono">Secure Node Handshake</p>
           <p className="text-xs text-slate-400 font-semibold uppercase">Synchronizing research workspace credentials...</p>
         </div>
       </div>
@@ -124,7 +125,7 @@ export default function WorkspacePage() {
 
   if (!activeWorkspace) {
     return (
-      <div className="text-center py-12 cb-card max-w-md mx-auto my-12 p-8 space-y-5 bg-white/90 backdrop-blur-md">
+      <div className="text-center py-12 cb-card max-w-md mx-auto my-12 p-8 space-y-5 bg-surface/90 backdrop-blur-md">
         <div className="w-12 h-12 bg-red-50 text-red-600 border border-red-100 rounded-full flex items-center justify-center mx-auto">
           <AlertTriangle className="w-6 h-6" />
         </div>
@@ -136,7 +137,7 @@ export default function WorkspacePage() {
         </div>
         <button 
           onClick={() => router.push('/workspace')} 
-          className="w-full py-2.5 bg-primary text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-primary/95 transition-all shadow cursor-pointer"
+          className="w-full py-2.5 bg-primary text-white rounded-lg text-xs font-medium capitalize hover:bg-primary/95 transition-all shadow cursor-pointer"
         >
           Back to Workspaces
         </button>
@@ -159,10 +160,9 @@ export default function WorkspacePage() {
     setIsUploadingFile(true);
     try {
       if (selectedFile) {
-        // Direct browser upload to S3 via presigned URL
-        const s3Result = await uploadResearchFileToS3(selectedFile, `workspaces/${workspaceId}`);
-        await addWorkspaceFile(workspaceId, fileName || selectedFile.name, s3Result.fileUrl, s3Result.size);
-        addToast(`Successfully uploaded ${fileName || selectedFile.name} to S3.`, 'success');
+        // Direct browser upload to the private bucket via a presigned URL, then register it.
+        await uploadWorkspaceFile(workspaceId, selectedFile, fileName || selectedFile.name);
+        addToast(`Successfully uploaded ${fileName || selectedFile.name}.`, 'success');
       } else if (fileUrl) {
         await addWorkspaceFile(workspaceId, fileName || 'Research Document Link', fileUrl, 0);
         addToast(`Linked external resource to workspace.`, 'success');
@@ -271,26 +271,26 @@ export default function WorkspacePage() {
           <span>Back to Workspaces</span>
         </button>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] font-bold text-primary uppercase tracking-widest font-mono flex items-center gap-1.5 bg-primary/5 px-2.5 py-1 rounded-md border border-primary/15">
+          <span className="text-xs font-medium text-primary capitalize font-mono flex items-center gap-1.5 bg-primary/5 px-2.5 py-1 rounded-md border border-primary/15">
             <FolderOpen className="w-3.5 h-3.5" />
             <span>Curious Nexus</span>
           </span>
-          <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">
+          <span className="text-xs font-mono font-medium text-slate-400 capitalize">
             ID: {workspaceId.substring(0, 8)}
           </span>
         </div>
       </div>
 
       {/* 📄 WORKSPACE HERO HEADER */}
-      <div className="cb-card p-6 bg-white border border-slate-200/80 rounded-2xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xs">
+      <div className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xs">
         <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
         
         <div className="space-y-3 relative z-10 flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-[10px] uppercase tracking-wider font-bold">
+            <span className="px-2.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-xs capitalize font-medium">
               Active Collaboration
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-700">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-slate-100 text-slate-700">
               {currentProvider === 'GOOGLE_WORKSPACE' ? (
                 <>
                   <span className="w-2 h-2 rounded-full bg-emerald-500" />
@@ -319,7 +319,7 @@ export default function WorkspacePage() {
 
           {/* Members Ring */}
           <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-3">
-            <span className="text-[10px] text-slate-400 uppercase tracking-wider font-bold">
+            <span className="text-xs text-slate-400 capitalize font-medium">
               Collaborators:
             </span>
             <div className="flex flex-wrap items-center gap-2">
@@ -329,12 +329,12 @@ export default function WorkspacePage() {
                     {member.user?.image ? (
                       <img src={member.user.image} alt={member.user.name || ''} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-[9px] font-bold text-primary">{getInitials(member.user?.name || '')}</span>
+                      <span className="text-2xs font-bold text-primary">{getInitials(member.user?.name || '')}</span>
                     )}
                   </div>
                   <div className="text-left leading-none">
                     <p className="text-xs font-bold text-slate-800">{member.user?.name}</p>
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5 block">
+                    <span className="text-xs font-medium text-slate-400 capitalize mt-0.5 block">
                       {member.role === 'OWNER' ? 'Principal Investigator' : 'Collaborator'}
                     </span>
                   </div>
@@ -348,7 +348,7 @@ export default function WorkspacePage() {
         <div className="cb-card p-4 bg-slate-50 border border-slate-200/60 rounded-xl w-full md:w-64 relative z-10 flex flex-col justify-between space-y-4 shrink-0">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Research Progress</span>
+              <span className="text-xs font-medium text-slate-400 capitalize">Research Progress</span>
               <span className="text-xs font-bold text-primary font-mono">{progressPercent}%</span>
             </div>
             <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
@@ -359,7 +359,7 @@ export default function WorkspacePage() {
                 className="h-full bg-primary rounded-full"
               />
             </div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+            <p className="text-xs text-slate-400 font-medium capitalize">
               {completedMilestones} of {totalMilestones} Milestones Complete
             </p>
           </div>
@@ -367,14 +367,14 @@ export default function WorkspacePage() {
           <div className="pt-2 border-t border-slate-200/60 flex items-center gap-2">
             <button
               onClick={() => setActiveTab('discussions')}
-              className="flex-1 py-1.5 px-2.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="flex-1 py-1.5 px-2.5 bg-surface hover:bg-slate-100 border border-slate-200 rounded-lg text-2xs font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <MessageSquare className="w-3 h-3 text-blue-600" />
               <span>Chat</span>
             </button>
             <button
               onClick={() => { setActiveTab('meetings'); setShowMeetingModal(true); }}
-              className="flex-1 py-1.5 px-2.5 bg-primary hover:bg-primary/95 text-white rounded-lg text-[10px] font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              className="flex-1 py-1.5 px-2.5 bg-primary hover:bg-primary/95 text-white rounded-lg text-2xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
             >
               <Video className="w-3 h-3" />
               <span>Meet</span>
@@ -404,14 +404,14 @@ export default function WorkspacePage() {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 py-2 px-3.5 rounded-lg text-xs font-bold transition-all duration-150 shrink-0 cursor-pointer select-none ${
                 isActive 
-                  ? 'bg-white text-primary shadow-xs border border-slate-200/80 font-bold' 
-                  : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'
+                  ? 'bg-surface text-primary shadow-xs border border-slate-200/80 font-bold' 
+                  : 'text-slate-500 hover:text-slate-900 hover:bg-surface/50'
               }`}
             >
               <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-primary' : 'text-slate-400'}`} />
               <span>{tab.label}</span>
               {tab.id === 'meetings' && upcomingMeetings.length > 0 && (
-                <span className="w-4 h-4 rounded-full bg-primary text-white text-[9px] flex items-center justify-center font-mono font-bold">
+                <span className="w-4 h-4 rounded-full bg-primary text-white text-2xs flex items-center justify-center font-mono font-bold">
                   {upcomingMeetings.length}
                 </span>
               )}
@@ -436,7 +436,7 @@ export default function WorkspacePage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
                 {/* Collaboration Hub Card */}
-                <div className="md:col-span-2 cb-card p-6 bg-white border border-slate-200/80 rounded-2xl space-y-4">
+                <div className="md:col-span-2 cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl space-y-4">
                   <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                     <Layers className="w-4 h-4 text-primary" />
                     <span>Research Collaboration Summary</span>
@@ -447,25 +447,25 @@ export default function WorkspacePage() {
                   
                   <div className="grid grid-cols-3 gap-3 pt-2">
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Milestones</span>
+                      <span className="text-2xs font-bold text-slate-400 uppercase">Milestones</span>
                       <p className="text-lg font-bold font-mono text-slate-900">{completedMilestones}/{totalMilestones}</p>
                     </div>
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Shared Files</span>
+                      <span className="text-2xs font-bold text-slate-400 uppercase">Shared Files</span>
                       <p className="text-lg font-mono font-bold text-slate-900">{activeWorkspace.files?.length || 0}</p>
                     </div>
                     <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Meetings</span>
+                      <span className="text-2xs font-bold text-slate-400 uppercase">Meetings</span>
                       <p className="text-lg font-mono font-bold text-slate-900">{meetings.length}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Primary Communication Channel Card */}
-                <div className="cb-card p-6 bg-gradient-to-br from-slate-50 to-white border border-slate-200/80 rounded-2xl flex flex-col justify-between space-y-4">
+                <div className="cb-card p-6 bg-gradient-to-br from-slate-50 to-surface border border-slate-200/80 rounded-2xl flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Collaboration Tool</span>
+                      <span className="text-xs font-medium capitalize text-slate-400">Collaboration Tool</span>
                       <span className="w-2 h-2 rounded-full bg-emerald-500" />
                     </div>
                     <h4 className="text-sm font-bold text-slate-900">
@@ -498,7 +498,7 @@ export default function WorkspacePage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="cb-card p-6 bg-white border border-slate-200/80 rounded-2xl space-y-4 text-xs"
+              className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl space-y-4 text-xs"
             >
               <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-primary" />
@@ -508,7 +508,7 @@ export default function WorkspacePage() {
                 {activeWorkspace.description || 'This collaboration aims to address computational and theoretical frameworks in the designated research domains.'}
               </p>
               <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
-                <span className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">Institutional Governance</span>
+                <span className="font-medium text-slate-700 capitalize text-xs">Institutional Governance</span>
                 <p className="text-slate-500">
                   All research conducted under this Curious Nexus complies with SRMIST Academic Integrity and Ethics Guidelines.
                 </p>
@@ -526,7 +526,7 @@ export default function WorkspacePage() {
               className="space-y-4"
             >
               <div className="flex justify-between items-center">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Collaboration Milestones</h3>
+                <h3 className="text-xs font-medium capitalize text-slate-400">Collaboration Milestones</h3>
                 <button 
                   onClick={() => setShowMilestoneModal(true)} 
                   className="flex items-center space-x-1.5 px-3 py-2 bg-primary hover:bg-primary/95 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
@@ -541,7 +541,7 @@ export default function WorkspacePage() {
                   {activeWorkspace.milestones.map((milestone) => (
                     <div 
                       key={milestone.id} 
-                      className={`cb-card p-4 border rounded-xl flex items-start justify-between gap-4 transition-all bg-white ${
+                      className={`cb-card p-4 border rounded-xl flex items-start justify-between gap-4 transition-all bg-surface ${
                         milestone.completed ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-200/80 hover:border-primary/40'
                       }`}
                     >
@@ -550,8 +550,8 @@ export default function WorkspacePage() {
                           onClick={() => toggleWorkspaceMilestone(workspaceId, milestone.id, !milestone.completed)}
                           className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-colors cursor-pointer ${
                             milestone.completed 
-                              ? 'bg-emerald-600 border-emerald-600 text-white' 
-                              : 'border-slate-300 hover:border-primary bg-white'
+                              ? 'bg-success border-emerald-600 text-white' 
+                              : 'border-slate-300 hover:border-primary bg-surface'
                           }`}
                         >
                           {milestone.completed && <Check className="w-3.5 h-3.5" />}
@@ -564,14 +564,14 @@ export default function WorkspacePage() {
                             <p className="text-xs text-slate-500 leading-relaxed">{milestone.description}</p>
                           )}
                           {milestone.dueDate && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-slate-400">
+                            <span className="inline-flex items-center gap-1 text-2xs font-mono font-bold text-slate-400">
                               <Calendar className="w-3 h-3" />
                               <span>Due {new Date(milestone.dueDate).toLocaleDateString()}</span>
                             </span>
                           )}
                         </div>
                       </div>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${
+                      <span className={`px-2 py-0.5 rounded text-2xs font-bold uppercase font-mono ${
                         milestone.completed ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
                       }`}>
                         {milestone.completed ? 'Completed' : 'Pending'}
@@ -580,7 +580,7 @@ export default function WorkspacePage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 cb-card bg-white border border-slate-200/80 rounded-xl space-y-3">
+                <div className="text-center py-12 cb-card bg-surface border border-slate-200/80 rounded-xl space-y-3">
                   <CheckSquare className="w-8 h-8 text-slate-300 mx-auto" />
                   <p className="text-xs font-bold text-slate-700">No milestones yet</p>
                   <p className="text-xs text-slate-400">Create research targets and progress deliverables for this collaboration.</p>
@@ -596,7 +596,7 @@ export default function WorkspacePage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="cb-card p-6 bg-white border border-slate-200/80 rounded-2xl space-y-4"
+              className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl space-y-4"
             >
               <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                 <FileText className="w-4 h-4 text-primary" />
@@ -623,7 +623,7 @@ export default function WorkspacePage() {
               className="space-y-4"
             >
               <div className="flex justify-between items-center">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Shared Documents & Artifacts</h3>
+                <h3 className="text-xs font-medium capitalize text-slate-400">Shared Documents & Artifacts</h3>
                 <button 
                   onClick={() => setShowFileModal(true)} 
                   className="flex items-center space-x-1.5 px-3 py-2 bg-primary hover:bg-primary/95 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
@@ -638,7 +638,7 @@ export default function WorkspacePage() {
                   {activeWorkspace.files.map((file) => (
                     <div 
                       key={file.id} 
-                      className="cb-card p-4 flex items-start justify-between hover:border-primary/40 transition-all bg-white border border-slate-200/80 rounded-xl"
+                      className="cb-card p-4 flex items-start justify-between hover:border-primary/40 transition-all bg-surface border border-slate-200/80 rounded-xl"
                     >
                       <div className="flex items-start space-x-3 text-left min-w-0">
                         <div className="w-9 h-9 rounded-lg border border-blue-100 bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -648,25 +648,21 @@ export default function WorkspacePage() {
                           <h4 className="text-xs font-bold text-slate-900 truncate" title={file.name}>
                             {file.name}
                           </h4>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
-                            Uploaded by {file.uploadedBy?.name || 'Academic'} | {file.size} KB
+                          <p className="text-xs text-slate-400 font-medium capitalize mt-0.5">
+                            Uploaded by {file.uploadedBy?.name || 'Academic'} | {formatWorkspaceFileSize(file)}
                           </p>
                         </div>
                       </div>
-                      <a 
-                        href={file.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-primary hover:bg-primary hover:text-white transition-all text-[10px] font-bold uppercase tracking-wider shrink-0 ml-2 flex items-center gap-1 cursor-pointer"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Download</span>
-                      </a>
+                      <WorkspaceFileDownloadButton
+                        workspaceId={workspaceId}
+                        file={file}
+                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-primary hover:bg-primary hover:text-white transition-all text-xs font-medium capitalize shrink-0 ml-2 flex items-center gap-1 cursor-pointer"
+                      />
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12 cb-card bg-white border border-slate-200/80 rounded-xl space-y-3">
+                <div className="text-center py-12 cb-card bg-surface border border-slate-200/80 rounded-xl space-y-3">
                   <UploadCloud className="w-8 h-8 text-slate-300 mx-auto" />
                   <p className="text-xs font-bold text-slate-700">No resources shared yet</p>
                   <p className="text-xs text-slate-400">Upload research datasets, code snippets, or draft documents.</p>
@@ -686,7 +682,7 @@ export default function WorkspacePage() {
             >
               {currentProvider === 'GOOGLE_WORKSPACE' ? (
                 /* Google Chat Space Integration Card */
-                <div className="cb-card p-6 bg-white border border-slate-200/80 rounded-2xl shadow-xs space-y-6">
+                <div className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl shadow-xs space-y-6">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
                     <div className="flex items-center gap-3.5">
                       <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200/60 flex items-center justify-center p-2.5 shadow-2xs">
@@ -695,7 +691,7 @@ export default function WorkspacePage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <h3 className="font-display font-bold text-base text-slate-900">Google Chat Research Space</h3>
-                          <span className="text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                          <span className="text-2xs font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             <span>Connected</span>
                           </span>
@@ -739,11 +735,11 @@ export default function WorkspacePage() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5">
-                      <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Space Name</span>
+                      <span className="font-medium text-slate-400 capitalize text-xs">Space Name</span>
                       <p className="font-bold text-slate-800">CuriousBees · {activeWorkspace.title}</p>
                     </div>
                     <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5">
-                      <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px]">Space Membership</span>
+                      <span className="font-medium text-slate-400 capitalize text-xs">Space Membership</span>
                       <p className="text-slate-600">{activeWorkspace.members?.length || 2} Approved Collaborators</p>
                     </div>
                   </div>
@@ -757,10 +753,10 @@ export default function WorkspacePage() {
                 </div>
               ) : (
                 /* Zoom Workplace / External Channel Card */
-                <div className="cb-card p-6 bg-white border border-slate-200/80 rounded-2xl shadow-xs space-y-6">
+                <div className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl shadow-xs space-y-6">
                   <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-xl bg-[#2D8CFF]/10 border border-[#2D8CFF]/20 flex items-center justify-center p-2.5">
-                      <Video className="w-6 h-6 text-[#2D8CFF]" />
+                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center p-2.5">
+                      <Video className="w-6 h-6 text-blue-500" />
                     </div>
                     <div>
                       <h3 className="font-display font-bold text-base text-slate-900">Zoom Workplace Collaboration</h3>
@@ -771,7 +767,7 @@ export default function WorkspacePage() {
                   </div>
                   <button
                     onClick={() => { setActiveTab('meetings'); setShowMeetingModal(true); }}
-                    className="px-4 py-2.5 bg-[#2D8CFF] hover:bg-[#2378DE] text-white rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer"
+                    className="px-4 py-2.5 bg-brand hover:bg-brand-strong text-white rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer"
                   >
                     <Video className="w-3.5 h-3.5" />
                     <span>Schedule Zoom Discussion</span>
@@ -800,7 +796,7 @@ export default function WorkspacePage() {
 
                 <button
                   onClick={() => setShowMeetingModal(true)}
-                  className="px-4 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 shadow-xs transition-all cursor-pointer self-start sm:self-auto"
+                  className="px-4 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-medium capitalize flex items-center gap-2 shadow-xs transition-all cursor-pointer self-start sm:self-auto"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>Schedule Meeting</span>
@@ -809,7 +805,7 @@ export default function WorkspacePage() {
 
               {/* Upcoming Meetings Section */}
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <div className="flex items-center gap-2 text-xs font-medium text-slate-400 capitalize">
                   <CalendarCheck2 className="w-3.5 h-3.5 text-primary" />
                   <span>Upcoming Meetings ({upcomingMeetings.length})</span>
                 </div>
@@ -824,22 +820,22 @@ export default function WorkspacePage() {
                       return (
                         <div 
                           key={meeting.id}
-                          className="cb-card p-5 bg-white border border-slate-200/80 rounded-2xl shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-4"
+                          className="cb-card p-5 bg-surface border border-slate-200/80 rounded-2xl shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-4"
                         >
                           <div className="space-y-2.5">
                             <div className="flex items-start justify-between gap-2">
-                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-2xs font-bold uppercase ${
                                 isGoogle 
                                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
                                   : isZoom 
-                                  ? 'bg-blue-50 text-[#2D8CFF] border border-blue-200' 
+                                  ? 'bg-blue-50 text-blue-500 border border-blue-200' 
                                   : 'bg-purple-50 text-purple-700 border border-purple-200'
                               }`}>
                                 <Video className="w-3 h-3" />
                                 <span>{isGoogle ? 'Google Meet' : isZoom ? 'Zoom Workplace' : 'External'}</span>
                               </span>
 
-                              <span className="text-[11px] font-mono font-bold text-slate-500">
+                              <span className="text-2xs font-mono font-bold text-slate-500">
                                 {meeting.duration} mins
                               </span>
                             </div>
@@ -865,7 +861,7 @@ export default function WorkspacePage() {
                                   {meetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>
-                              <span className="text-[10px] text-slate-400 font-medium">
+                              <span className="text-2xs text-slate-400 font-medium">
                                 Host: {meeting.createdBy?.name?.split(' ')[0] || 'Peer'}
                               </span>
                             </div>
@@ -899,7 +895,7 @@ export default function WorkspacePage() {
                     })}
                   </div>
                 ) : (
-                  <div className="p-8 cb-card bg-white border border-slate-200/80 rounded-2xl text-center space-y-3">
+                  <div className="p-8 cb-card bg-surface border border-slate-200/80 rounded-2xl text-center space-y-3">
                     <Video className="w-8 h-8 text-slate-300 mx-auto" />
                     <p className="text-xs font-bold text-slate-700">No upcoming meetings scheduled</p>
                     <p className="text-xs text-slate-400">Click "Schedule Meeting" to coordinate your next research review.</p>
@@ -910,7 +906,7 @@ export default function WorkspacePage() {
               {/* Past Meetings Section */}
               {pastMeetings.length > 0 && (
                 <div className="space-y-3 pt-4 border-t border-slate-200/80">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                  <span className="text-xs font-medium text-slate-400 capitalize">
                     Past Meetings & Archives
                   </span>
                   <div className="space-y-2">
@@ -921,11 +917,11 @@ export default function WorkspacePage() {
                       >
                         <div className="space-y-0.5">
                           <h5 className="font-bold text-slate-800">{meeting.title}</h5>
-                          <p className="text-[10px] text-slate-400 font-mono">
+                          <p className="text-2xs text-slate-400 font-mono">
                             {new Date(meeting.scheduledAt).toLocaleDateString()} · {meeting.duration} mins · {meeting.provider}
                           </p>
                         </div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded">
+                        <span className="text-xs font-medium capitalize text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded">
                           {meeting.status}
                         </span>
                       </div>
@@ -943,7 +939,7 @@ export default function WorkspacePage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="cb-card p-6 bg-white border border-slate-200/80 rounded-2xl space-y-4"
+              className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl space-y-4"
             >
               <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                 <Activity className="w-4 h-4 text-primary" />
@@ -953,17 +949,17 @@ export default function WorkspacePage() {
                 <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
                   <div className="space-y-0.5">
                     <p className="font-bold text-slate-800">Curious Nexus Workspace Synchronized</p>
-                    <p className="text-slate-500 text-[10px]">Secure node established between research scholars and supervisors.</p>
+                    <p className="text-slate-500 text-2xs">Secure node established between research scholars and supervisors.</p>
                   </div>
-                  <span className="text-[10px] font-mono text-slate-400 font-bold">Node Ready</span>
+                  <span className="text-2xs font-mono text-slate-400 font-bold">Node Ready</span>
                 </div>
                 {meetings.map((m) => (
                   <div key={m.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
                     <div className="space-y-0.5">
                       <p className="font-bold text-slate-800">Meeting Scheduled: {m.title}</p>
-                      <p className="text-slate-500 text-[10px]">Scheduled via {m.provider} for {new Date(m.scheduledAt).toLocaleString()}.</p>
+                      <p className="text-slate-500 text-2xs">Scheduled via {m.provider} for {new Date(m.scheduledAt).toLocaleString()}.</p>
                     </div>
-                    <span className="text-[10px] font-mono text-slate-400 font-bold">{m.status}</span>
+                    <span className="text-2xs font-mono text-slate-400 font-bold">{m.status}</span>
                   </div>
                 ))}
               </div>
@@ -979,7 +975,7 @@ export default function WorkspacePage() {
               exit={{ opacity: 0, y: -8 }}
               className="space-y-6"
             >
-              <div className="cb-card p-6 bg-white border border-slate-200/80 rounded-2xl shadow-xs space-y-6">
+              <div className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl shadow-xs space-y-6">
                 <div>
                   <h3 className="text-base font-display font-bold text-slate-900">Workspace Collaboration Platform</h3>
                   <p className="text-xs text-slate-500 mt-1">
@@ -994,7 +990,7 @@ export default function WorkspacePage() {
                     className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
                       currentProvider === 'GOOGLE_WORKSPACE' 
                         ? 'border-primary bg-primary/5 shadow-xs ring-1 ring-primary/20' 
-                        : 'border-slate-200 bg-white hover:border-slate-300'
+                        : 'border-slate-200 bg-surface hover:border-slate-300'
                     }`}
                   >
                     <div className="flex items-start justify-between">
@@ -1010,7 +1006,7 @@ export default function WorkspacePage() {
                         className="mt-1"
                       />
                     </div>
-                    <span className="text-[10px] font-bold uppercase text-primary font-mono">Primary SRM Provider</span>
+                    <span className="text-2xs font-bold uppercase text-primary font-mono">Primary SRM Provider</span>
                   </div>
 
                   {/* Zoom Workplace Option */}
@@ -1018,8 +1014,8 @@ export default function WorkspacePage() {
                     onClick={() => setWorkspaceCollaborationProvider(workspaceId, 'ZOOM_WORKPLACE')}
                     className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
                       currentProvider === 'ZOOM_WORKPLACE' 
-                        ? 'border-[#2D8CFF] bg-[#2D8CFF]/5 shadow-xs ring-1 ring-[#2D8CFF]/20' 
-                        : 'border-slate-200 bg-white hover:border-slate-300'
+                        ? 'border-blue-500 bg-blue-500/5 shadow-xs ring-1 ring-blue-500/20' 
+                        : 'border-slate-200 bg-surface hover:border-slate-300'
                     }`}
                   >
                     <div className="flex items-start justify-between">
@@ -1035,7 +1031,7 @@ export default function WorkspacePage() {
                         className="mt-1"
                       />
                     </div>
-                    <span className="text-[10px] font-bold uppercase text-[#2D8CFF] font-mono">Secondary Provider</span>
+                    <span className="text-2xs font-bold uppercase text-blue-500 font-mono">Secondary Provider</span>
                   </div>
                 </div>
 
@@ -1058,8 +1054,8 @@ export default function WorkspacePage() {
 
       {/* ── 🗓️ SCHEDULE MEETING MODAL ── */}
       {showMeetingModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="cb-card bg-white max-w-lg w-full p-6 rounded-2xl shadow-xl space-y-5 relative">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="cb-card bg-surface max-w-lg w-full p-6 rounded-2xl shadow-xl space-y-5 relative">
             <button 
               onClick={() => setShowMeetingModal(false)}
               className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 cursor-pointer"
@@ -1155,7 +1151,7 @@ export default function WorkspacePage() {
                     onClick={() => setMeetingProvider('ZOOM')}
                     className={`py-2 px-2.5 rounded-lg border text-center transition-all cursor-pointer ${
                       meetingProvider === 'ZOOM'
-                        ? 'border-[#2D8CFF] bg-[#2D8CFF]/10 text-[#2D8CFF] font-bold'
+                        ? 'border-blue-500 bg-blue-500/10 text-blue-500 font-bold'
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                     }`}
                   >
@@ -1219,8 +1215,8 @@ export default function WorkspacePage() {
 
       {/* ── 📁 FILE UPLOAD MODAL ── */}
       {showFileModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="cb-card bg-white max-w-md w-full p-6 rounded-2xl shadow-xl space-y-4 relative">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="cb-card bg-surface max-w-md w-full p-6 rounded-2xl shadow-xl space-y-4 relative">
             <button 
               onClick={() => {
                 if (!isUploadingFile) {
@@ -1258,14 +1254,14 @@ export default function WorkspacePage() {
                   <label htmlFor="research-file-input" className="cursor-pointer flex flex-col items-center gap-1.5">
                     <UploadCloud className="w-8 h-8 text-primary" />
                     {selectedFile ? (
-                      <div className="text-left w-full mt-1 px-2 py-1.5 bg-white border border-slate-200 rounded-lg flex items-center justify-between">
+                      <div className="text-left w-full mt-1 px-2 py-1.5 bg-surface border border-slate-200 rounded-lg flex items-center justify-between">
                         <span className="font-semibold text-slate-800 truncate max-w-[240px]">{selectedFile.name}</span>
-                        <span className="text-[10px] text-slate-500 font-mono">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                        <span className="text-2xs text-slate-500 font-mono">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
                       </div>
                     ) : (
                       <>
                         <span className="font-bold text-slate-800 hover:text-primary">Click to browse file</span>
-                        <span className="text-[10px] text-slate-400">PDF, Word, PPT, Excel, ZIP, Data up to 50MB</span>
+                        <span className="text-2xs text-slate-400">PDF, Word, PPT, Excel, ZIP, Data up to 50MB</span>
                       </>
                     )}
                   </label>
@@ -1285,7 +1281,7 @@ export default function WorkspacePage() {
 
               <div className="relative flex py-1 items-center">
                 <div className="flex-grow border-t border-slate-200"></div>
-                <span className="flex-shrink mx-2 text-[10px] font-bold text-slate-400 uppercase">OR External Link</span>
+                <span className="flex-shrink mx-2 text-2xs font-bold text-slate-400 uppercase">OR External Link</span>
                 <div className="flex-grow border-t border-slate-200"></div>
               </div>
 
@@ -1328,8 +1324,8 @@ export default function WorkspacePage() {
 
       {/* ── 🎯 MILESTONE MODAL ── */}
       {showMilestoneModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="cb-card bg-white max-w-md w-full p-6 rounded-2xl shadow-xl space-y-4 relative">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="cb-card bg-surface max-w-md w-full p-6 rounded-2xl shadow-xl space-y-4 relative">
             <button 
               onClick={() => setShowMilestoneModal(false)}
               className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 cursor-pointer"

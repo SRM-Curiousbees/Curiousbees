@@ -28,10 +28,10 @@ export function PublicationsCard({ publications = [], isOwnProfile }: Publicatio
 
   if (!publications || publications.length === 0) {
     return (
-      <div className="bg-white border border-[#E4E9F2] rounded-2xl p-6 shadow-xs space-y-4">
+      <div className="bg-surface border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[#0C4DA2]">
-            <FileText className="w-4 h-4 text-[#0C4DA2]" />
+          <div className="flex items-center gap-2 text-xs font-medium capitalize text-brand">
+            <FileText className="w-4 h-4 text-brand" />
             <span>Publications</span>
           </div>
         </div>
@@ -44,10 +44,10 @@ export function PublicationsCard({ publications = [], isOwnProfile }: Publicatio
   }
 
   return (
-    <div className="bg-white border border-[#E4E9F2] rounded-2xl p-6 shadow-xs space-y-4">
+    <div className="bg-surface border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[#0C4DA2]">
-          <FileText className="w-4 h-4 text-[#0C4DA2]" />
+        <div className="flex items-center gap-2 text-xs font-medium capitalize text-brand">
+          <FileText className="w-4 h-4 text-brand" />
           <span>Publications ({publications.length})</span>
         </div>
       </div>
@@ -59,8 +59,8 @@ export function PublicationsCard({ publications = [], isOwnProfile }: Publicatio
             className="p-4 rounded-xl bg-slate-50 border border-slate-200 hover:border-slate-300 transition-colors space-y-2"
           >
             <div className="flex items-start justify-between gap-3">
-              <h4 className="text-sm font-extrabold text-[#17233D] leading-snug flex-1">{pub.title}</h4>
-              <span className="px-2 py-0.5 rounded-md bg-blue-50 text-[#0C4DA2] border border-blue-100 text-[11px] font-bold shrink-0">
+              <h4 className="text-sm font-semibold text-slate-900 leading-snug flex-1">{pub.title}</h4>
+              <span className="px-2 py-0.5 rounded-md bg-blue-50 text-brand border border-blue-100 text-2xs font-bold shrink-0">
                 {pub.year}
               </span>
             </div>
@@ -80,7 +80,7 @@ export function PublicationsCard({ publications = [], isOwnProfile }: Publicatio
                     href={pub.doi.startsWith('http') ? pub.doi : `https://doi.org/${pub.doi}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs font-bold text-[#0C4DA2] hover:underline flex items-center gap-1 cursor-pointer"
+                    className="text-xs font-bold text-brand hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <span>DOI</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -95,7 +95,7 @@ export function PublicationsCard({ publications = [], isOwnProfile }: Publicatio
       {publications.length > 3 && (
         <button
           onClick={() => setShowAll(!showAll)}
-          className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[#0C4DA2] text-xs font-bold rounded-xl transition-colors cursor-pointer"
+          className="w-full py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-brand text-xs font-bold rounded-xl transition-colors cursor-pointer"
         >
           {showAll ? 'Show Fewer Publications' : `View All (${publications.length}) Publications`}
         </button>

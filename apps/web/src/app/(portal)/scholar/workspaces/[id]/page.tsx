@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DashboardShell } from '@/components/shared/dashboard-shell';
+import { WorkspaceFileDownloadButton, formatWorkspaceFileSize } from '@/components/workspace/WorkspaceFileDownloadButton';
 
 interface WorkspaceDetailPageProps {
   params: Promise<{ id: string }>;
@@ -72,7 +73,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
           <Sparkles className="w-5 h-5 text-primary absolute inset-0 m-auto animate-pulse" />
         </div>
         <div className="space-y-1 text-center">
-          <p className="text-xs text-primary font-bold uppercase tracking-wider font-mono">Secure Node Handshake</p>
+          <p className="text-xs text-primary font-medium capitalize font-mono">Secure Node Handshake</p>
           <p className="text-xs text-slate-400 font-semibold uppercase">Synchronizing research workspace credentials...</p>
         </div>
       </div>
@@ -81,7 +82,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
 
   if (!activeWorkspace) {
     return (
-      <div className="text-center py-12 cb-card max-w-md mx-auto my-12 p-8 space-y-5 bg-white/90 backdrop-blur-md text-left">
+      <div className="text-center py-12 cb-card max-w-md mx-auto my-12 p-8 space-y-5 bg-surface/90 backdrop-blur-md text-left">
         <div className="w-12 h-12 bg-red-50 text-red-650 border border-red-100 rounded-full flex items-center justify-center mx-auto">
           <AlertTriangle className="w-6 h-6" />
         </div>
@@ -93,7 +94,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
         </div>
         <button 
           onClick={() => router.push('/scholar/workspaces')} 
-          className="w-full py-2.5 bg-primary text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-primary/95 transition-all shadow cursor-pointer"
+          className="w-full py-2.5 bg-primary text-white rounded-lg text-xs font-medium capitalize hover:bg-primary/95 transition-all shadow cursor-pointer"
         >
           Back to Workspaces
         </button>
@@ -168,23 +169,23 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
           <span>Back to Workspaces</span>
         </button>
-        <span className="text-[10px] font-bold text-primary uppercase tracking-widest font-mono flex items-center gap-1.5">
+        <span className="text-xs font-medium text-primary capitalize font-mono flex items-center gap-1.5">
           <FolderOpen className="w-3.5 h-3.5" />
           <span>Secure Research Node</span>
         </span>
       </div>
 
       {/* 📄 WORKSPACE HEADER DETAILS */}
-      <div className="cb-card p-6 bg-white/90 backdrop-blur-md relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 text-left">
+      <div className="cb-card p-6 bg-surface/90 backdrop-blur-md relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 text-left">
         <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -left-20 -bottom-20 w-64 h-64 bg-secondary/5 rounded-full blur-3xl pointer-events-none" />
         
         <div className="space-y-4 relative z-10 flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded bg-primary/5 text-primary border border-primary/15 font-label-caps text-[10px] uppercase tracking-wider font-bold">
+            <span className="px-2.5 py-0.5 rounded bg-primary/5 text-primary border border-primary/15 font-label-caps text-xs capitalize font-medium">
               Active Research Lab
             </span>
-            <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">
+            <span className="text-xs font-mono font-medium text-slate-400 capitalize">
               ID: {workspaceId.substring(0, 8)}
             </span>
           </div>
@@ -198,7 +199,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
 
           {/* Members ring */}
           <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center gap-4">
-            <span className="font-label-caps text-[10px] text-slate-450 uppercase tracking-wider font-bold">
+            <span className="font-label-caps text-xs text-slate-450 capitalize font-medium">
               Research Group:
             </span>
             <div className="flex flex-wrap items-center gap-3">
@@ -208,12 +209,12 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                     {member.user?.image ? (
                       <img src={member.user.image} alt={member.user.name || ''} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-[10px] font-bold text-primary">{getInitials(member.user?.name || '')}</span>
+                      <span className="text-2xs font-bold text-primary">{getInitials(member.user?.name || '')}</span>
                     )}
                   </div>
                   <div className="text-left leading-none">
                     <p className="text-xs font-bold text-slate-800">{member.user?.name}</p>
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider mt-0.5 block">
+                    <span className="text-xs font-medium text-slate-400 capitalize mt-0.5 block">
                       {member.role === 'OWNER' ? 'Principal Investigator' : 'Collaborator'}
                     </span>
                   </div>
@@ -226,7 +227,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
         {/* Progress pipeline meter */}
         <div className="cb-card p-5 bg-slate-50/50 border-slate-200/50 w-full md:w-64 relative z-10 flex flex-col justify-between self-stretch shrink-0">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Workspace Progress</span>
+            <span className="text-xs font-medium text-slate-400 capitalize">Workspace Progress</span>
             <span className="text-xs font-bold text-primary">{progressPercent}%</span>
           </div>
           <div className="space-y-2">
@@ -238,7 +239,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                 className="h-full bg-gradient-to-r from-primary to-primary/70 rounded-full"
               />
             </div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+            <p className="text-xs text-slate-400 font-medium capitalize">
               {completedMilestones} of {totalMilestones} Milestones Completed
             </p>
           </div>
@@ -258,10 +259,10 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center justify-center space-x-1.5 py-2 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all duration-200 flex-1 cursor-pointer select-none ${
+              className={`flex items-center justify-center space-x-1.5 py-2 px-3 rounded-lg text-2xs font-bold uppercase tracking-wider transition-all duration-200 flex-1 cursor-pointer select-none ${
                 isActive 
-                  ? 'bg-white text-primary shadow-sm border border-slate-200/50' 
-                  : 'text-slate-505 hover:text-slate-800 hover:bg-white/40'
+                  ? 'bg-surface text-primary shadow-sm border border-slate-200/50' 
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-surface/40'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -286,10 +287,10 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
               className="space-y-4"
             >
               <div className="flex justify-between items-center mb-1">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Shared Documents & Drafts</h3>
+                <h3 className="text-xs font-medium capitalize text-slate-400">Shared Documents & Drafts</h3>
                 <button 
                   onClick={() => setShowFileModal(true)} 
-                  className="flex items-center space-x-1.5 px-3 py-2 bg-primary hover:bg-primary/95 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow-sm transition-colors cursor-pointer"
+                  className="flex items-center space-x-1.5 px-3 py-2 bg-primary hover:bg-primary/95 text-white text-xs font-medium capitalize rounded-lg shadow-sm transition-colors cursor-pointer"
                 >
                   <UploadCloud className="w-3.5 h-3.5" />
                   <span>Upload Document</span>
@@ -298,14 +299,14 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
 
               <div 
                 onClick={() => setShowFileModal(true)} 
-                className="border border-dashed border-slate-350 hover:border-primary/60 bg-white hover:bg-primary/5 rounded-xl p-8 text-center cursor-pointer transition-all duration-200 group flex flex-col items-center justify-center space-y-2.5"
+                className="border border-dashed border-slate-350 hover:border-primary/60 bg-surface hover:bg-primary/5 rounded-xl p-8 text-center cursor-pointer transition-all duration-200 group flex flex-col items-center justify-center space-y-2.5"
               >
                 <div className="w-10 h-10 rounded-full bg-primary/5 text-primary flex items-center justify-center group-hover:scale-110 transition-transform duration-200 border border-primary/10">
                   <UploadCloud className="w-5 h-5" />
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-slate-850">Select Research Resource or PDF</p>
-                  <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Drag & drop files or click here to upload</p>
+                  <p className="text-xs text-slate-400 font-medium capitalize">Drag & drop files or click here to upload</p>
                 </div>
               </div>
 
@@ -321,7 +322,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                     return (
                       <div 
                         key={file.id} 
-                        className="cb-card p-4 flex items-start justify-between hover:border-primary/40 transition-all duration-200 group bg-white"
+                        className="cb-card p-4 flex items-start justify-between hover:border-primary/40 transition-all duration-200 group bg-surface"
                       >
                         <div className="flex items-start space-x-3 text-left min-w-0">
                           <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${fileColorClass}`}>
@@ -331,26 +332,23 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                             <h4 className="text-xs font-bold text-slate-905 truncate group-hover:text-primary transition-colors" title={file.name}>
                               {file.name}
                             </h4>
-                            <p className="text-[10px] text-slate-404 font-bold uppercase tracking-wider mt-0.5">
-                              Uploaded by {file.uploadedBy?.name || 'Academic'} | {file.size} KB
+                            <p className="text-xs text-slate-404 font-medium capitalize mt-0.5">
+                              Uploaded by {file.uploadedBy?.name || 'Academic'} | {formatWorkspaceFileSize(file)}
                             </p>
                           </div>
                         </div>
-                        <a 
-                          href={file.url} 
-                          target="_blank" 
-                          rel="noopener noreferrer" 
-                          className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-primary hover:bg-primary hover:text-white transition-all text-[10px] font-bold uppercase tracking-wider shrink-0 ml-2 flex items-center gap-1 cursor-pointer"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Get</span>
-                        </a>
+                        <WorkspaceFileDownloadButton
+                          workspaceId={workspaceId}
+                          file={file}
+                          label="Get"
+                          className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-primary hover:bg-primary hover:text-white transition-all text-xs font-medium capitalize shrink-0 ml-2 flex items-center gap-1 cursor-pointer"
+                        />
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <div className="py-12 text-center border border-dashed border-slate-200 rounded-xl text-slate-400 bg-white/50 flex flex-col items-center justify-center space-y-2">
+                <div className="py-12 text-center border border-dashed border-slate-200 rounded-xl text-slate-400 bg-surface/50 flex flex-col items-center justify-center space-y-2">
                   <FolderOpen className="w-8 h-8 text-slate-300" />
                   <span className="text-xs font-semibold text-slate-500">No files or scientific proposals shared yet.</span>
                 </div>
@@ -369,11 +367,11 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
               className="space-y-4"
             >
               <div className="flex justify-between items-center mb-1">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Research Roadmap Checklist</h3>
+                <h3 className="text-xs font-medium capitalize text-slate-400">Research Roadmap Checklist</h3>
                 {isOwner && (
                   <button 
                     onClick={() => setShowMilestoneModal(true)} 
-                    className="flex items-center space-x-1.5 px-3 py-2 bg-primary hover:bg-primary/95 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow-sm transition-colors cursor-pointer"
+                    className="flex items-center space-x-1.5 px-3 py-2 bg-primary hover:bg-primary/95 text-white text-xs font-medium capitalize rounded-lg shadow-sm transition-colors cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Add Milestone</span>
@@ -388,7 +386,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
 
                     return (
                       <div key={milestone.id} className="relative">
-                        <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 bg-white flex items-center justify-center transition-all ${
+                        <div className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 bg-surface flex items-center justify-center transition-all ${
                           isCompleted 
                             ? 'border-primary bg-primary text-white scale-110' 
                             : 'border-slate-300'
@@ -399,7 +397,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                         <div className={`cb-card p-4 relative overflow-hidden transition-all duration-200 ${
                           isCompleted 
                             ? 'border-slate-105 bg-slate-50/50 opacity-85' 
-                            : 'border-slate-200 hover:border-primary/30 bg-white'
+                            : 'border-slate-200 hover:border-primary/30 bg-surface'
                         }`}>
                           <div className="flex items-start justify-between gap-4">
                             <div className="space-y-1 flex-1 min-w-0">
@@ -410,22 +408,22 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                                   {milestone.title}
                                 </h4>
                                 {isCompleted ? (
-                                  <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-[8px] font-bold uppercase tracking-wider font-sans">
+                                  <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 text-xs font-medium capitalize font-sans">
                                     Done
                                   </span>
                                 ) : (
-                                  <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100 text-[8px] font-bold uppercase tracking-wider font-sans">
+                                  <span className="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100 text-xs font-medium capitalize font-sans">
                                     In Progress
                                   </span>
                                 )}
                               </div>
                               {milestone.description && (
-                                <p className={`text-xs leading-relaxed ${isCompleted ? 'text-slate-400' : 'text-slate-505 font-medium'}`}>
+                                <p className={`text-xs leading-relaxed ${isCompleted ? 'text-slate-400' : 'text-slate-500 font-medium'}`}>
                                   {milestone.description}
                                 </p>
                               )}
                               {milestone.dueDate && (
-                                <div className="flex items-center text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-2">
+                                <div className="flex items-center text-xs text-slate-400 font-medium capitalize mt-2">
                                   <Calendar className="w-3.5 h-3.5 mr-1" />
                                   <span>Due {new Date(milestone.dueDate).toLocaleDateString()}</span>
                                 </div>
@@ -445,7 +443,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                   })}
                 </div>
               ) : (
-                <div className="py-12 text-center border border-dashed border-slate-200 rounded-xl text-slate-400 bg-white/50 flex flex-col items-center justify-center space-y-2">
+                <div className="py-12 text-center border border-dashed border-slate-200 rounded-xl text-slate-400 bg-surface/50 flex flex-col items-center justify-center space-y-2">
                   <CheckSquare className="w-8 h-8 text-slate-300" />
                   <span className="text-xs font-semibold text-slate-500">No milestone checks registered in this node.</span>
                 </div>
@@ -464,10 +462,10 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
               className="space-y-4"
             >
               <div className="flex justify-between items-center mb-1">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Group Broadcasts</h3>
+                <h3 className="text-xs font-medium capitalize text-slate-400">Group Broadcasts</h3>
                 <button 
                   onClick={() => setShowAnnounceModal(true)} 
-                  className="flex items-center space-x-1.5 px-3 py-2 bg-primary hover:bg-primary/95 text-white text-[10px] font-bold uppercase tracking-wider rounded-lg shadow-sm transition-colors cursor-pointer"
+                  className="flex items-center space-x-1.5 px-3 py-2 bg-primary hover:bg-primary/95 text-white text-xs font-medium capitalize rounded-lg shadow-sm transition-colors cursor-pointer"
                 >
                   <Megaphone className="w-3.5 h-3.5" />
                   <span>Post Announcement</span>
@@ -479,22 +477,22 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                   {activeWorkspace.announcements.map((announce) => (
                     <div 
                       key={announce.id} 
-                      className="cb-card p-5 relative overflow-hidden bg-white hover:border-slate-300 transition-all duration-200 text-left"
+                      className="cb-card p-5 relative overflow-hidden bg-surface hover:border-slate-300 transition-all duration-200 text-left"
                     >
                       <div className="flex items-start space-x-3 text-left">
                         <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 overflow-hidden flex items-center justify-center shrink-0">
                           {announce.author?.image ? (
                             <img src={announce.author.image} alt={announce.author.name || ''} className="w-full h-full object-cover" />
                           ) : (
-                            <span className="text-[11px] font-bold text-primary">{getInitials(announce.author?.name || '')}</span>
+                            <span className="text-2xs font-bold text-primary">{getInitials(announce.author?.name || '')}</span>
                           )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between">
                             <h4 className="text-xs font-bold text-slate-900">{announce.author?.name}</h4>
-                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">{new Date(announce.createdAt).toLocaleDateString()}</span>
+                            <span className="text-xs text-slate-400 font-medium capitalize">{new Date(announce.createdAt).toLocaleDateString()}</span>
                           </div>
-                          <span className="px-2 py-0.5 rounded bg-primary/5 text-primary border border-primary/10 text-[8px] font-mono font-bold uppercase tracking-wider mt-1 inline-block">
+                          <span className="px-2 py-0.5 rounded bg-primary/5 text-primary border border-primary/10 text-xs font-mono font-medium capitalize mt-1 inline-block">
                             Synergy Broadcast
                           </span>
                           <div className="mt-3 space-y-1">
@@ -507,7 +505,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                   ))}
                 </div>
               ) : (
-                <div className="py-12 text-center border border-dashed border-slate-200 rounded-xl text-slate-400 bg-white/50 flex flex-col items-center justify-center space-y-2">
+                <div className="py-12 text-center border border-dashed border-slate-200 rounded-xl text-slate-400 bg-surface/50 flex flex-col items-center justify-center space-y-2">
                   <Megaphone className="w-8 h-8 text-slate-300" />
                   <span className="text-xs font-semibold text-slate-500">No announcements broadcasted.</span>
                 </div>
@@ -529,13 +527,13 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
               animate={{ opacity: 0.3 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowFileModal(false)}
-              className="absolute inset-0 bg-slate-900 backdrop-blur-[2px]"
+              className="absolute inset-0 bg-black backdrop-blur-[2px]"
             />
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="cb-card bg-white rounded-xl border border-slate-200 p-6 max-w-sm w-full shadow-2xl space-y-4 relative z-10 text-left"
+              className="cb-card bg-surface rounded-xl border border-slate-200 p-6 max-w-sm w-full shadow-2xl space-y-4 relative z-10 text-left"
             >
               <div className="flex justify-between items-center border-b border-slate-100 pb-2.5">
                 <h3 className="text-sm font-bold text-slate-905 uppercase tracking-wider">Share Research Document</h3>
@@ -545,7 +543,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
               </div>
               <form onSubmit={handleUploadFile} className="space-y-4">
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">File Name</label>
+                  <label className="block text-xs font-medium text-slate-400 capitalize">File Name</label>
                   <input 
                     type="text" 
                     required
@@ -556,7 +554,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Document URL</label>
+                  <label className="block text-xs font-medium text-slate-400 capitalize">Document URL</label>
                   <input 
                     type="url" 
                     required
@@ -570,13 +568,13 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                   <button 
                     type="button" 
                     onClick={() => setShowFileModal(false)}
-                    className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-wider rounded-lg transition cursor-pointer"
+                    className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-xs font-medium capitalize rounded-lg transition cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button 
                     type="submit" 
-                    className="px-4 py-2 bg-primary text-white hover:bg-primary/95 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow transition cursor-pointer"
+                    className="px-4 py-2 bg-primary text-white hover:bg-primary/95 rounded-lg text-xs font-medium capitalize shadow transition cursor-pointer"
                   >
                     Upload Document
                   </button>
@@ -594,13 +592,13 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
               animate={{ opacity: 0.3 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowMilestoneModal(false)}
-              className="absolute inset-0 bg-slate-900 backdrop-blur-[2px]"
+              className="absolute inset-0 bg-black backdrop-blur-[2px]"
             />
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="cb-card bg-white rounded-xl border border-slate-200 p-6 max-w-sm w-full shadow-2xl space-y-4 relative z-10 text-left"
+              className="cb-card bg-surface rounded-xl border border-slate-200 p-6 max-w-sm w-full shadow-2xl space-y-4 relative z-10 text-left"
             >
               <div className="flex justify-between items-center border-b border-slate-100 pb-2.5">
                 <h3 className="text-sm font-bold text-slate-905 uppercase tracking-wider">New Research Milestone</h3>
@@ -610,7 +608,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
               </div>
               <form onSubmit={handleCreateMilestone} className="space-y-4">
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Milestone Title</label>
+                  <label className="block text-xs font-medium text-slate-400 capitalize">Milestone Title</label>
                   <input 
                     type="text" 
                     required
@@ -621,16 +619,16 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Description</label>
+                  <label className="block text-xs font-medium text-slate-400 capitalize">Description</label>
                   <textarea 
                     value={milestoneDesc}
                     onChange={(e) => setMilestoneDesc(e.target.value)}
                     placeholder="Outline checklist goals..."
-                    className="w-full bg-white border border-slate-200 rounded-lg p-3 font-sans text-xs leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition-colors resize-none h-[64px]"
+                    className="w-full bg-surface border border-slate-200 rounded-lg p-3 font-sans text-xs leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition-colors resize-none h-[64px]"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Due Date</label>
+                  <label className="block text-xs font-medium text-slate-400 capitalize">Due Date</label>
                   <input 
                     type="date" 
                     value={milestoneDueDate}
@@ -642,13 +640,13 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                   <button 
                     type="button" 
                     onClick={() => setShowMilestoneModal(false)}
-                    className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-wider rounded-lg transition cursor-pointer"
+                    className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-xs font-medium capitalize rounded-lg transition cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button 
                     type="submit" 
-                    className="px-4 py-2 bg-primary text-white hover:bg-primary/95 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow transition cursor-pointer"
+                    className="px-4 py-2 bg-primary text-white hover:bg-primary/95 rounded-lg text-xs font-medium capitalize shadow transition cursor-pointer"
                   >
                     Create Milestone
                   </button>
@@ -666,13 +664,13 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
               animate={{ opacity: 0.3 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowAnnounceModal(false)}
-              className="absolute inset-0 bg-slate-900 backdrop-blur-[2px]"
+              className="absolute inset-0 bg-black backdrop-blur-[2px]"
             />
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="cb-card bg-white rounded-xl border border-slate-200 p-6 max-w-sm w-full shadow-2xl space-y-4 relative z-10 text-left"
+              className="cb-card bg-surface rounded-xl border border-slate-200 p-6 max-w-sm w-full shadow-2xl space-y-4 relative z-10 text-left"
             >
               <div className="flex justify-between items-center border-b border-slate-100 pb-2.5">
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Broadcast to Group</h3>
@@ -682,7 +680,7 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
               </div>
               <form onSubmit={handleCreateAnnouncement} className="space-y-4">
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Subject Title</label>
+                  <label className="block text-xs font-medium text-slate-400 capitalize">Subject Title</label>
                   <input 
                     type="text" 
                     required
@@ -693,26 +691,26 @@ export default function ScholarWorkspaceDetailPage({ params }: WorkspaceDetailPa
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Message Content</label>
+                  <label className="block text-xs font-medium text-slate-400 capitalize">Message Content</label>
                   <textarea 
                     required
                     value={announceContent}
                     onChange={(e) => setAnnounceContent(e.target.value)}
                     placeholder="Write the announcement details..."
-                    className="w-full bg-white border border-slate-200 rounded-lg p-3 font-sans text-xs leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition-colors resize-none h-[90px]"
+                    className="w-full bg-surface border border-slate-200 rounded-lg p-3 font-sans text-xs leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition-colors resize-none h-[90px]"
                   />
                 </div>
                 <div className="flex justify-end space-x-2 pt-4 border-t border-slate-100">
                   <button 
                     type="button" 
                     onClick={() => setShowAnnounceModal(false)}
-                    className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-[10px] font-bold uppercase tracking-wider rounded-lg transition cursor-pointer"
+                    className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-xs font-medium capitalize rounded-lg transition cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button 
                     type="submit" 
-                    className="px-4 py-2 bg-primary text-white hover:bg-primary/95 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow transition cursor-pointer"
+                    className="px-4 py-2 bg-primary text-white hover:bg-primary/95 rounded-lg text-xs font-medium capitalize shadow transition cursor-pointer"
                   >
                     Post Broadcast
                   </button>

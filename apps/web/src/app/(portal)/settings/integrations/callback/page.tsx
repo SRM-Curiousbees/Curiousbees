@@ -72,7 +72,7 @@ export default function IntegrationsCallbackPage() {
 
   return (
     <div className="min-h-[60vh] flex items-center justify-center p-4">
-      <div className="cb-card max-w-md w-full p-8 bg-white border border-slate-200/80 rounded-2xl shadow-sm text-center space-y-5">
+      <div className="cb-card max-w-md w-full p-8 bg-surface border border-slate-200/80 rounded-2xl shadow-sm text-center space-y-5">
         {status === 'PROCESSING' && (
           <>
             <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
@@ -121,7 +121,7 @@ export default function IntegrationsCallbackPage() {
             </div>
             <button
               onClick={() => router.push('/settings/integrations')}
-              className="w-full py-2.5 bg-primary text-white rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-primary/95 transition-all cursor-pointer"
+              className="w-full py-2.5 bg-primary text-white rounded-lg text-xs font-medium capitalize hover:bg-primary/95 transition-all cursor-pointer"
             >
               Return to Integrations
             </button>

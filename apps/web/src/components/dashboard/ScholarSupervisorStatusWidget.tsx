@@ -57,18 +57,18 @@ export function ScholarSupervisorStatusWidget() {
 
   if (isApproved) {
     return (
-      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/20 border border-emerald-200/80 dark:border-emerald-800/40 rounded-3xl p-5 shadow-xs flex items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/80 rounded-3xl p-5 shadow-xs flex items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+          <div className="w-10 h-10 rounded-2xl bg-success text-white flex items-center justify-center shadow-xs">
             <CheckCircle2 className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-700 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-900/40 px-2 py-0.5 rounded-md">
+              <span className="text-xs font-medium capitalize text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md">
                 Supervisor Assigned
               </span>
             </div>
-            <h4 className="text-sm font-bold text-slate-900 dark:text-[#F5F7FA] mt-0.5">
+            <h4 className="text-sm font-bold text-slate-900 mt-0.5">
               Dr. {supervisorName}
             </h4>
           </div>
@@ -76,7 +76,7 @@ export function ScholarSupervisorStatusWidget() {
         {latestRequest?.supervisor?.id && (
           <button
             onClick={() => router.push(`/researchers/${latestRequest.supervisor.id}`)}
-            className="px-4 py-2 bg-white dark:bg-[#101D30] border border-emerald-300 dark:border-emerald-700/40 text-emerald-800 dark:text-emerald-300 font-bold text-xs rounded-xl shadow-2xs hover:bg-emerald-50 dark:hover:bg-[#172942] transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+            className="px-4 py-2 bg-surface border border-emerald-300 text-emerald-800 font-bold text-xs rounded-xl shadow-2xs hover:bg-emerald-50 transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
           >
             <span>View Supervisor Profile</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -88,23 +88,23 @@ export function ScholarSupervisorStatusWidget() {
 
   if (isPending) {
     return (
-      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/20 border border-amber-200/80 dark:border-amber-700/40 rounded-3xl p-5 shadow-xs flex items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200/80 rounded-3xl p-5 shadow-xs flex items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-[#0C4DA2] dark:bg-[#2563EB] text-white flex items-center justify-center shadow-xs">
-            <Clock className="w-5 h-5 text-[#FFC828]" />
+          <div className="w-10 h-10 rounded-2xl bg-brand text-white flex items-center justify-center shadow-xs">
+            <Clock className="w-5 h-5 text-gold" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#855D00] dark:text-amber-300 bg-[#FFC828]/25 dark:bg-amber-900/40 px-2 py-0.5 rounded-md">
+              <span className="text-xs font-medium capitalize text-amber-700 bg-gold/25 px-2 py-0.5 rounded-md">
                 Supervisor Request Pending
               </span>
             </div>
-            <h4 className="text-sm font-bold text-slate-900 dark:text-[#F5F7FA] mt-0.5">
+            <h4 className="text-sm font-bold text-slate-900 mt-0.5">
               Requested: Dr. {supervisorName}
             </h4>
           </div>
         </div>
-        <div className="text-xs text-slate-500 dark:text-[#A7B3C5] font-medium hidden sm:block">
+        <div className="text-xs text-slate-500 font-medium hidden sm:block">
           Your request is currently awaiting supervisor review.
         </div>
       </div>
@@ -113,18 +113,18 @@ export function ScholarSupervisorStatusWidget() {
 
   if (isRejected || !latestRequest) {
     return (
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/20 border border-blue-200/80 dark:border-blue-800/40 rounded-3xl p-5 shadow-xs flex items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200/80 rounded-3xl p-5 shadow-xs flex items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-[#0C4DA2] dark:bg-[#2563EB] text-white flex items-center justify-center shadow-xs">
-            <UserCheck className="w-5 h-5 text-[#FFC828]" />
+          <div className="w-10 h-10 rounded-2xl bg-brand text-white flex items-center justify-center shadow-xs">
+            <UserCheck className="w-5 h-5 text-gold" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#0C4DA2] dark:text-[#38BDF8] bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded-md">
+              <span className="text-xs font-medium capitalize text-brand bg-blue-100 px-2 py-0.5 rounded-md">
                 {isRejected ? 'Supervisor Request Declined' : 'Supervisor Assignment Needed'}
               </span>
             </div>
-            <p className="text-xs text-slate-600 dark:text-[#A7B3C5] mt-0.5">
+            <p className="text-xs text-slate-600 mt-0.5">
               {isRejected
                 ? 'Your previous request was declined. You can select another research supervisor.'
                 : 'Select an SRMIST research supervisor to activate your research collaboration workspace.'}
@@ -133,7 +133,7 @@ export function ScholarSupervisorStatusWidget() {
         </div>
         <button
           onClick={() => router.push('/researchers')}
-          className="px-4 py-2 bg-[#0C4DA2] dark:bg-[#2563EB] hover:bg-[#003370] dark:hover:bg-blue-600 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
+          className="px-4 py-2 bg-brand hover:bg-brand-strong text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
         >
           <Search className="w-3.5 h-3.5" />
           <span>Find Supervisors</span>

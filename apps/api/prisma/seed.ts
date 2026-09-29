@@ -5,113 +5,12 @@ import * as path from 'path';
 // Load root .env absolutely
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
+import { SRM_ORGANIZATION_DATA, RESEARCH_INTERESTS } from '../src/database/reference-data';
+
 const prisma = new PrismaClient();
 
-const SRM_ORGANIZATION_DATA = {
-  campus: {
-    code: 'KTR',
-    name: 'Kattankulathur',
-    location: 'SRM Nagar, Kattankulathur, Chengalpattu District, Tamil Nadu 603203',
-    status: 'ACTIVE',
-  },
-  faculties: [
-    {
-      name: 'Faculty of Engineering & Technology',
-      legacyNames: ['Engineering & Technology'],
-      departments: [
-        { code: 'MCA', name: 'Computer Applications', description: 'Department of Computer Applications (MCA)' },
-        { code: 'CSE', name: 'Computing Technologies', description: 'Department of Computing Technologies (CSE)' },
-        { code: 'IT', name: 'Information Technology', description: 'Department of Information Technology' },
-        { code: 'AIML', name: 'Computational Intelligence', description: 'Department of Computational Intelligence (AIML)' },
-        { code: 'ECE', name: 'Electronics & Communication Engineering', description: 'Department of Electronics & Communication Engineering' },
-        { code: 'EEE', name: 'Electrical & Electronics Engineering', description: 'Department of Electrical & Electronics Engineering' },
-        { code: 'BIOTECH', name: 'Biotechnology', description: 'Department of Biotechnology' },
-        { code: 'MECH', name: 'Mechanical Engineering', description: 'Department of Mechanical Engineering' },
-        { code: 'CIVIL', name: 'Civil Engineering', description: 'Department of Civil Engineering' },
-        { code: 'CHEM', name: 'Chemical Engineering', description: 'Department of Chemical Engineering' },
-        { code: 'AERO', name: 'Aerospace Engineering', description: 'Department of Aerospace Engineering' },
-        { code: 'BME', name: 'Biomedical Engineering', description: 'Department of Biomedical Engineering' },
-      ],
-    },
-    {
-      name: 'Faculty of Science & Humanities',
-      legacyNames: ['Science & Humanities'],
-      departments: [
-        { code: 'PHYS', name: 'Physics & Nanotechnology', description: 'Department of Physics & Nanotechnology' },
-        { code: 'CHEMISTRY', name: 'Chemistry', description: 'Department of Chemistry' },
-        { code: 'MATHS', name: 'Mathematics', description: 'Department of Mathematics' },
-        { code: 'ENG', name: 'English & Foreign Languages', description: 'Department of English & Foreign Languages' },
-        { code: 'COMMERCE', name: 'Commerce & Economics', description: 'Department of Commerce & Economics' },
-      ],
-    },
-    {
-      name: 'Faculty of Management',
-      legacyNames: ['Management'],
-      departments: [
-        { code: 'SOM', name: 'Management Studies', description: 'Department of Management Studies' },
-      ],
-    },
-    {
-      name: 'Faculty of Law',
-      legacyNames: ['Law'],
-      departments: [
-        { code: 'LAW-CORP', name: 'Corporate Law & Governance', description: 'Department of Corporate Law' },
-        { code: 'LAW-IPR', name: 'Intellectual Property Rights', description: 'Department of IPR & Cyber Law' },
-      ],
-    },
-    {
-      name: 'Faculty of Medicine & Health Sciences',
-      legacyNames: ['Medical'],
-      departments: [
-        { code: 'HEALTH', name: 'Health Sciences & Clinical Research', description: 'Department of Health Sciences & Clinical Research' },
-        { code: 'COMM-MED', name: 'Community Medicine', description: 'Department of Community Medicine' },
-      ],
-    },
-    {
-      name: 'Faculty of Pharmacy',
-      legacyNames: [],
-      departments: [
-        { code: 'PHARM-CHEM', name: 'Pharmaceutical Chemistry & Analysis', description: 'Department of Pharmaceutical Chemistry' },
-        { code: 'PHARM-PRAC', name: 'Pharmacy Practice', description: 'Department of Pharmacy Practice' },
-      ],
-    },
-    {
-      name: 'Faculty of Nursing',
-      legacyNames: [],
-      departments: [
-        { code: 'NURS-COMM', name: 'Community Health Nursing', description: 'Department of Community Health Nursing' },
-      ],
-    },
-    {
-      name: 'Faculty of Physiotherapy',
-      legacyNames: [],
-      departments: [
-        { code: 'PHYSIO', name: 'Physiotherapy & Rehabilitation', description: 'Department of Physiotherapy' },
-      ],
-    },
-    {
-      name: 'Faculty of Occupational Therapy',
-      legacyNames: [],
-      departments: [
-        { code: 'OCC-THERAPY', name: 'Occupational Therapy', description: 'Department of Occupational Therapy' },
-      ],
-    },
-    {
-      name: 'Faculty of Public Health',
-      legacyNames: [],
-      departments: [
-        { code: 'PUB-HEALTH', name: 'Public Health & Epidemiology', description: 'Department of Public Health' },
-      ],
-    },
-    {
-      name: 'Faculty of Hotel Management',
-      legacyNames: [],
-      departments: [
-        { code: 'HOTEL-MGMT', name: 'Hotel Management & Catering', description: 'Department of Hotel Management' },
-      ],
-    },
-  ],
-};
+// Organisation hierarchy lives in src/database/reference-data.ts
+
 
 async function main() {
   console.log('🌱 Starting safe, idempotent database seeding...');
@@ -191,19 +90,7 @@ async function main() {
   console.log(`✅ Seeded ${Object.keys(facultyMap).length} faculties and ${Object.keys(deptMap).length} departments.`);
 
   // 3. Create Research Interests (Idempotent)
-  const interestsData = [
-    'Generative AI & LLMs',
-    'Quantum Computing',
-    'Silicon Photonics',
-    'Nanomaterials & Thin Films',
-    'Cancer Immunotherapy',
-    '5G/6G Wireless Networks',
-    'VLSI System Design',
-    'Reinforcement Learning',
-    'Bioinformatics',
-    'Structural Health Monitoring',
-    'Blockchains & Smart Contracts',
-  ];
+  const interestsData = RESEARCH_INTERESTS;
 
   const interestsMap: Record<string, any> = {};
   for (const name of interestsData) {
@@ -291,13 +178,13 @@ async function main() {
       interests: ['Blockchains & Smart Contracts', 'VLSI System Design'],
     },
     {
-      name: 'CuriousBees Admin',
-      email: 'admin@srmist.edu.in',
-      image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      name: 'Curiousbees',
+      email: 'srmcuriousbees@gmail.com',
+      image: 'https://lh3.googleusercontent.com/a/ACg8ocLyDIHFe7iTqEvN7tEbBWueG5lliIQdj-h6W0kcBD_teR0QyA=s96-c',
       role: Role.INSTITUTE_ADMIN,
       facultyName: 'Faculty of Engineering & Technology',
       departmentCode: 'MCA',
-      bio: 'SRMIST System Administrator for CuriousBees platform.',
+      bio: 'SRMIST Root Administrator for CuriousBees platform.',
       interests: [],
     },
   ];

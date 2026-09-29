@@ -128,7 +128,7 @@ export default function PublicationsPage() {
       {/* 🚀 Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5 gap-4">
         <div>
-          <span className="text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-1.5">
+          <span className="text-xs font-medium text-primary capitalize flex items-center gap-1.5">
             <BookOpen className="w-4 h-4 text-primary" />
             <span>Academic Publications Registry</span>
           </span>
@@ -141,7 +141,7 @@ export default function PublicationsPage() {
         {!isSupervisor && !isAdmin && (
           <button
             onClick={handleOpenCreate}
-            className="px-4 py-2.5 bg-primary hover:bg-primary/95 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all duration-200 active:scale-95 flex items-center justify-center space-x-1.5 shrink-0 cursor-pointer"
+            className="px-4 py-2.5 bg-primary hover:bg-primary/95 text-white text-xs font-medium capitalize rounded-lg shadow-sm transition-all duration-200 active:scale-95 flex items-center justify-center space-x-1.5 shrink-0 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Add Publication</span>
@@ -150,7 +150,7 @@ export default function PublicationsPage() {
       </div>
 
       {/* 🚀 Search & Filter */}
-      <div className="cb-card p-4 bg-white/95 backdrop-blur-md max-w-md">
+      <div className="cb-card p-4 bg-surface/95 backdrop-blur-md max-w-md">
         <div className="relative">
           <input
             type="text"
@@ -168,7 +168,7 @@ export default function PublicationsPage() {
         {loading && publications.length === 0 ? (
           <div className="space-y-4 animate-pulse">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="cb-card p-5 bg-white/95 backdrop-blur-md space-y-3">
+              <div key={i} className="cb-card p-5 bg-surface/95 backdrop-blur-md space-y-3">
                 <div className="w-24 h-4 bg-slate-200 rounded-full" />
                 <div className="w-3/4 h-5 bg-slate-200 rounded" />
                 <div className="w-1/2 h-4 bg-slate-100 rounded" />
@@ -176,23 +176,23 @@ export default function PublicationsPage() {
             ))}
           </div>
         ) : error && publications.length === 0 ? (
-          <div className="cb-card p-12 text-center bg-white/95 backdrop-blur-md max-w-md mx-auto space-y-4">
+          <div className="cb-card p-12 text-center bg-surface/95 backdrop-blur-md max-w-md mx-auto space-y-4">
             <div className="w-14 h-14 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center mx-auto text-rose-600">
               <BookOpen className="w-7 h-7" />
             </div>
             <div>
-              <h3 className="text-base font-extrabold text-slate-900">Unable to load publications</h3>
+              <h3 className="text-base font-semibold text-slate-900">Unable to load publications</h3>
               <p className="text-xs text-slate-500 mt-1">{error}</p>
             </div>
             <button
               onClick={() => loadPublications(true)}
-              className="px-6 py-2.5 bg-[#0C4DA2] hover:bg-[#042654] text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
+              className="px-6 py-2.5 bg-brand hover:bg-brand-strong text-white font-semibold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
             >
               Retry Loading
             </button>
           </div>
         ) : filteredPubs.length === 0 ? (
-          <div className="cb-card p-12 text-center bg-white/95 backdrop-blur-md">
+          <div className="cb-card p-12 text-center bg-surface/95 backdrop-blur-md">
             <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-3" />
             <h3 className="text-slate-900 font-bold text-sm">No Publications Logged</h3>
             <p className="text-slate-400 text-xs mt-1">
@@ -201,10 +201,10 @@ export default function PublicationsPage() {
           </div>
         ) : (
           filteredPubs.map((pub) => (
-            <div key={pub.id} className="cb-card p-5 bg-white/95 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div key={pub.id} className="cb-card p-5 bg-surface/95 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1.5">
                 <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                  <span className={`px-2 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider ${
+                  <span className={`px-2 py-0.5 rounded text-2xs font-extrabold uppercase tracking-wider ${
                     pub.status === 'PUBLISHED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
                     pub.status === 'UNDER_REVIEW' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
                     pub.status === 'SUBMITTED' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
@@ -213,7 +213,7 @@ export default function PublicationsPage() {
                     {pub.status.replace('_', ' ')}
                   </span>
                   {pub.doi && (
-                    <span className="text-[10px] text-slate-450 flex items-center gap-1 font-semibold">
+                    <span className="text-2xs text-slate-450 flex items-center gap-1 font-semibold">
                       <Globe className="w-3 h-3" />
                       DOI: {pub.doi}
                     </span>
@@ -222,7 +222,7 @@ export default function PublicationsPage() {
                 <h3 className="font-bold text-slate-900 text-sm leading-snug">{pub.title}</h3>
                 <p className="text-xs text-slate-500 font-medium">Authors: {pub.authors}</p>
                 
-                <div className="flex items-center space-x-3 text-[10px] text-slate-400 font-semibold pt-1">
+                <div className="flex items-center space-x-3 text-2xs text-slate-400 font-semibold pt-1">
                   {pub.publisher && (
                     <span className="flex items-center gap-1">
                       <FileText className="w-3.5 h-3.5" />
@@ -277,23 +277,23 @@ export default function PublicationsPage() {
               animate={{ opacity: 0.3 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsDrawerOpen(false)}
-              className="fixed inset-0 bg-slate-900/30 backdrop-blur-[2px] z-50 cursor-pointer"
+              className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-50 cursor-pointer"
             />
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 right-0 w-full sm:max-w-lg bg-white border-l border-slate-200 z-50 p-6 shadow-2xl flex flex-col overflow-y-auto text-left"
+              className="fixed inset-y-0 right-0 w-full sm:max-w-lg bg-surface border-l border-slate-200 z-50 p-6 shadow-2xl flex flex-col overflow-y-auto text-left"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
                 <div className="flex items-center space-x-2.5">
                   <BookOpen className="w-5 h-5 text-primary" />
                   <div>
-                    <h3 className="font-display font-bold text-sm text-[#0c4da2]">
+                    <h3 className="font-display font-bold text-sm text-brand">
                       {editingPub ? 'Edit Publication' : 'Add New Publication'}
                     </h3>
-                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1">
+                    <p className="text-xs text-slate-400 font-medium capitalize mt-1">
                       Academic Intranet Logs
                     </p>
                   </div>
@@ -308,7 +308,7 @@ export default function PublicationsPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4 flex-1">
                 <div className="space-y-1">
-                  <label className="block text-[9px] font-bold text-slate-450 uppercase tracking-widest">
+                  <label className="block text-xs font-medium text-slate-450 capitalize">
                     Title *
                   </label>
                   <input
@@ -322,7 +322,7 @@ export default function PublicationsPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[9px] font-bold text-slate-450 uppercase tracking-widest">
+                  <label className="block text-xs font-medium text-slate-450 capitalize">
                     Authors (Comma-separated) *
                   </label>
                   <input
@@ -336,7 +336,7 @@ export default function PublicationsPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[9px] font-bold text-slate-450 uppercase tracking-widest">
+                  <label className="block text-xs font-medium text-slate-450 capitalize">
                     DOI (Digital Object Identifier)
                   </label>
                   <input
@@ -349,7 +349,7 @@ export default function PublicationsPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[9px] font-bold text-slate-450 uppercase tracking-widest">
+                  <label className="block text-xs font-medium text-slate-450 capitalize">
                     Publisher / Journal
                   </label>
                   <input
@@ -363,7 +363,7 @@ export default function PublicationsPage() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="block text-[9px] font-bold text-slate-450 uppercase tracking-widest">
+                    <label className="block text-xs font-medium text-slate-450 capitalize">
                       Year *
                     </label>
                     <input
@@ -378,13 +378,13 @@ export default function PublicationsPage() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-[9px] font-bold text-slate-450 uppercase tracking-widest">
+                    <label className="block text-xs font-medium text-slate-450 capitalize">
                       Status *
                     </label>
                     <select
                       value={status}
                       onChange={(e) => setStatus(e.target.value)}
-                      className="w-full px-3 h-[42px] text-xs font-semibold rounded-lg bg-white border border-slate-200 focus:outline-none transition-all cursor-pointer"
+                      className="w-full px-3 h-[42px] text-xs font-semibold rounded-lg bg-surface border border-slate-200 focus:outline-none transition-all cursor-pointer"
                     >
                       <option value="DRAFT">Draft</option>
                       <option value="SUBMITTED">Submitted</option>
@@ -398,13 +398,13 @@ export default function PublicationsPage() {
                   <button
                     type="button"
                     onClick={() => setIsDrawerOpen(false)}
-                    className="px-4 py-2.5 border border-slate-200 rounded-lg text-slate-650 hover:bg-slate-50 transition-colors text-xs font-bold uppercase tracking-wider cursor-pointer"
+                    className="px-4 py-2.5 border border-slate-200 rounded-lg text-slate-650 hover:bg-slate-50 transition-colors text-xs font-medium capitalize cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2.5 bg-primary hover:bg-primary/95 text-white text-xs font-bold uppercase tracking-wider rounded-lg shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer"
+                    className="px-5 py-2.5 bg-primary hover:bg-primary/95 text-white text-xs font-medium capitalize rounded-lg shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer"
                   >
                     <Check className="w-4 h-4" />
                     <span>{editingPub ? 'Update' : 'Publish'}</span>

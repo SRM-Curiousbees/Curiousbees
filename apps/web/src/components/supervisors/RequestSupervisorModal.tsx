@@ -114,7 +114,7 @@ export function RequestSupervisorModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm"
         />
 
         {/* Modal Container */}
@@ -123,14 +123,14 @@ export function RequestSupervisorModal({
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.2 }}
-          className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden z-10 max-h-[90vh] flex flex-col"
+          className="relative w-full max-w-lg bg-surface rounded-3xl shadow-2xl border border-slate-200 overflow-hidden z-10 max-h-[90vh] flex flex-col"
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#0C4DA2] to-[#042654] p-6 text-white relative">
+          <div className="bg-gradient-to-r from-brand to-brand-950 p-6 text-white relative theme-static">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
-                  <UserCheck className="w-5 h-5 text-[#FFC828]" />
+                  <UserCheck className="w-5 h-5 text-gold" />
                 </div>
                 <div>
                   <h3 className="text-lg font-bold">Request Supervisor</h3>
@@ -158,7 +158,7 @@ export function RequestSupervisorModal({
 
             {/* Target Supervisor Card */}
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#0C4DA2]">
+              <span className="text-xs font-medium capitalize text-brand">
                 Target Supervisor
               </span>
               <div className="flex items-start justify-between">
@@ -170,7 +170,7 @@ export function RequestSupervisorModal({
                   </div>
                   {supervisorArea && (
                     <div className="flex items-center gap-1 text-xs text-slate-600 mt-1">
-                      <BookOpen className="w-3.5 h-3.5 text-[#0C4DA2]" />
+                      <BookOpen className="w-3.5 h-3.5 text-brand" />
                       <span className="font-medium text-slate-700">{supervisorArea}</span>
                     </div>
                   )}
@@ -180,21 +180,21 @@ export function RequestSupervisorModal({
 
             {/* Scholar Profile Summary */}
             <div className="bg-blue-50/60 border border-blue-100 rounded-2xl p-4 space-y-1.5">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500">
+              <span className="text-xs font-medium capitalize text-slate-500">
                 Your Scholar Profile
               </span>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-slate-900">{scholarName}</span>
-                <span className="text-[11px] text-slate-500 font-medium">{scholarDept}</span>
+                <span className="text-2xs text-slate-500 font-medium">{scholarDept}</span>
               </div>
-              <p className="text-[11px] text-[#0C4DA2] font-semibold flex items-center gap-1">
+              <p className="text-2xs text-brand font-semibold flex items-center gap-1">
                 <BookOpen className="w-3 h-3" /> Area: {scholarArea}
               </p>
             </div>
 
             {/* Explanatory Notice */}
-            <div className="flex items-start gap-2.5 p-3.5 bg-[#FFC828]/10 border border-[#FFC828]/25 rounded-2xl text-xs text-slate-700 leading-relaxed font-medium">
-              <Info className="w-4 h-4 text-[#B88608] shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2.5 p-3.5 bg-gold/10 border border-gold/25 rounded-2xl text-xs text-slate-700 leading-relaxed font-medium">
+              <Info className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
               <p>
                 You are requesting this faculty member to become your research supervisor. Your request will remain pending until the supervisor accepts it.
               </p>
@@ -202,7 +202,7 @@ export function RequestSupervisorModal({
 
             {/* Research Context */}
             <div className="space-y-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest text-[#0C4DA2]">
+              <span className="text-xs font-medium capitalize text-brand">
                 Research Topic Alignment
               </span>
               
@@ -213,7 +213,7 @@ export function RequestSupervisorModal({
                   value={proposalTitle}
                   onChange={(e) => setProposalTitle(e.target.value)}
                   placeholder="e.g., Deep Learning Architectures for Autonomous Systems"
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]/40"
+                  className="w-full bg-surface border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/40"
                 />
               </div>
 
@@ -224,7 +224,7 @@ export function RequestSupervisorModal({
                     <select
                       value={researchDomain}
                       onChange={(e) => handleDomainChange(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]/40"
+                      className="w-full bg-surface border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand/40"
                     >
                       {availableDomains.map((d) => (
                         <option key={d.id} value={d.name}>{d.name}</option>
@@ -236,7 +236,7 @@ export function RequestSupervisorModal({
                       value={researchDomain}
                       onChange={(e) => setResearchDomain(e.target.value)}
                       placeholder="e.g. Computer Science & AI"
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]/40"
+                      className="w-full bg-surface border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand/40"
                     />
                   )}
                 </div>
@@ -250,7 +250,7 @@ export function RequestSupervisorModal({
                         <select
                           value={researchTopic}
                           onChange={(e) => setResearchTopic(e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]/40"
+                          className="w-full bg-surface border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand/40"
                         >
                           {domainObj.topics.map((t) => (
                             <option key={t.id} value={t.name}>{t.name}</option>
@@ -264,7 +264,7 @@ export function RequestSupervisorModal({
                         value={researchTopic}
                         onChange={(e) => setResearchTopic(e.target.value)}
                         placeholder="e.g. Deep Learning"
-                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]/40"
+                        className="w-full bg-surface border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand/40"
                       />
                     );
                   })()}
@@ -276,14 +276,14 @@ export function RequestSupervisorModal({
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
                 <span>Optional Message to Supervisor</span>
-                <span className="text-[10px] text-slate-400 font-normal">Optional</span>
+                <span className="text-2xs text-slate-400 font-normal">Optional</span>
               </label>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Briefly explain your research objectives or why you would like this faculty member to supervise your research..."
                 rows={3}
-                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]/40"
+                className="w-full bg-surface border border-slate-200 rounded-xl p-3 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand/40"
               />
             </div>
 
@@ -300,7 +300,7 @@ export function RequestSupervisorModal({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="px-5 py-2.5 rounded-xl bg-[#0C4DA2] hover:bg-[#003370] text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-strong text-white font-bold text-xs flex items-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>

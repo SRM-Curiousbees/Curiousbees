@@ -1,36 +1,62 @@
 import { z } from 'zod';
 
-export const envSchema = z.object({
+const nonEmptyCommaList = (message: string) =>
+  z.string().refine((val) => val.split(',').some((v) => v.trim().length > 0), message);
+
+const baseSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-  PORT: z.preprocess((val) => {
-    if (typeof val === 'string') return parseInt(val, 10);
-    return val;
-  }, z.number().int().default(4000)),
+  PORT: z.coerce.number().int().default(4000),
   DATABASE_URL: z.string().url('DATABASE_URL must be a valid connection URL'),
-  DIRECT_URL: z.string().url('DIRECT_URL must be a valid connection URL'),
-  NEXT_PUBLIC_API_URL: z.string().url('NEXT_PUBLIC_API_URL must be a valid URL'),
-  FRONTEND_URL: z.string().url('FRONTEND_URL must be a valid URL'),
+  DIRECT_URL: z.string().url('DIRECT_URL must be a valid connection URL').optional(),
+  FRONTEND_URL: z.string().url('FRONTEND_URL must be a valid URL').optional(),
   ALLOWED_ORIGINS: z.string().optional(),
+  ALLOWED_EMAIL_DOMAINS: z.string().optional(),
+  SUPABASE_URL: z.string().url().optional(),
+  NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().optional(),
-  SUPABASE_URL: z.string().optional(),
-  AUTH_MODE: z.string().optional(),
+  AWS_REGION: z.string().optional(),
+  AWS_S3_BUCKET: z.string().optional(),
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).optional(),
+  BREVO_API_KEY: z.string().optional(),
+  MAIL_FROM_EMAIL: z.string().email().optional(),
+  ENABLE_CRON: z.enum(['true', 'false']).optional(),
+  ENABLE_SWAGGER: z.enum(['true', 'false']).optional(),
 });
 
-export type EnvConfig = z.infer<typeof envSchema>;
+/**
+ * Production must be fully and explicitly configured. Anything that would
+ * otherwise fall back to a development default is required here, so a
+ * misconfigured task fails at boot instead of running with unsafe behaviour.
+ */
+const productionSchema = baseSchema.extend({
+  DIRECT_URL: z.string().url('DIRECT_URL must be a valid connection URL'),
+  FRONTEND_URL: z.string().url().refine((v) => v.startsWith('https://'), 'FRONTEND_URL must use https in production'),
+  ALLOWED_EMAIL_DOMAINS: nonEmptyCommaList('ALLOWED_EMAIL_DOMAINS must list at least one domain'),
+  SUPABASE_URL: z.string().url('SUPABASE_URL is required in production'),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required in production'),
+  AWS_REGION: z.string().min(1, 'AWS_REGION is required in production'),
+  AWS_S3_BUCKET: z.string().min(1, 'AWS_S3_BUCKET is required in production'),
+  // Production always sits behind at least the ALB (CloudFront + ALB = 2).
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(1, 'TRUST_PROXY_HOPS must be >= 1 behind the load balancer').max(5),
+  BREVO_API_KEY: z.string().min(1, 'BREVO_API_KEY is required in production'),
+  MAIL_FROM_EMAIL: z.string().email('MAIL_FROM_EMAIL is required in production'),
+});
+
+export type EnvConfig = z.infer<typeof baseSchema>;
 
 export function validateEnv(config: Record<string, unknown>) {
-  const result = envSchema.safeParse(config);
+  const isProduction = config.NODE_ENV === 'production';
+  // SUPABASE_URL may be provided under the shared NEXT_PUBLIC_ name in local development.
+  const input = { ...config, SUPABASE_URL: config.SUPABASE_URL || config.NEXT_PUBLIC_SUPABASE_URL };
+  const result = (isProduction ? productionSchema : baseSchema).safeParse(input);
+
   if (!result.success) {
-    console.warn('\n================================================================');
-    console.warn('⚠️  WARNING: Invalid or missing environment variables detected:');
-    console.warn('================================================================');
-    result.error.errors.forEach((err) => {
-      console.warn(`  - [${err.path.join('.') || 'Global'}]: ${err.message}`);
-    });
-    console.warn('The application will proceed, but some modules may malfunction.');
-    console.warn('================================================================\n');
-    return config as any;
+    const problems = result.error.errors.map((err) => `  - [${err.path.join('.') || 'Global'}]: ${err.message}`);
+    if (isProduction) {
+      throw new Error(`Invalid production configuration:\n${problems.join('\n')}`);
+    }
+    console.warn(`\n⚠️  Invalid or missing environment variables detected:\n${problems.join('\n')}\n`);
+    return config;
   }
-  return result.data;
+  return { ...config, ...result.data };
 }

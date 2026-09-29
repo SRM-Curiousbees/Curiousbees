@@ -91,7 +91,7 @@ export default function AdminSupervisorsPage() {
       
       {/* Header */}
       <div className="border-b border-slate-100 pb-5">
-        <span className="text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-1.5">
+        <span className="text-xs font-medium text-primary capitalize flex items-center gap-1.5">
           <Award className="w-4 h-4 text-primary" />
           <span>Faculty Directory</span>
         </span>
@@ -103,49 +103,49 @@ export default function AdminSupervisorsPage() {
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="cb-card p-5 bg-white/95 backdrop-blur-md flex items-center gap-4">
-          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 rounded-xl">
+        <div className="cb-card p-5 bg-surface/95 backdrop-blur-md flex items-center gap-4">
+          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
             <Users className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Total Supervisors</p>
+            <p className="text-xs text-slate-400 font-medium capitalize">Total Supervisors</p>
             <h3 className="text-xl font-bold text-slate-800 mt-0.5">{totalSupervisorsCount}</h3>
           </div>
         </div>
 
-        <div className="cb-card p-5 bg-white/95 backdrop-blur-md flex items-center gap-4">
-          <div className="p-3 bg-teal-50 dark:bg-teal-950/30 text-teal-600 rounded-xl">
+        <div className="cb-card p-5 bg-surface/95 backdrop-blur-md flex items-center gap-4">
+          <div className="p-3 bg-teal-50 text-teal-600 rounded-xl">
             <UserCheck className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Advised Scholars</p>
+            <p className="text-xs text-slate-400 font-medium capitalize">Advised Scholars</p>
             <h3 className="text-xl font-bold text-slate-800 mt-0.5">{totalScholarsWithSupervisor}</h3>
           </div>
         </div>
 
-        <div className="cb-card p-5 bg-white/95 backdrop-blur-md flex items-center gap-4">
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/30 text-amber-600 rounded-xl">
+        <div className="cb-card p-5 bg-surface/95 backdrop-blur-md flex items-center gap-4">
+          <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
             <BookOpen className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Average Advising Load</p>
+            <p className="text-xs text-slate-400 font-medium capitalize">Average Advising Load</p>
             <h3 className="text-xl font-bold text-slate-800 mt-0.5">{averageLoad} / guide</h3>
           </div>
         </div>
 
-        <div className="cb-card p-5 bg-white/95 backdrop-blur-md flex items-center gap-4">
-          <div className="p-3 bg-rose-50 dark:bg-rose-950/30 text-rose-600 rounded-xl">
+        <div className="cb-card p-5 bg-surface/95 backdrop-blur-md flex items-center gap-4">
+          <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
             <ShieldAlert className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Peak Advising Load</p>
+            <p className="text-xs text-slate-400 font-medium capitalize">Peak Advising Load</p>
             <h3 className="text-xl font-bold text-slate-800 mt-0.5">{maxLoad} scholars</h3>
           </div>
         </div>
       </div>
 
       {/* Filters & Actions */}
-      <div className="cb-card p-5 bg-white/95 backdrop-blur-md flex flex-col sm:flex-row gap-4 items-center justify-between">
+      <div className="cb-card p-5 bg-surface/95 backdrop-blur-md flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="relative w-full sm:w-80">
           <input
             type="text"
@@ -163,7 +163,7 @@ export default function AdminSupervisorsPage() {
             else if (loadSortOrder === 'desc') setLoadSortOrder('asc');
             else setLoadSortOrder(null);
           }}
-          className="w-full sm:w-auto px-4 h-[42px] border border-slate-200 rounded-lg bg-white hover:bg-slate-50 transition-all text-xs font-semibold text-slate-700 flex items-center justify-center gap-2 cursor-pointer"
+          className="w-full sm:w-auto px-4 h-[42px] border border-slate-200 rounded-lg bg-surface hover:bg-slate-50 transition-all text-xs font-semibold text-slate-700 flex items-center justify-center gap-2 cursor-pointer"
         >
           <ArrowUpDown className="w-3.5 h-3.5" />
           <span>
@@ -189,11 +189,11 @@ export default function AdminSupervisorsPage() {
       ) : (
         <>
           {/* Desktop Table View */}
-          <div className="hidden md:block cb-card overflow-hidden bg-white/95 backdrop-blur-md">
-            <div className="overflow-x-auto">
+          <div className="hidden md:block cb-card overflow-hidden bg-surface/95 backdrop-blur-md">
+            <div className="relative overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="cb-table-header text-[10px] uppercase tracking-wider text-slate-450 border-b border-slate-100">
+                  <tr className="cb-table-header text-xs capitalize text-slate-450 border-b border-slate-100">
                     <th className="p-4 pl-6">Supervisor</th>
                     <th className="p-4">Department</th>
                     <th className="p-4">Advising Load</th>
@@ -219,13 +219,13 @@ export default function AdminSupervisorsPage() {
                             <h4 className="font-bold text-slate-900 leading-snug flex items-center gap-1.5">
                               <span>{sup.name || 'Faculty Member'}</span>
                               {sup.suspended && (
-                                <span className="text-[9px] bg-red-50 text-red-700 font-extrabold uppercase px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                                <span className="text-2xs bg-red-50 text-red-700 font-semibold uppercase px-1.5 py-0.5 rounded flex items-center gap-0.5">
                                   <Lock className="w-2.5 h-2.5" />
                                   <span>Suspended</span>
                                 </span>
                               )}
                             </h4>
-                            <p className="text-[10px] text-slate-400 font-semibold">{sup.email}</p>
+                            <p className="text-2xs text-slate-400 font-semibold">{sup.email}</p>
                           </div>
                         </td>
 
@@ -234,7 +234,7 @@ export default function AdminSupervisorsPage() {
                         <td className="p-4">
                           <div className="flex items-center gap-2">
                             <span className="font-bold text-slate-800">{loadCount}</span>
-                            <div className="w-24 bg-slate-100 rounded-full h-1.5 dark:bg-slate-800 overflow-hidden">
+                            <div className="w-24 bg-slate-100 rounded-full h-1.5 overflow-hidden">
                               <div
                                 className={`h-1.5 rounded-full ${
                                   loadCount >= 4
@@ -246,13 +246,13 @@ export default function AdminSupervisorsPage() {
                                 style={{ width: `${Math.min((loadCount / 5) * 100, 100)}%` }}
                               />
                             </div>
-                            <span className="text-[10px] text-slate-400 font-semibold">({loadCount}/5 Max)</span>
+                            <span className="text-2xs text-slate-400 font-semibold">({loadCount}/5 Max)</span>
                           </div>
                         </td>
 
                         <td className="p-4">
                           {loadCount === 0 ? (
-                            <span className="text-[10px] text-slate-400 italic">No assigned scholars</span>
+                            <span className="text-2xs text-slate-400 italic">No assigned scholars</span>
                           ) : (
                             <div className="flex -space-x-1.5 overflow-hidden">
                               {scholarsList.slice(0, 4).map((scholar) => (
@@ -262,12 +262,12 @@ export default function AdminSupervisorsPage() {
                                     name={scholar.name || undefined}
                                     role={scholar.role}
                                     size="sm"
-                                    className="border-2 border-white dark:border-slate-900"
+                                    className="border-2 border-surface"
                                   />
                                 </div>
                               ))}
                               {loadCount > 4 && (
-                                <div className="w-7 h-7 rounded-full bg-slate-100 border-2 border-white flex items-center justify-center text-[10px] font-bold text-slate-500 dark:bg-slate-800 dark:border-slate-900">
+                                <div className="w-7 h-7 rounded-full bg-slate-100 border-2 border-surface flex items-center justify-center text-2xs font-bold text-slate-500">
                                   +{loadCount - 4}
                                 </div>
                               )}
@@ -278,7 +278,7 @@ export default function AdminSupervisorsPage() {
                         <td className="p-4 pr-6 text-right">
                           <button
                             onClick={() => handleSuspendToggle(sup.id, !!sup.suspended)}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ml-auto border cursor-pointer ${
+                            className={`px-3 py-1.5 rounded-lg text-2xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ml-auto border cursor-pointer ${
                               sup.suspended
                                 ? 'bg-emerald-50 border-emerald-250 text-emerald-700 hover:bg-emerald-100/60'
                                 : 'bg-red-50 border-red-200 text-red-750 hover:bg-red-100/60'
@@ -303,7 +303,7 @@ export default function AdminSupervisorsPage() {
               const loadCount = scholarsList.length;
 
               return (
-                <div key={sup.id} className="cb-card p-5 bg-white/95 backdrop-blur-md space-y-4">
+                <div key={sup.id} className="cb-card p-5 bg-surface/95 backdrop-blur-md space-y-4">
                   <div className="flex items-center gap-3">
                     <AvatarRing
                       src={sup.image || undefined}
@@ -315,13 +315,13 @@ export default function AdminSupervisorsPage() {
                       <h4 className="font-bold text-slate-900 leading-snug flex items-center gap-1.5">
                         <span>{sup.name || 'Faculty Member'}</span>
                         {sup.suspended && (
-                          <span className="text-[9px] bg-red-50 text-red-700 font-extrabold px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                          <span className="text-2xs bg-red-50 text-red-700 font-semibold px-1.5 py-0.5 rounded flex items-center gap-0.5">
                             <Lock className="w-2.5 h-2.5" />
                             <span>Suspended</span>
                           </span>
                         )}
                       </h4>
-                      <p className="text-[10px] text-slate-400 font-semibold">{sup.email}</p>
+                      <p className="text-2xs text-slate-400 font-semibold">{sup.email}</p>
                     </div>
                   </div>
 
@@ -335,7 +335,7 @@ export default function AdminSupervisorsPage() {
                       <span className="text-slate-400 font-semibold">Advising Load:</span>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-slate-800">{loadCount}</span>
-                        <div className="w-20 bg-slate-100 rounded-full h-1.5 dark:bg-slate-800 overflow-hidden">
+                        <div className="w-20 bg-slate-100 rounded-full h-1.5 overflow-hidden">
                           <div
                             className={`h-1.5 rounded-full ${
                               loadCount >= 4
@@ -360,16 +360,16 @@ export default function AdminSupervisorsPage() {
                             name={scholar.name || undefined}
                             role={scholar.role}
                             size="sm"
-                            className="border border-white dark:border-slate-900"
+                            className="border border-surface"
                           />
                         ))}
                         {loadCount > 3 && (
-                          <div className="w-7 h-7 rounded-full bg-slate-100 border border-white flex items-center justify-center text-[9px] font-bold text-slate-500">
+                          <div className="w-7 h-7 rounded-full bg-slate-100 border border-surface flex items-center justify-center text-2xs font-bold text-slate-500">
                             +{loadCount - 3}
                           </div>
                         )}
                         {loadCount === 0 && (
-                          <span className="text-[10px] text-slate-405 italic">None</span>
+                          <span className="text-2xs text-slate-405 italic">None</span>
                         )}
                       </div>
                     </div>
@@ -378,7 +378,7 @@ export default function AdminSupervisorsPage() {
                   <div className="border-t border-slate-100/70 pt-3 flex justify-end">
                     <button
                       onClick={() => handleSuspendToggle(sup.id, !!sup.suspended)}
-                      className={`w-full py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 border cursor-pointer ${
+                      className={`w-full py-2 rounded-lg text-2xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 border cursor-pointer ${
                         sup.suspended
                           ? 'bg-emerald-50 border-emerald-250 text-emerald-700 hover:bg-emerald-100/60'
                           : 'bg-red-50 border-red-200 text-red-750 hover:bg-red-100/60'

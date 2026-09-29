@@ -82,17 +82,17 @@ export default function ResearchersDiscoveryPage() {
     <div className="min-h-[calc(100vh-4rem)] p-4 md:p-8 max-w-7xl mx-auto space-y-8 pb-32 select-none text-left">
       
       {/* ─── 1. HEADER SECTION ─── */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-white/90 backdrop-blur-xl border border-slate-200/80 p-6 md:p-8 rounded-3xl shadow-sm">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-surface/90 backdrop-blur-xl border border-slate-200/80 p-6 md:p-8 rounded-3xl shadow-sm">
         <div className="space-y-2">
           <div className="flex items-center gap-2.5">
-            <span className="p-2 bg-[#0C4DA2]/10 text-[#0C4DA2] rounded-xl border border-blue-100">
+            <span className="p-2 bg-brand/10 text-brand rounded-xl border border-blue-100">
               <Network className="w-5 h-5" />
             </span>
-            <span className="text-xs font-black uppercase tracking-widest text-[#0C4DA2]">
+            <span className="text-xs font-medium capitalize text-brand">
               SRM RESEARCH COMMUNITY
             </span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight font-display">
+          <h1 className="text-3xl md:text-4xl font-semibold text-slate-900 tracking-tight font-display">
             Researchers
           </h1>
           <p className="text-slate-600 max-w-2xl text-sm md:text-base leading-relaxed font-medium">
@@ -101,9 +101,9 @@ export default function ResearchersDiscoveryPage() {
         </div>
 
         <div className="flex items-center gap-3 bg-slate-50 border border-slate-200/80 px-4 py-3 rounded-2xl shrink-0">
-          <Users className="w-5 h-5 text-[#0C4DA2]" />
+          <Users className="w-5 h-5 text-brand" />
           <div className="text-xs">
-            <p className="font-extrabold text-slate-900">{totalCount} Researchers</p>
+            <p className="font-semibold text-slate-900">{totalCount} Researchers</p>
             <p className="text-slate-500 font-medium">Across CuriousBees</p>
           </div>
         </div>
@@ -113,8 +113,8 @@ export default function ResearchersDiscoveryPage() {
       {suggestedPeers.length > 0 && !searchQuery && (
         <section className="space-y-4">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#0C4DA2]" />
-            <h2 className="text-xs font-black text-slate-900 uppercase tracking-widest">
+            <Sparkles className="w-4 h-4 text-brand" />
+            <h2 className="text-xs font-medium text-slate-900 capitalize">
               Suggested Peers (Shared Focus)
             </h2>
           </div>
@@ -124,7 +124,7 @@ export default function ResearchersDiscoveryPage() {
                 key={`suggested-${peer.id}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between relative overflow-hidden group"
+                className="bg-surface border border-slate-200/90 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-blue-300 transition-all flex flex-col justify-between relative overflow-hidden group"
               >
                 <div className="space-y-4 relative z-10">
                   <div className="flex items-center gap-3">
@@ -132,14 +132,14 @@ export default function ResearchersDiscoveryPage() {
                       <img src={getProfileImageUrl(peer)} alt={peer.name} className="w-full h-full object-cover" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <h3 className="font-extrabold text-slate-900 text-base truncate group-hover:text-[#0C4DA2] transition-colors">
+                      <h3 className="font-semibold text-slate-900 text-base truncate group-hover:text-brand transition-colors">
                         {peer.name}
                       </h3>
                       <span className={cn(
-                        "inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full mb-0.5",
+                        "inline-block text-2xs font-semibold px-2 py-0.5 rounded-full mb-0.5",
                         peer.role === 'RESEARCH_SUPERVISOR' || peer.role === 'SUPERVISOR'
                           ? "bg-amber-50 text-amber-700 border border-amber-200" 
-                          : "bg-blue-50 text-[#0C4DA2] border border-blue-100"
+                          : "bg-blue-50 text-brand border border-blue-100"
                       )}>
                         {peer.role === 'RESEARCH_SUPERVISOR' || peer.role === 'SUPERVISOR' ? 'Research Supervisor' : 'Research Scholar'}
                       </span>
@@ -149,7 +149,7 @@ export default function ResearchersDiscoveryPage() {
                     </div>
                   </div>
 
-                  <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0C4DA2] bg-blue-50/70 px-2.5 py-1 rounded-lg border border-blue-100">
+                  <div className="inline-flex items-center gap-1.5 text-xs font-bold text-brand bg-blue-50/70 px-2.5 py-1 rounded-lg border border-blue-100">
                     <BookOpen className="w-3.5 h-3.5" />
                     {peer.sharedInterestCount} Shared Research Interests
                   </div>
@@ -171,7 +171,7 @@ export default function ResearchersDiscoveryPage() {
 
       {/* ─── 3. SEARCH & CONTROLS SECTION ─── */}
       <section className="space-y-6">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-3">
+        <div className="bg-surface p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
@@ -179,7 +179,7 @@ export default function ResearchersDiscoveryPage() {
               placeholder="Search researchers by name, department, or research interests..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] focus:bg-white text-xs md:text-sm font-semibold transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:bg-surface text-xs md:text-sm font-semibold transition-all"
             />
           </div>
 
@@ -187,7 +187,7 @@ export default function ResearchersDiscoveryPage() {
             <select
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
-              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs md:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] focus:bg-white min-w-[150px] transition-all cursor-pointer"
+              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs md:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand focus:bg-surface min-w-[150px] transition-all cursor-pointer"
             >
               <option value="">All Roles</option>
               <option value="RESEARCH_SUPERVISOR">Research Supervisors</option>
@@ -204,7 +204,7 @@ export default function ResearchersDiscoveryPage() {
                   if (!isValid) setSelectedDeptId('');
                 }
               }}
-              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs md:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] focus:bg-white min-w-[160px] max-w-[220px] transition-all cursor-pointer"
+              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs md:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand focus:bg-surface min-w-[160px] max-w-[220px] transition-all cursor-pointer"
             >
               <option value="">All Faculties</option>
               {faculties.map((f) => (
@@ -215,7 +215,7 @@ export default function ResearchersDiscoveryPage() {
             <select
               value={selectedDeptId}
               onChange={(e) => setSelectedDeptId(e.target.value)}
-              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs md:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] focus:bg-white min-w-[170px] max-w-[240px] transition-all cursor-pointer"
+              className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs md:text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand focus:bg-surface min-w-[170px] max-w-[240px] transition-all cursor-pointer"
             >
               <option value="">All Departments</option>
               {availableDepartments.map((dept) => (
@@ -231,7 +231,7 @@ export default function ResearchersDiscoveryPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-pulse">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-              <div key={i} className="bg-white border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-2xs">
+              <div key={i} className="bg-surface border border-slate-200/80 rounded-2xl p-5 space-y-4 shadow-2xs">
                 <div className="flex items-start gap-3.5">
                   <div className="w-12 h-12 rounded-full bg-slate-200 shrink-0" />
                   <div className="space-y-2 flex-1">
@@ -246,19 +246,19 @@ export default function ResearchersDiscoveryPage() {
             ))}
           </div>
         ) : isError ? (
-          <div className="bg-white border border-rose-200 rounded-3xl p-12 text-center max-w-md mx-auto space-y-4 shadow-sm">
+          <div className="bg-surface border border-rose-200 rounded-3xl p-12 text-center max-w-md mx-auto space-y-4 shadow-sm">
             <div className="w-14 h-14 bg-rose-50 border border-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto">
               <Network className="w-7 h-7" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-base font-extrabold text-slate-900">Unable to load researchers</h3>
+              <h3 className="text-base font-semibold text-slate-900">Unable to load researchers</h3>
               <p className="text-xs text-slate-500">
                 {(error as any)?.message || 'An error occurred while connecting to the academic directory.'}
               </p>
             </div>
             <button
               onClick={() => refetch()}
-              className="px-6 py-2.5 bg-[#0C4DA2] hover:bg-[#042654] text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
+              className="px-6 py-2.5 bg-brand hover:bg-brand-strong text-white font-semibold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
             >
               Retry Loading
             </button>
@@ -274,7 +274,7 @@ export default function ResearchersDiscoveryPage() {
                   exit={{ opacity: 0, scale: 0.97 }}
                   transition={{ duration: 0.2 }}
                   key={`dir-${researcher.id}`}
-                  className="bg-white border border-slate-200/80 hover:border-blue-300 rounded-2xl shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group"
+                  className="bg-surface border border-slate-200/80 hover:border-blue-300 rounded-2xl shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col justify-between group"
                 >
                   <Link href={`/researchers/${researcher.id}`} className="p-5 block space-y-4 flex-1 cursor-pointer">
                     <div className="flex items-start gap-3.5">
@@ -283,20 +283,20 @@ export default function ResearchersDiscoveryPage() {
                       </div>
                       
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-extrabold text-slate-900 text-base truncate group-hover:text-[#0C4DA2] transition-colors">
+                        <h3 className="font-semibold text-slate-900 text-base truncate group-hover:text-brand transition-colors">
                           {researcher.name}
                         </h3>
                         <div className="flex items-center gap-1.5 flex-wrap mb-1">
                           <span className={cn(
-                            "inline-block text-[10px] font-extrabold px-2 py-0.5 rounded-full",
+                            "inline-block text-2xs font-semibold px-2 py-0.5 rounded-full",
                             researcher.role === 'RESEARCH_SUPERVISOR' || researcher.role === 'SUPERVISOR'
                               ? "bg-amber-50 text-amber-700 border border-amber-200" 
-                              : "bg-blue-50 text-[#0C4DA2] border border-blue-100"
+                              : "bg-blue-50 text-brand border border-blue-100"
                           )}>
                             {researcher.role === 'RESEARCH_SUPERVISOR' || researcher.role === 'SUPERVISOR' ? 'Research Supervisor' : 'Research Scholar'}
                           </span>
                           {researcher.alignmentScore ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center gap-1 text-2xs font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                               {researcher.alignmentScore}% Match
                             </span>
                           ) : null}
@@ -311,11 +311,11 @@ export default function ResearchersDiscoveryPage() {
                         {(researcher.role === 'RESEARCH_SUPERVISOR' || researcher.role === 'SUPERVISOR') && (
                           <div className="mt-1">
                             {researcher.isAtCapacity ? (
-                              <span className="inline-block text-[10px] font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-md">
+                              <span className="inline-block text-2xs font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-md">
                                 Capacity Full ({researcher.currentScholars}/{researcher.maxScholars})
                               </span>
                             ) : (
-                              <span className="inline-block text-[10px] font-bold text-emerald-600 bg-emerald-50/80 border border-emerald-200 px-2 py-0.5 rounded-md">
+                              <span className="inline-block text-2xs font-bold text-emerald-600 bg-emerald-50/80 border border-emerald-200 px-2 py-0.5 rounded-md">
                                 {researcher.capacityRemaining} Scholar Slot{researcher.capacityRemaining !== 1 ? 's' : ''} Open
                               </span>
                             )}
@@ -332,12 +332,12 @@ export default function ResearchersDiscoveryPage() {
 
                     {researcher.sharedInterests?.length > 0 && (
                       <div className="bg-blue-50/60 border border-blue-100 rounded-xl p-2.5 space-y-1">
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#0C4DA2] flex items-center gap-1">
+                        <span className="text-xs font-medium capitalize text-brand flex items-center gap-1">
                           <BookOpen className="w-3 h-3" /> Shared Focus ({researcher.sharedInterestCount})
                         </span>
                         <div className="flex flex-wrap gap-1">
                           {researcher.sharedInterests.slice(0, 3).map((item: string) => (
-                            <span key={item} className="px-1.5 py-0.5 bg-white border border-blue-200 text-[#0C4DA2] rounded text-[10px] font-bold truncate max-w-full">
+                            <span key={item} className="px-1.5 py-0.5 bg-surface border border-blue-200 text-brand rounded text-2xs font-bold truncate max-w-full">
                               {item}
                             </span>
                           ))}
@@ -348,12 +348,12 @@ export default function ResearchersDiscoveryPage() {
                     {researcher.researchInterests?.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         {researcher.researchInterests.slice(0, 3).map((interest: string) => (
-                          <span key={interest} className="px-2 py-0.5 bg-slate-50 border border-slate-200/80 rounded-md text-[11px] font-bold text-slate-600 max-w-full truncate">
+                          <span key={interest} className="px-2 py-0.5 bg-slate-50 border border-slate-200/80 rounded-md text-2xs font-bold text-slate-600 max-w-full truncate">
                             {interest}
                           </span>
                         ))}
                         {researcher.researchInterests.length > 3 && (
-                          <span className="px-2 py-0.5 bg-slate-50 border border-slate-200/80 rounded-md text-[11px] font-bold text-slate-500">
+                          <span className="px-2 py-0.5 bg-slate-50 border border-slate-200/80 rounded-md text-2xs font-bold text-slate-500">
                             +{researcher.researchInterests.length - 3}
                           </span>
                         )}
@@ -375,12 +375,12 @@ export default function ResearchersDiscoveryPage() {
           </div>
         ) : (
           /* Empty State */
-          <div className="bg-white border border-slate-200/80 rounded-3xl p-12 text-center shadow-sm max-w-xl mx-auto space-y-4">
-            <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto text-[#0C4DA2]">
+          <div className="bg-surface border border-slate-200/80 rounded-3xl p-12 text-center shadow-sm max-w-xl mx-auto space-y-4">
+            <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto text-brand">
               <Search className="w-7 h-7" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-lg font-extrabold text-slate-900">
+              <h3 className="text-lg font-semibold text-slate-900">
                 {searchQuery || selectedDeptId || selectedRole ? 'No Researchers Found' : 'No Researchers Available'}
               </h3>
               <p className="text-xs md:text-sm text-slate-500 max-w-md mx-auto font-medium">
@@ -396,7 +396,7 @@ export default function ResearchersDiscoveryPage() {
                   setSelectedDeptId('');
                   setSelectedRole('');
                 }}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
               >
                 Reset Filters
               </button>

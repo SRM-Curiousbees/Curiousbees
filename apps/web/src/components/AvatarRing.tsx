@@ -21,14 +21,14 @@ export default function AvatarRing({
   const isFaculty = role === 'SUPERVISOR';
   
   const sizeClasses = {
-    sm: 'w-7 h-7 text-[10px]',
+    sm: 'w-7 h-7 text-2xs',
     md: 'w-10 h-10 text-xs',
     lg: 'w-16 h-16 text-lg',
   };
 
   const ringColor = isFaculty
-    ? 'border-[#0B4EA2] shadow-sm'
-    : 'border-[#F5B800] shadow-sm';
+    ? 'border-brand shadow-sm'
+    : 'border-gold shadow-sm';
 
   const initials = name
     .split(' ')
@@ -49,12 +49,12 @@ export default function AvatarRing({
           <img
             src={src}
             alt={name}
-            className="w-full h-full rounded-full object-cover bg-[#EEF4FF]"
+            className="w-full h-full rounded-full object-cover bg-blue-50"
           />
         ) : (
           <div className={cn(
-            "w-full h-full rounded-full flex items-center justify-center font-bold text-[#17233D]",
-            isFaculty ? "bg-[#EEF4FF] text-[#0B4EA2]" : "bg-[#FFF9E6] text-[#92400E]"
+            "w-full h-full rounded-full flex items-center justify-center font-bold text-slate-900",
+            isFaculty ? "bg-blue-50 text-brand" : "bg-amber-50 text-amber-700"
           )}>
             {initials}
           </div>
@@ -62,8 +62,8 @@ export default function AvatarRing({
       </div>
       {/* Presence indicator */}
       <span className={cn(
-        "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white",
-        isFaculty ? "bg-[#0B4EA2]" : "bg-[#F5B800]"
+        "absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-surface",
+        isFaculty ? "bg-brand" : "bg-gold"
       )} />
     </div>
   );

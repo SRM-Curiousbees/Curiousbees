@@ -13,8 +13,8 @@ export default function AdminApprovalRequestsRedirectPage() {
 
   return (
     <div className="min-h-[70vh] flex flex-col items-center justify-center gap-3">
-      <Loader2 className="w-8 h-8 text-[#0C4DA2] animate-spin" />
-      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Redirecting to Admin Dashboard...</p>
+      <Loader2 className="w-8 h-8 text-brand animate-spin" />
+      <p className="text-xs font-medium text-slate-500 capitalize">Redirecting to Admin Dashboard...</p>
     </div>
   );
 }

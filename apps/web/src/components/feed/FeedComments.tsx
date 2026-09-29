@@ -95,7 +95,7 @@ function CommentItem({
   const roleLabel = comment.author?.role === 'RESEARCH_SUPERVISOR' ? 'Supervisor' : 'Scholar';
   const roleBadgeStyle = comment.author?.role === 'RESEARCH_SUPERVISOR'
     ? 'bg-amber-50 text-amber-700 border-amber-200'
-    : 'bg-blue-50 text-[#0C4DA2] border-blue-200';
+    : 'bg-blue-50 text-brand border-blue-200';
 
   return (
     <motion.div
@@ -106,7 +106,7 @@ function CommentItem({
     >
       {/* Thread line connector for nested replies */}
       {depth > 0 && (
-        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-slate-200 dark:from-slate-700 via-slate-200/60 dark:via-slate-700/60 to-transparent" />
+        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-slate-200 via-slate-200/60 to-transparent" />
       )}
 
       <div className="flex items-start gap-2.5 py-2.5 group">
@@ -114,17 +114,17 @@ function CommentItem({
         <img
           src={avatarUrl}
           alt={authorName}
-          className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700 shrink-0 mt-0.5"
+          className="w-7 h-7 rounded-full object-cover border border-slate-200 shrink-0 mt-0.5"
         />
 
         <div className="flex-1 min-w-0">
           {/* Header: name, role, time */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-[11px] font-extrabold text-slate-900 dark:text-[#F5F7FA]">{authorName}</span>
-            <span className={`inline-flex px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase border leading-none ${roleBadgeStyle} dark:bg-[#0B1728] dark:border-white/[0.10]`}>
+            <span className="text-2xs font-semibold text-slate-900">{authorName}</span>
+            <span className={`inline-flex px-1.5 py-0.5 rounded-full text-2xs font-bold uppercase border leading-none ${roleBadgeStyle}`}>
               {roleLabel}
             </span>
-            <span className="text-[10px] font-semibold text-slate-400 dark:text-[#718096]">
+            <span className="text-2xs font-semibold text-slate-400">
               {formatRelativeTime(comment.createdAt)}
             </span>
           </div>
@@ -136,27 +136,27 @@ function CommentItem({
                 type="text"
                 value={editingContent}
                 onChange={(e) => setEditingContent(e.target.value)}
-                className="w-full bg-white dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.10] text-slate-900 dark:text-[#F5F7FA] rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]/20 focus:border-[#0C4DA2]/40 transition-all"
+                className="w-full bg-surface border border-slate-200 text-slate-900 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition-all"
                 autoFocus
                 onKeyDown={(e) => e.key === 'Enter' && handleEditSubmit()}
               />
               <div className="flex items-center gap-2 justify-end">
                 <button
                   onClick={() => setIsEditing(false)}
-                  className="text-[10px] font-bold text-slate-500 dark:text-[#718096] hover:text-slate-700 dark:hover:text-[#F5F7FA] px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-[#132238] transition-colors"
+                  className="text-2xs font-bold text-slate-500 hover:text-slate-700 px-2 py-1 rounded-md hover:bg-slate-100 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleEditSubmit}
-                  className="text-[10px] font-bold text-white bg-[#0C4DA2] dark:bg-[#2563EB] hover:bg-[#042654] dark:hover:bg-blue-600 px-3 py-1 rounded-lg transition-colors"
+                  className="text-2xs font-bold text-white bg-brand hover:bg-brand-strong px-3 py-1 rounded-lg transition-colors"
                 >
                   Save
                 </button>
               </div>
             </div>
           ) : (
-            <p className="text-slate-700 dark:text-[#E2E8F0] text-xs leading-relaxed font-medium mt-0.5">
+            <p className="text-slate-700 text-xs leading-relaxed font-medium mt-0.5">
               {comment.content}
             </p>
           )}
@@ -167,8 +167,8 @@ function CommentItem({
               {/* Like */}
               <button
                 onClick={() => onLike(comment.id)}
-                className={`flex items-center gap-1 text-[10px] font-bold transition-colors ${
-                  isLiked ? 'text-rose-500' : 'text-slate-400 dark:text-[#718096] hover:text-rose-500'
+                className={`flex items-center gap-1 text-2xs font-bold transition-colors ${
+                  isLiked ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'
                 }`}
               >
                 <Heart className={`w-3 h-3 ${isLiked ? 'fill-current' : ''}`} />
@@ -179,7 +179,7 @@ function CommentItem({
               {depth < maxDepth && (
                 <button
                   onClick={() => setShowReplyInput(!showReplyInput)}
-                  className="flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-[#718096] hover:text-[#0C4DA2] dark:hover:text-[#3B82F6] transition-colors"
+                  className="flex items-center gap-1 text-2xs font-bold text-slate-400 hover:text-brand transition-colors"
                 >
                   <Reply className="w-3 h-3" />
                   <span>Reply</span>
@@ -194,14 +194,14 @@ function CommentItem({
                       setIsEditing(true);
                       setEditingContent(comment.content);
                     }}
-                    className="flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-[#718096] hover:text-slate-600 dark:hover:text-slate-200 transition-colors ml-1"
+                    className="flex items-center gap-1 text-2xs font-bold text-slate-400 hover:text-slate-600 transition-colors ml-1"
                   >
                     <Edit2 className="w-3 h-3" />
                     <span>Edit</span>
                   </button>
                   <button
                     onClick={() => onDelete(comment.id)}
-                    className="flex items-center gap-1 text-[10px] font-bold text-slate-400 dark:text-[#718096] hover:text-red-500 transition-colors ml-1"
+                    className="flex items-center gap-1 text-2xs font-bold text-slate-400 hover:text-red-500 transition-colors ml-1"
                   >
                     <Trash2 className="w-3 h-3" />
                     <span>Delete</span>
@@ -235,12 +235,12 @@ function CommentItem({
                     value={replyContent}
                     onChange={(e) => setReplyContent(e.target.value)}
                     placeholder={`Reply to ${authorName}...`}
-                    className="w-full pl-3 pr-9 py-1.5 rounded-full border border-slate-200 dark:border-white/[0.10] focus:border-[#0C4DA2] dark:focus:border-blue-500 focus:ring-1 focus:ring-[#0C4DA2]/20 outline-none text-[11px] font-medium transition-all bg-slate-50/80 dark:bg-[#0B1728] text-slate-900 dark:text-[#F5F7FA]"
+                    className="w-full pl-3 pr-9 py-1.5 rounded-full border border-slate-200 focus:border-brand focus:ring-1 focus:ring-brand/20 outline-none text-2xs font-medium transition-all bg-slate-50/80 text-slate-900"
                   />
                   <button
                     type="submit"
                     disabled={isSubmittingReply || !replyContent.trim()}
-                    className="absolute right-1 top-1 bottom-1 p-1 rounded-full bg-[#0C4DA2] dark:bg-[#2563EB] hover:bg-[#042654] dark:hover:bg-blue-600 disabled:opacity-40 text-white transition-all cursor-pointer"
+                    className="absolute right-1 top-1 bottom-1 p-1 rounded-full bg-brand hover:bg-brand-strong disabled:opacity-40 text-white transition-all cursor-pointer"
                   >
                     {isSubmittingReply ? (
                       <Loader2 className="w-3 h-3 animate-spin" />
@@ -258,7 +258,7 @@ function CommentItem({
             <div className="mt-1">
               <button
                 onClick={() => setShowReplies(!showReplies)}
-                className="flex items-center gap-1 text-[10px] font-bold text-[#0C4DA2] dark:text-[#3B82F6] hover:text-[#042654] dark:hover:text-blue-300 transition-colors mb-1"
+                className="flex items-center gap-1 text-2xs font-bold text-brand hover:text-brand-950 transition-colors mb-1"
               >
                 {showReplies ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                 <span>{replies.length} {replies.length === 1 ? 'reply' : 'replies'}</span>
@@ -383,18 +383,18 @@ export default function FeedComments({ threadId }: FeedCommentsProps) {
       <div className="max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
         {commentTree.length === 0 ? (
           <div className="flex flex-col items-center py-6 text-center">
-            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-[#0B1728] flex items-center justify-center mb-2">
-              <MessageSquare className="w-5 h-5 text-slate-300 dark:text-slate-600" />
+            <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center mb-2">
+              <MessageSquare className="w-5 h-5 text-slate-300" />
             </div>
-            <p className="text-xs font-bold text-slate-400 dark:text-[#718096]">
+            <p className="text-xs font-bold text-slate-400">
               Be the first to comment
             </p>
-            <p className="text-[10px] font-medium text-slate-300 dark:text-slate-600 mt-0.5">
+            <p className="text-2xs font-medium text-slate-300 mt-0.5">
               Share your thoughts on this research
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100/60 dark:divide-white/[0.06]">
+          <div className="divide-y divide-slate-100/60">
             {commentTree.map((comment: any) => (
               <CommentItem
                 key={comment.id}
@@ -412,8 +412,8 @@ export default function FeedComments({ threadId }: FeedCommentsProps) {
       </div>
 
       {/* Comment Input */}
-      <form onSubmit={handleCommentSubmit} className="flex gap-2 mt-3 pt-3 border-t border-slate-100 dark:border-white/[0.08]">
-        <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center">
+      <form onSubmit={handleCommentSubmit} className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
+        <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-slate-200 shadow-sm flex items-center justify-center">
           <img
             src={getProfileImageUrl(currentUser)}
             className="w-full h-full object-cover"
@@ -426,12 +426,12 @@ export default function FeedComments({ threadId }: FeedCommentsProps) {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Write a comment..."
-            className="w-full pl-3 pr-10 py-1.5 rounded-full border border-slate-200 dark:border-white/[0.10] focus:border-[#0C4DA2] dark:focus:border-blue-500 focus:ring-1 focus:ring-[#0C4DA2]/20 outline-none text-xs font-semibold transition-all bg-slate-50 dark:bg-[#0B1728] text-slate-900 dark:text-[#F5F7FA] placeholder:text-slate-400 dark:placeholder:text-[#718096]"
+            className="w-full pl-3 pr-10 py-1.5 rounded-full border border-slate-200 focus:border-brand focus:ring-1 focus:ring-brand/20 outline-none text-xs font-semibold transition-all bg-slate-50 text-slate-900 placeholder:text-slate-400"
           />
           <button
             type="submit"
             disabled={isSubmitting || !content.trim()}
-            className="absolute right-1 top-1 bottom-1 p-1.5 rounded-full bg-[#0C4DA2] dark:bg-[#2563EB] hover:bg-[#042654] dark:hover:bg-blue-600 disabled:opacity-40 text-white transition-all shadow-sm cursor-pointer"
+            className="absolute right-1 top-1 bottom-1 p-1.5 rounded-full bg-brand hover:bg-brand-strong disabled:opacity-40 text-white transition-all shadow-sm cursor-pointer"
           >
             {isSubmitting ? (
               <Loader2 className="w-3 h-3 animate-spin" />

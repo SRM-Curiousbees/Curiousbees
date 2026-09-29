@@ -1,111 +1,233 @@
-name: CuriousBees V2 CI/CD Pipeline
+name: CuriousBees CI/CD
+
+# validate  : every PR and push — lint, typecheck, unit + integration tests, Prisma
+#             validation, fresh-database `prisma migrate deploy`, production builds.
+# images    : pushes to main — build ARM64 images, push to ECR (GitHub OIDC, no keys).
+# deploy    : after `images`, gated by the "production" GitHub environment
+#             (required reviewers) — migrate, roll out ECS services, health-check.
+#
+# AWS access is only via OIDC: the "production" environment holds the role ARN
+# as a variable. No AWS access keys exist in GitHub. See docs/deployment/aws-production.md.
 
 on:
   push:
-    branches: [main, staging]
+    branches: [main]
   pull_request:
-    branches: [main, staging]
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
-  packages: write
-  id-token: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: 22
+  AWS_REGION: ap-south-1
+  ECS_CLUSTER: curiousbees-prod
+  ECR_API: curiousbees-api
+  ECR_WEB: curiousbees-web
+  APP_URL: https://srmcuriousbees.in
 
 jobs:
   validate:
-    name: Lint, Typecheck, Test & Production Build
+    name: Lint, typecheck, test, build
     runs-on: ubuntu-latest
-
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci_only
+          POSTGRES_DB: curiousbees_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci -d curiousbees_ci"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      s3:
+        image: localstack/localstack:4
+        env:
+          SERVICES: s3
+          S3_SKIP_SIGNATURE_VALIDATION: "0"
+        ports: ["4566:4566"]
+    env:
+      DATABASE_URL: postgresql://ci:ci_only@localhost:5432/curiousbees_ci?schema=public
+      DIRECT_URL: postgresql://ci:ci_only@localhost:5432/curiousbees_ci?schema=public
+      # Public placeholders so the Next.js build-time validation passes in CI.
+      NEXT_PUBLIC_SITE_URL: https://srmcuriousbees.in
+      NEXT_PUBLIC_API_URL: https://srmcuriousbees.in
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: "npm"
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
-      - name: Install Monorepo Dependencies
+      - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Generate Prisma Client
-        run: npm run db:generate
+      - name: Prisma validate + generate
+        run: |
+          npx prisma validate --schema apps/api/prisma/schema.prisma
+          npm run db:generate
 
-      - name: Lint Codebase
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - name: Lint
         run: npm run lint
 
-      - name: TypeScript Typecheck
+      - name: Typecheck
         run: npm run typecheck
 
-      - name: Execute Automated Unit & Integration Tests
-        run: npm test
+      - name: Unit tests
+        run: npm test -- --silent
 
-      - name: Build Production Bundles (Web & API)
-        run: npm run build
+      - name: Migration has no drift from schema.prisma
+        run: |
+          npx prisma migrate deploy --schema apps/api/prisma/schema.prisma
+          npx prisma migrate diff --from-url "$DATABASE_URL" \
+            --to-schema-datamodel apps/api/prisma/schema.prisma --exit-code
+
+      - name: Integration tests (fresh DB + S3 emulator)
+        working-directory: apps/api
+        env:
+          E2E_DATABASE_URL: ${{ env.DATABASE_URL }}
+          E2E_S3_ENDPOINT: http://localhost:4566
+        run: npm run test:e2e -- --silent
+
+      - name: Production builds
         env:
           NODE_ENV: production
-          PORT: 4000
-          DEVELOPMENT_MODE: "false"
-          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/srm_curiousbees_db?schema=public"
-          DIRECT_URL: "postgresql://postgres:postgres@localhost:5432/srm_curiousbees_db?schema=public"
-          FRONTEND_URL: "http://localhost:3000"
-          NEXT_PUBLIC_API_URL: "http://localhost:4000"
-          NEXT_PUBLIC_SUPABASE_URL: "https://mockup-project.supabase.co"
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: "mockup-anon-key"
-          SUPABASE_SERVICE_ROLE_KEY: "mockup-service-role-key"
+        run: npm run build
 
-  docker-staging:
-    name: Build Docker Images & Push to ECR (Staging)
+  images:
+    name: Build & push images (ARM64)
     needs: validate
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
-    runs-on: ubuntu-latest
-    environment: staging
-
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Native ARM64 runner for Graviton Fargate tasks. Override with the ARM_RUNNER variable if needed.
+    runs-on: ${{ vars.ARM_RUNNER || 'ubuntu-24.04-arm' }}
+    timeout-minutes: 40
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      api_image: ${{ steps.meta.outputs.api_image }}
+      web_image: ${{ steps.meta.outputs.web_image }}
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # If AWS Credentials are configured in repository secrets, authenticate to AWS ECR
-      - name: Configure AWS Credentials
-        if: env.AWS_ROLE_ARN != ''
+      - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION || 'ap-south-1' }}
-        env:
-          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Build API Docker Image
+      - name: Log in to Amazon ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Image names
+        id: meta
         run: |
-          docker build \
-            -t curiousbees-api:${{ github.sha }} \
-            -t curiousbees-api:staging-latest \
-            -f Dockerfile.api .
+          echo "api_image=${{ steps.ecr.outputs.registry }}/${ECR_API}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "web_image=${{ steps.ecr.outputs.registry }}/${ECR_WEB}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
 
-      - name: Build Web Docker Image
+      - name: Build & push API image
         run: |
-          docker build \
-            --build-arg NEXT_PUBLIC_API_URL=${{ secrets.STAGING_API_URL || 'https://api-staging.curiousbees.srmist.edu.in' }} \
-            --build-arg NEXT_PUBLIC_SUPABASE_URL=${{ secrets.SUPABASE_URL || 'https://staging-supabase.curiousbees.srmist.edu.in' }} \
-            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY || 'staging-anon-key' }} \
-            -t curiousbees-web:${{ github.sha }} \
-            -t curiousbees-web:staging-latest \
-            -f Dockerfile.web .
+          docker build -f Dockerfile.api -t "${{ steps.meta.outputs.api_image }}" .
+          docker push "${{ steps.meta.outputs.api_image }}"
 
-  deploy-production:
-    name: Deploy to Production (Manual Approval Gate)
-    needs: docker-staging
-    if: github.ref == 'refs/heads/main'
+      - name: Build & push web image
+        # Only PUBLIC values are passed as build args (they end up in the browser bundle).
+        run: |
+          docker build -f Dockerfile.web \
+            --build-arg NEXT_PUBLIC_SITE_URL="$APP_URL" \
+            --build-arg NEXT_PUBLIC_API_URL="$APP_URL" \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL="${{ vars.SUPABASE_URL }}" \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY="${{ vars.SUPABASE_ANON_KEY }}" \
+            --build-arg NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS="${{ vars.ALLOWED_EMAIL_DOMAINS }}" \
+            -t "${{ steps.meta.outputs.web_image }}" .
+          docker push "${{ steps.meta.outputs.web_image }}"
+
+  deploy:
+    name: Deploy to production
+    needs: images
     runs-on: ubuntu-latest
-    environment: production # Requires manual approval in GitHub repo environments
-
+    timeout-minutes: 40
+    environment:
+      name: production
+      url: https://srmcuriousbees.in
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_ACCOUNT_ID: ${{ vars.AWS_ACCOUNT_ID }}
+      S3_BUCKET: ${{ vars.S3_BUCKET }}
+      SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      ALLOWED_EMAIL_DOMAINS: ${{ vars.ALLOWED_EMAIL_DOMAINS }}
+      MAIL_FROM_EMAIL: ${{ vars.MAIL_FROM_EMAIL }}
+      API_IMAGE: ${{ needs.images.outputs.api_image }}
+      WEB_IMAGE: ${{ needs.images.outputs.web_image }}
     steps:
-      - name: Production Deployment Notification
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Render task definitions
         run: |
-          echo "Production deployment gate approved."
-          echo "Targeting AWS Application Load Balancer target groups for rolling blue/green release."
-          echo "Release commit: ${{ github.sha }}"
+          infra/aws/scripts/render.sh infra/aws/ecs/api-task-definition.json > api-td.json
+          infra/aws/scripts/render.sh infra/aws/ecs/web-task-definition.json > web-td.json
+
+      - name: Register API task definition
+        id: api_td
+        run: |
+          arn=$(aws ecs register-task-definition --cli-input-json file://api-td.json \
+            --query 'taskDefinition.taskDefinitionArn' --output text)
+          echo "arn=$arn" >> "$GITHUB_OUTPUT"
+
+      - name: Database migrations + reference seed (prisma migrate deploy)
+        env:
+          TASK_DEFINITION_ARN: ${{ steps.api_td.outputs.arn }}
+          ECS_SUBNETS: ${{ vars.ECS_SUBNETS }}
+          ECS_API_SECURITY_GROUP: ${{ vars.ECS_API_SECURITY_GROUP }}
+          BOOTSTRAP_ADMIN_EMAIL: ${{ vars.BOOTSTRAP_ADMIN_EMAIL }}
+        run: infra/aws/scripts/run-migrations.sh
+
+      - name: Deploy API service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: api-td.json
+          service: curiousbees-api
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Deploy web service
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: web-td.json
+          service: curiousbees-web
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+
+      - name: Post-deploy health check
+        run: |
+          for path in /api/health/live /api/health /healthz; do
+            for attempt in 1 2 3 4 5 6; do
+              status=$(curl -s -o /dev/null -w '%{http_code}' "$APP_URL$path" || true)
+              [[ "$status" == "200" ]] && { echo "OK $path"; break; }
+              [[ $attempt == 6 ]] && { echo "FAILED $path ($status)"; exit 1; }
+              sleep 10
+            done
+          done

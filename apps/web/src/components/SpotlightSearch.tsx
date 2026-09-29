@@ -140,10 +140,10 @@ export default function SpotlightSearch({ isOpen, onClose }: SpotlightSearchProp
   }, [isOpen, results, selectedIndex, onClose, router]);
 
   const categoryIcons = {
-    Threads: <MessageSquare className="w-4 h-4 text-primary dark:text-blue-400" />,
-    Opportunities: <Briefcase className="w-4 h-4 text-amber-600 dark:text-amber-400" />,
-    Events: <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
-    Researchers: <Users className="w-4 h-4 text-blue-600 dark:text-blue-400" />,
+    Threads: <MessageSquare className="w-4 h-4 text-primary" />,
+    Opportunities: <Briefcase className="w-4 h-4 text-amber-600" />,
+    Events: <Calendar className="w-4 h-4 text-emerald-600" />,
+    Researchers: <Users className="w-4 h-4 text-blue-600" />,
   };
 
   return (
@@ -156,7 +156,7 @@ export default function SpotlightSearch({ isOpen, onClose }: SpotlightSearchProp
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-900/40 dark:bg-black/75 backdrop-blur-[3px]"
+            className="fixed inset-0 bg-black/40 backdrop-blur-[3px]"
           />
 
           {/* Modal Container */}
@@ -165,11 +165,11 @@ export default function SpotlightSearch({ isOpen, onClose }: SpotlightSearchProp
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: -8 }}
             transition={{ type: 'spring', duration: 0.35 }}
-            className="relative w-full max-w-xl bg-white dark:bg-[#101D30] border border-borderStroke dark:border-white/[0.10] rounded-2xl shadow-2xl overflow-hidden text-left flex flex-col font-sans"
+            className="relative w-full max-w-xl bg-surface border border-borderStroke rounded-2xl shadow-2xl overflow-hidden text-left flex flex-col font-sans"
           >
             {/* Search Input Bar */}
-            <div className="flex items-center px-4 py-3.5 border-b border-borderStroke dark:border-white/[0.08] gap-3">
-              <Search className="w-4.5 h-4.5 text-textSecondary dark:text-slate-400 shrink-0" />
+            <div className="flex items-center px-4 py-3.5 border-b border-borderStroke gap-3">
+              <Search className="w-4.5 h-4.5 text-textSecondary shrink-0" />
               <input
                 ref={inputRef}
                 type="text"
@@ -179,15 +179,15 @@ export default function SpotlightSearch({ isOpen, onClose }: SpotlightSearchProp
                   setQuery(e.target.value);
                   setSelectedIndex(0);
                 }}
-                className="flex-1 bg-transparent border-none text-[13.5px] text-slate-900 dark:text-[#F5F7FA] placeholder-textSecondary/50 dark:placeholder-slate-500 outline-none select-text"
+                className="flex-1 bg-transparent border-none text-sm text-slate-900 placeholder-textSecondary/50 outline-none select-text"
               />
-              <span className="text-[9px] font-bold text-textSecondary/60 dark:text-[#A7B3C5] uppercase border border-borderStroke/70 dark:border-white/[0.10] bg-slate-50 dark:bg-[#0B1728] px-2 py-0.5 rounded shadow-sm">
+              <span className="text-2xs font-bold text-textSecondary/60 uppercase border border-borderStroke/70 bg-slate-50 px-2 py-0.5 rounded shadow-sm">
                 ESC
               </span>
             </div>
 
             {/* Quick Filter Tabs */}
-            <div className="flex px-3 py-2 border-b border-borderStroke dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#0B1728] gap-1.5 overflow-x-auto">
+            <div className="flex px-3 py-2 border-b border-borderStroke bg-slate-50/50 gap-1.5 overflow-x-auto">
               {(['ALL', 'THREADS', 'OPPORTUNITIES', 'EVENTS', 'RESEARCHERS'] as const).map((cat) => (
                 <button
                   key={cat}
@@ -196,10 +196,10 @@ export default function SpotlightSearch({ isOpen, onClose }: SpotlightSearchProp
                     setSelectedIndex(0);
                   }}
                   className={cn(
-                    'px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer',
+                    'px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-colors cursor-pointer',
                     activeCategory === cat
-                      ? 'bg-primary dark:bg-[#2563EB] text-white shadow-sm'
-                      : 'bg-transparent text-textSecondary dark:text-[#A7B3C5] hover:text-black dark:hover:text-[#F5F7FA] hover:bg-slate-100 dark:hover:bg-[#132238]'
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-transparent text-textSecondary hover:text-ink hover:bg-slate-100'
                   )}
                 >
                   {cat}
@@ -210,10 +210,10 @@ export default function SpotlightSearch({ isOpen, onClose }: SpotlightSearchProp
             {/* Results Zone */}
             <div className="max-h-[320px] overflow-y-auto p-2 space-y-0.5">
               {results.length === 0 ? (
-                <div className="py-10 text-center text-textSecondary dark:text-slate-400 space-y-1.5">
-                  <Search className="w-8 h-8 opacity-20 mx-auto text-textSecondary dark:text-slate-400" />
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-textSecondary/80 dark:text-slate-300">No matching results found</p>
-                  <p className="text-xs text-textSecondary/50 dark:text-slate-500">Try refining your search keyword queries</p>
+                <div className="py-10 text-center text-textSecondary space-y-1.5">
+                  <Search className="w-8 h-8 opacity-20 mx-auto text-textSecondary" />
+                  <p className="text-xs font-medium capitalize text-textSecondary/80">No matching results found</p>
+                  <p className="text-xs text-textSecondary/50">Try refining your search keyword queries</p>
                 </div>
               ) : (
                 results.map((item, idx) => {
@@ -228,27 +228,27 @@ export default function SpotlightSearch({ isOpen, onClose }: SpotlightSearchProp
                       onMouseEnter={() => setSelectedIndex(idx)}
                       className={cn(
                         'flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 relative overflow-hidden',
-                        isSelected ? 'bg-primary/5 dark:bg-blue-600/15' : 'bg-transparent'
+                        isSelected ? 'bg-primary/5' : 'bg-transparent'
                       )}
                     >
                       <div className="flex items-center gap-3 min-w-0 z-10">
                         <div className={cn(
                           'p-1.5 rounded-lg shrink-0 border transition-all',
                           isSelected 
-                            ? 'bg-white dark:bg-[#132238] border-primary/20 dark:border-blue-500/30 shadow-sm' 
-                            : 'bg-slate-50 dark:bg-[#0B1728] border-borderStroke/30 dark:border-white/[0.06]'
+                            ? 'bg-surface border-primary/20 shadow-sm' 
+                            : 'bg-slate-50 border-borderStroke/30'
                         )}>
                           {categoryIcons[item.category]}
                         </div>
                         <div className="min-w-0 text-left">
                           <p className={cn(
-                            'text-[13px] font-semibold leading-tight truncate transition-colors',
-                            isSelected ? 'text-primary dark:text-[#3B82F6]' : 'text-slate-900 dark:text-[#F5F7FA]'
+                            'text-sm font-semibold leading-tight truncate transition-colors',
+                            isSelected ? 'text-primary' : 'text-slate-900'
                           )}>
                             {item.title}
                           </p>
                           {item.meta && (
-                            <p className="text-[10px] text-textSecondary/60 dark:text-[#718096] leading-normal truncate mt-0.5 font-medium">
+                            <p className="text-2xs text-textSecondary/60 leading-normal truncate mt-0.5 font-medium">
                               {item.meta}
                             </p>
                           )}
@@ -256,9 +256,9 @@ export default function SpotlightSearch({ isOpen, onClose }: SpotlightSearchProp
                       </div>
 
                       {isSelected && (
-                        <div className="flex items-center gap-1 text-[9px] font-bold text-primary dark:text-[#3B82F6] uppercase shrink-0 z-10">
+                        <div className="flex items-center gap-1 text-2xs font-bold text-primary uppercase shrink-0 z-10">
                           <span>Open</span>
-                          <CornerDownLeft className="w-3.5 h-3.5 text-primary dark:text-[#3B82F6]" />
+                          <CornerDownLeft className="w-3.5 h-3.5 text-primary" />
                         </div>
                       )}
                     </div>
@@ -268,12 +268,12 @@ export default function SpotlightSearch({ isOpen, onClose }: SpotlightSearchProp
             </div>
 
             {/* Instructions Footer */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-t border-borderStroke dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#0B1728] text-[9px] font-bold text-textSecondary/60 dark:text-[#718096] uppercase">
+            <div className="flex items-center justify-between px-4 py-2.5 border-t border-borderStroke bg-slate-50/50 text-2xs font-bold text-textSecondary/60 uppercase">
               <div className="flex items-center gap-4">
                 <span>↑↓ navigate</span>
                 <span>⏎ select</span>
               </div>
-              <span className="font-semibold text-primary dark:text-[#3B82F6]">CuriousBees Spotlight Search</span>
+              <span className="font-semibold text-primary">CuriousBees Spotlight Search</span>
             </div>
           </motion.div>
         </div>

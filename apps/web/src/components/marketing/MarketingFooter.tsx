@@ -1,59 +1,40 @@
-'use client';
-
 import React from 'react';
 import Link from 'next/link';
 import Logo from '../Logo';
 
+const COLUMNS = [
+  { title: 'Platform', links: [['/research', 'Research'], ['/education', 'Education'], ['/institution', 'Institution'], ['/about', 'About']] },
+  { title: 'Resources', links: [['/ethics-framework', 'Ethics framework'], ['/contact', 'Contact']] },
+  { title: 'Legal', links: [['/privacy-policy', 'Privacy policy'], ['/terms-of-service', 'Terms of service']] },
+];
+
 export default function MarketingFooter() {
   return (
-    <footer className="bg-slate-50 border-t border-slate-200 py-12 md:py-16">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
-          <div className="col-span-1 md:col-span-1">
-            <Link href="/" className="inline-block mb-4 hover:opacity-80 transition-opacity">
-              <Logo showText={true} size={28} />
-            </Link>
-            <p className="text-sm text-slate-500 max-w-xs">
-              Elevating academic research through structured collaboration, transparent supervision, and institutional intelligence.
+    <footer className="border-t border-line bg-surface">
+      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+        <div className="grid gap-10 md:grid-cols-[1.5fr_1fr_1fr_1fr]">
+          <div>
+            <Logo showText size={28} />
+            <p className="mt-4 max-w-xs text-sm text-ink-secondary">
+              The research collaboration platform for SRM Institute of Science and Technology.
             </p>
           </div>
-          
-          <div>
-            <h3 className="font-semibold text-slate-900 mb-4 text-sm">Platform</h3>
-            <ul className="space-y-3">
-              <li><Link href="/research" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">Research</Link></li>
-              <li><Link href="/education" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">Education</Link></li>
-              <li><Link href="/institution" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">Institution</Link></li>
-              <li><Link href="/about" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">About Us</Link></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="font-semibold text-slate-900 mb-4 text-sm">Resources</h3>
-            <ul className="space-y-3">
-              <li><Link href="/ethics-framework" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">Ethics Framework</Link></li>
-              <li><Link href="/contact" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">Contact Support</Link></li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="font-semibold text-slate-900 mb-4 text-sm">Legal</h3>
-            <ul className="space-y-3">
-              <li><Link href="/privacy-policy" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">Privacy Policy</Link></li>
-              <li><Link href="/terms-of-service" className="text-sm text-slate-500 hover:text-slate-900 transition-colors">Terms of Service</Link></li>
-            </ul>
-          </div>
+          {COLUMNS.map((col) => (
+            <nav key={col.title} aria-label={col.title}>
+              <h3 className="text-sm font-semibold text-ink">{col.title}</h3>
+              <ul className="mt-3 space-y-2.5">
+                {col.links.map(([href, label]) => (
+                  <li key={href}>
+                    <Link href={href} className="text-sm text-ink-secondary transition-colors hover:text-ink">{label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ))}
         </div>
-        
-        <div className="pt-8 border-t border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-slate-500">
-            © {new Date().getFullYear()} CuriousBees. Designed for academic excellence.
-          </p>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-500" />
-            <span className="text-xs font-medium text-slate-600">All systems operational</span>
-          </div>
-        </div>
+        <p className="mt-10 border-t border-line pt-6 text-xs text-ink-muted">
+          © {new Date().getFullYear()} CuriousBees, SRM Institute of Science and Technology.
+        </p>
       </div>
     </footer>
   );

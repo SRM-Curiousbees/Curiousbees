@@ -1,5 +1,9 @@
-import { Controller, Get, Res } from '@nestjs/common';
+import { Controller, Get, Res, UseGuards } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
+import { SupabaseAuthGuard } from './auth/supabase.guard';
+import { RolesGuard } from './auth/roles/roles.guard';
+import { Roles } from './auth/roles/roles.decorator';
+import { Role } from './auth/roles/role.enum';
 import * as os from 'os';
 
 @Controller()
@@ -63,7 +67,10 @@ export class AppController {
     };
   }
 
+  // Host/process diagnostics: institute admins only.
   @Get(['system', 'api/system'])
+  @UseGuards(SupabaseAuthGuard, RolesGuard)
+  @Roles(Role.INSTITUTE_ADMIN)
   async system() {
     const memory = process.memoryUsage();
     return {
@@ -95,7 +102,6 @@ export class AppController {
     return {
       version: '1.0.0',
       environment: process.env.NODE_ENV || 'development',
-      nodeVersion: process.version,
       timestamp: new Date().toISOString(),
     };
   }

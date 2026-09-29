@@ -431,20 +431,20 @@ export function PremiumOpportunities() {
       <div className="max-w-[1400px] mx-auto p-4 md:p-8 space-y-6">
         
         {/* ─── 1. HEADER SECTION ────────────────────── */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/90 backdrop-blur-xl p-6 md:p-8 rounded-[32px] border border-slate-200/80 shadow-[0_8px_30px_rgb(12,77,162,0.04)]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface/90 backdrop-blur-xl p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-sm">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="text-[10px] font-black uppercase tracking-widest bg-[#0C4DA2]/10 text-[#0C4DA2] px-3 py-1 rounded-full flex items-center gap-1.5">
+              <span className="text-xs font-medium capitalize bg-brand/10 text-brand px-3 py-1 rounded-full flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5" />
                 Institutional Directory
               </span>
               {currentUser?.department && (
-                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                <span className="text-2xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
                   {currentUser.department.split('(')[0].trim()}
                 </span>
               )}
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">Research Opportunities</h1>
+            <h1 className="text-2xl md:text-3xl font-semibold text-slate-900 tracking-tight">Research Opportunities</h1>
             <p className="text-xs md:text-sm font-medium text-slate-500 mt-1">
               Discover funded PhD slots, assistantships, active lab positions, grants, and department research projects.
             </p>
@@ -453,7 +453,7 @@ export function PremiumOpportunities() {
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setShowMobileFilters(!showMobileFilters)}
-              className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-2xs hover:bg-slate-50 cursor-pointer"
+              className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-surface border border-slate-200 text-slate-700 rounded-xl text-xs font-bold shadow-2xs hover:bg-slate-50 cursor-pointer"
             >
               <Filter className="w-4 h-4 text-slate-500" />
               <span>Filters</span>
@@ -461,7 +461,7 @@ export function PremiumOpportunities() {
             {canPublish && (
               <button
                 onClick={handleOpenDrawer}
-                className="flex items-center gap-2 px-5 py-3 bg-[#0C4DA2] hover:bg-[#042654] text-white rounded-2xl text-xs font-extrabold uppercase tracking-wider shadow-md shadow-blue-900/20 transition-all cursor-pointer active:scale-95"
+                className="flex items-center gap-2 px-5 py-3 bg-brand hover:bg-brand-strong text-white rounded-2xl text-xs font-medium capitalize shadow-md  transition-all cursor-pointer active:scale-95"
               >
                 <Plus className="w-4 h-4" />
                 <span>Publish Opportunity</span>
@@ -481,8 +481,8 @@ export function PremiumOpportunities() {
                 className={cn(
                   "px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap border cursor-pointer select-none",
                   isSelected
-                    ? "bg-[#0C4DA2] text-white border-[#0C4DA2] shadow-sm shadow-blue-900/20"
-                    : "bg-white text-slate-700 border-slate-200/80 hover:bg-slate-50"
+                    ? "bg-brand text-white border-brand shadow-sm "
+                    : "bg-surface text-slate-700 border-slate-200/80 hover:bg-slate-50"
                 )}
               >
                 {cat}
@@ -493,10 +493,10 @@ export function PremiumOpportunities() {
 
         {/* ACTIVE FILTER TAGS ROW */}
         {hasActiveFilters && (
-          <div className="flex items-center gap-2 flex-wrap bg-white p-3 rounded-2xl border border-slate-200/80">
-            <span className="text-[10px] font-black uppercase text-slate-400 mr-1">Active Filters:</span>
+          <div className="flex items-center gap-2 flex-wrap bg-surface p-3 rounded-2xl border border-slate-200/80">
+            <span className="text-2xs font-semibold uppercase text-slate-400 mr-1">Active Filters:</span>
             {selectedTypeCategory && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-[#0C4DA2] rounded-full text-xs font-bold border border-blue-100">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-brand rounded-full text-xs font-bold border border-blue-100">
                 Type: {selectedTypeCategory}
                 <button onClick={() => setSelectedTypeCategory('')} className="hover:text-rose-600"><X className="w-3 h-3" /></button>
               </span>
@@ -541,7 +541,7 @@ export function PremiumOpportunities() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search title, domain, supervisor..."
-                className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0C4DA2] focus:ring-2 focus:ring-[#0C4DA2]/20 shadow-2xs transition-all placeholder:text-slate-400"
+                className="w-full pl-10 pr-4 py-3 bg-surface border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 shadow-2xs transition-all placeholder:text-slate-400"
               />
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
               {searchQuery && (
@@ -554,8 +554,8 @@ export function PremiumOpportunities() {
 
 
             {/* Research Domain Filter Card */}
-            <div className="bg-white/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 p-5 shadow-2xs">
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-4">Research Domain</h3>
+            <div className="bg-surface/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 p-5 shadow-2xs">
+              <h3 className="text-xs font-medium capitalize text-slate-400 mb-4">Research Domain</h3>
               <div className="space-y-2 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
                 {uniqueDomains.map((domain) => (
                   <div 
@@ -564,19 +564,19 @@ export function PremiumOpportunities() {
                     className="flex items-center gap-3 cursor-pointer group py-1"
                   >
                     <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
-                      selectedDomains.includes(domain) ? 'bg-[#FEC727] border-[#FEC727]' : 'border-slate-300 group-hover:border-[#FEC727]'
+                      selectedDomains.includes(domain) ? 'bg-gold border-gold' : 'border-slate-300 group-hover:border-gold'
                     }`}>
-                      {selectedDomains.includes(domain) && <Check className="w-3 h-3 text-slate-900 font-bold" />}
+                      {selectedDomains.includes(domain) && <Check className="w-3 h-3 text-black" />}
                     </div>
-                    <span className="text-xs font-bold text-slate-700 group-hover:text-[#0C4DA2] transition-colors">{domain}</span>
+                    <span className="text-xs font-bold text-slate-700 group-hover:text-brand transition-colors">{domain}</span>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Funding Filter Card */}
-            <div className="bg-white/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 p-5 shadow-2xs">
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-4">Funding Type</h3>
+            <div className="bg-surface/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 p-5 shadow-2xs">
+              <h3 className="text-xs font-medium capitalize text-slate-400 mb-4">Funding Type</h3>
               <div className="space-y-2 max-h-40 overflow-y-auto pr-1 scrollbar-thin">
                 {FUNDING_OPTIONS.map((f) => (
                   <div 
@@ -585,7 +585,7 @@ export function PremiumOpportunities() {
                     className="flex items-center gap-3 cursor-pointer group py-1"
                   >
                     <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
-                      selectedFunding.includes(f) ? 'bg-emerald-600 border-emerald-600' : 'border-slate-300 group-hover:border-emerald-600'
+                      selectedFunding.includes(f) ? 'bg-success border-transparent' : 'border-slate-300 group-hover:border-emerald-600'
                     }`}>
                       {selectedFunding.includes(f) && <Check className="w-3 h-3 text-white" />}
                     </div>
@@ -596,8 +596,8 @@ export function PremiumOpportunities() {
             </div>
 
             {/* Work Mode Filter */}
-            <div className="bg-white/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 p-5 shadow-2xs">
-              <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-4">Work Mode</h3>
+            <div className="bg-surface/90 backdrop-blur-xl rounded-3xl border border-slate-200/80 p-5 shadow-2xs">
+              <h3 className="text-xs font-medium capitalize text-slate-400 mb-4">Work Mode</h3>
               <div className="space-y-2">
                 {MODE_OPTIONS.map((m) => (
                   <div 
@@ -606,11 +606,11 @@ export function PremiumOpportunities() {
                     className="flex items-center gap-3 cursor-pointer group py-1"
                   >
                     <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
-                      selectedModes.includes(m) ? 'bg-[#0C4DA2] border-[#0C4DA2]' : 'border-slate-300 group-hover:border-[#0C4DA2]'
+                      selectedModes.includes(m) ? 'bg-brand border-brand' : 'border-slate-300 group-hover:border-brand'
                     }`}>
                       {selectedModes.includes(m) && <Check className="w-3 h-3 text-white" />}
                     </div>
-                    <span className="text-xs font-bold text-slate-700 group-hover:text-[#0C4DA2]">{m}</span>
+                    <span className="text-xs font-bold text-slate-700 group-hover:text-brand">{m}</span>
                   </div>
                 ))}
               </div>
@@ -625,7 +625,7 @@ export function PremiumOpportunities() {
                 /* ── LOADING SKELETON ── */
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 w-full animate-pulse">
                   {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="bg-white/80 rounded-[28px] p-6 border border-slate-200/80 space-y-4">
+                    <div key={i} className="bg-surface/80 rounded-3xl p-6 border border-slate-200/80 space-y-4">
                       <div className="flex items-center gap-2">
                         <div className="w-20 h-5 bg-slate-200 rounded-full" />
                         <div className="w-16 h-5 bg-slate-100 rounded-full" />
@@ -645,18 +645,18 @@ export function PremiumOpportunities() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="bg-white/90 backdrop-blur-xl border border-rose-200/80 p-12 text-center rounded-[32px] shadow-sm flex flex-col items-center justify-center min-h-[360px] w-full"
+                  className="bg-surface/90 backdrop-blur-xl border border-rose-200/80 p-12 text-center rounded-3xl shadow-sm flex flex-col items-center justify-center min-h-[360px] w-full"
                 >
                   <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 mb-4">
                     <Briefcase className="w-7 h-7" />
                   </div>
-                  <h4 className="text-slate-900 font-extrabold text-lg">Unable to load opportunities</h4>
+                  <h4 className="text-slate-900 font-semibold text-lg">Unable to load opportunities</h4>
                   <p className="text-slate-500 text-xs max-w-md mx-auto mt-2 leading-relaxed font-medium">
                     {error || 'A network error occurred while connecting to the research repository.'}
                   </p>
                   <button
                     onClick={() => loadOpportunities(true)}
-                    className="mt-6 px-6 py-3 bg-[#0C4DA2] hover:bg-[#042654] text-white text-xs font-extrabold uppercase tracking-wider rounded-2xl shadow-md transition-all cursor-pointer"
+                    className="mt-6 px-6 py-3 bg-brand hover:bg-brand-strong text-white text-xs font-medium capitalize rounded-2xl shadow-md transition-all cursor-pointer"
                   >
                     Retry Loading
                   </button>
@@ -667,19 +667,19 @@ export function PremiumOpportunities() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
-                  className="bg-white/90 backdrop-blur-xl border border-slate-200/80 p-12 text-center rounded-[32px] shadow-sm flex flex-col items-center justify-center min-h-[360px] w-full"
+                  className="bg-surface/90 backdrop-blur-xl border border-slate-200/80 p-12 text-center rounded-3xl shadow-sm flex flex-col items-center justify-center min-h-[360px] w-full"
                 >
-                  <div className="w-16 h-16 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-[#0C4DA2] mb-4">
+                  <div className="w-16 h-16 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-brand mb-4">
                     <Briefcase className="w-7 h-7" />
                   </div>
-                  <h4 className="text-slate-900 font-extrabold text-lg">No research opportunities yet</h4>
+                  <h4 className="text-slate-900 font-semibold text-lg">No research opportunities yet</h4>
                   <p className="text-slate-500 text-xs max-w-md mx-auto mt-2 leading-relaxed font-medium">
                     New research positions, projects, and collaboration opportunities will appear here. Try adjusting your search filters.
                   </p>
                   {canPublish && (
                     <button
                       onClick={handleOpenDrawer}
-                      className="mt-6 px-6 py-3 bg-[#0C4DA2] hover:bg-[#042654] text-white text-xs font-extrabold uppercase tracking-wider rounded-2xl shadow-md transition-all cursor-pointer"
+                      className="mt-6 px-6 py-3 bg-brand hover:bg-brand-strong text-white text-xs font-medium capitalize rounded-2xl shadow-md transition-all cursor-pointer"
                     >
                       Be the first to publish an opportunity
                     </button>
@@ -706,7 +706,7 @@ export function PremiumOpportunities() {
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.97 }}
                         className={cn(
-                          "bg-white/90 backdrop-blur-xl rounded-[28px] p-6 border transition-all flex flex-col justify-between group hover:-translate-y-0.5 shadow-[0_8px_30px_rgb(12,77,162,0.04)] hover:shadow-[0_12px_40px_rgb(12,77,162,0.08)]",
+                          "bg-surface/90 backdrop-blur-xl rounded-3xl p-6 border transition-all flex flex-col justify-between group hover:-translate-y-0.5 shadow-sm hover:shadow-sm",
                           expired ? "border-slate-200 opacity-80" : "border-slate-200/80"
                         )}
                       >
@@ -714,15 +714,15 @@ export function PremiumOpportunities() {
                           {/* Top Badges & Bookmark */}
                           <div className="flex justify-between items-start gap-2 mb-3">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="inline-flex items-center px-3 py-1 bg-blue-50 text-[#0C4DA2] border border-blue-100 rounded-xl text-[10px] font-black uppercase tracking-wider">
+                              <span className="inline-flex items-center px-3 py-1 bg-blue-50 text-brand border border-blue-100 rounded-xl text-xs font-medium capitalize">
                                 {opp.opportunityType || 'PhD Position'}
                               </span>
                               {expired ? (
-                                <span className="inline-flex items-center px-2.5 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-full text-[9px] font-black uppercase tracking-wider">
+                                <span className="inline-flex items-center px-2.5 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-full text-xs font-medium capitalize">
                                   Expired
                                 </span>
                               ) : opp.funding ? (
-                                <span className="inline-flex items-center px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-[9px] font-bold">
+                                <span className="inline-flex items-center px-2.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-full text-2xs font-bold">
                                   {opp.funding}
                                 </span>
                               ) : null}
@@ -741,7 +741,7 @@ export function PremiumOpportunities() {
                           {/* Title */}
                           <h3 
                             onClick={() => setSelectedOpportunity(opp)}
-                            className="text-base font-extrabold text-slate-900 leading-snug mb-3 group-hover:text-[#0C4DA2] transition-colors cursor-pointer"
+                            className="text-base font-semibold text-slate-900 leading-snug mb-3 group-hover:text-brand transition-colors cursor-pointer"
                           >
                             {opp.title}
                           </h3>
@@ -749,14 +749,14 @@ export function PremiumOpportunities() {
                           {/* Supervisor Author Info */}
                           <div className="flex items-center gap-3 mb-4 bg-slate-50/80 p-2.5 rounded-2xl border border-slate-100">
                             {opp.author?.image ? (
-                              <img src={opp.author.image} className="w-9 h-9 rounded-full object-cover border border-white shadow-2xs" alt="" />
+                              <img src={opp.author.image} className="w-9 h-9 rounded-full object-cover border border-surface shadow-2xs" alt="" />
                             ) : (
-                              <div className="w-9 h-9 rounded-full bg-[#0C4DA2] text-white font-extrabold text-xs uppercase flex items-center justify-center border border-white shadow-2xs shrink-0">
+                              <div className="w-9 h-9 rounded-full bg-brand text-white font-semibold text-xs uppercase flex items-center justify-center border border-surface shadow-2xs shrink-0">
                                 {authorInitials}
                               </div>
                             )}
                             <div className="min-w-0 flex-1">
-                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">
+                              <p className="text-xs font-medium text-slate-400 capitalize leading-none mb-1">
                                 {(opp.author?.role as string) === 'RESEARCH_SUPERVISOR' || (opp.author?.role as string) === 'SUPERVISOR' ? 'Research Supervisor' : 'Researcher Lead'}
                               </p>
                               <p className="text-xs font-bold text-slate-800 truncate leading-none">{opp.author?.name || 'Faculty Lead'}</p>
@@ -779,7 +779,7 @@ export function PremiumOpportunities() {
                           {domainsList.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mb-4">
                               {domainsList.map((tag, idx) => (
-                                <span key={idx} className="text-[11px] font-bold text-[#0C4DA2] bg-blue-50/50 px-2.5 py-0.5 rounded-md">
+                                <span key={idx} className="text-2xs font-bold text-brand bg-blue-50/50 px-2.5 py-0.5 rounded-md">
                                   #{tag}
                                 </span>
                               ))}
@@ -795,7 +795,7 @@ export function PremiumOpportunities() {
                         {/* Card Footer: Deadline & Action Buttons */}
                         <div>
                           {opp.deadline && (
-                            <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 mb-3">
+                            <div className="flex items-center gap-1.5 text-2xs font-bold text-slate-500 mb-3">
                               <Calendar className="w-3.5 h-3.5 text-slate-400" />
                               <span>Deadline: {formatDate(opp.deadline)}</span>
                             </div>
@@ -804,7 +804,7 @@ export function PremiumOpportunities() {
                           <div className="grid grid-cols-2 gap-2.5 pt-2">
                             <button
                               onClick={() => setSelectedOpportunity(opp)}
-                              className="px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-[#0C4DA2] text-slate-700 hover:text-[#0C4DA2] text-xs font-extrabold uppercase tracking-wider transition-all bg-white cursor-pointer"
+                              className="px-3.5 py-2.5 rounded-xl border border-slate-200 hover:border-brand text-slate-700 hover:text-brand text-xs font-medium capitalize transition-all bg-surface cursor-pointer"
                             >
                               View Opportunity
                             </button>
@@ -813,12 +813,12 @@ export function PremiumOpportunities() {
                               onClick={(e) => handleApplyAction(e, opp)}
                               disabled={expired || isApplied}
                               className={cn(
-                                "px-3.5 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1",
+                                "px-3.5 py-2.5 rounded-xl text-xs font-medium capitalize shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1",
                                 isApplied
                                   ? "bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default"
                                   : expired
                                   ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                                  : "bg-[#0C4DA2] hover:bg-[#042654] text-white active:scale-95 shadow-blue-900/20"
+                                  : "bg-brand hover:bg-brand-strong text-white active:scale-95 "
                               )}
                             >
                               {isApplied ? (
@@ -856,7 +856,7 @@ export function PremiumOpportunities() {
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedOpportunity(null)}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 cursor-pointer"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 cursor-pointer"
             />
             
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -864,22 +864,22 @@ export function PremiumOpportunities() {
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="bg-white rounded-[32px] border border-slate-200 shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden text-left"
+                className="bg-surface rounded-3xl border border-slate-200 shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden text-left"
               >
                 {/* Modal Header */}
                 <div className="p-6 md:p-8 border-b border-slate-100 flex items-start justify-between gap-4 bg-slate-50/50">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="px-3 py-1 bg-blue-50 text-[#0C4DA2] border border-blue-100 rounded-xl text-[10px] font-black uppercase tracking-wider">
+                      <span className="px-3 py-1 bg-blue-50 text-brand border border-blue-100 rounded-xl text-xs font-medium capitalize">
                         {selectedOpportunity.opportunityType || 'PhD Position'}
                       </span>
                       {isExpired(selectedOpportunity.deadline) && (
-                        <span className="px-2.5 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-full text-[9px] font-black uppercase">
+                        <span className="px-2.5 py-0.5 bg-rose-50 text-rose-600 border border-rose-200 rounded-full text-2xs font-semibold uppercase">
                           Expired
                         </span>
                       )}
                     </div>
-                    <h2 className="text-xl md:text-2xl font-extrabold text-slate-900 leading-tight">
+                    <h2 className="text-xl md:text-2xl font-semibold text-slate-900 leading-tight">
                       {selectedOpportunity.title}
                     </h2>
                     <p className="text-xs font-semibold text-slate-500 mt-1">
@@ -901,14 +901,14 @@ export function PremiumOpportunities() {
                   {/* Supervisor Card */}
                   <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-100">
                     {selectedOpportunity.author?.image ? (
-                      <img src={selectedOpportunity.author.image} className="w-12 h-12 rounded-full object-cover border border-white shadow-sm" alt="" />
+                      <img src={selectedOpportunity.author.image} className="w-12 h-12 rounded-full object-cover border border-surface shadow-sm" alt="" />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-[#0C4DA2] text-white font-extrabold text-sm uppercase flex items-center justify-center border border-white shadow-sm shrink-0">
+                      <div className="w-12 h-12 rounded-full bg-brand text-white font-semibold text-sm uppercase flex items-center justify-center border border-surface shadow-sm shrink-0">
                         {selectedOpportunity.author?.name ? selectedOpportunity.author.name[0] : 'PI'}
                       </div>
                     )}
                     <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Research Supervisor / Lead</p>
+                      <p className="text-xs font-medium text-slate-400 capitalize">Research Supervisor / Lead</p>
                       <h4 className="text-sm font-bold text-slate-900">{selectedOpportunity.author?.name || 'Faculty Lead'}</h4>
                       <p className="text-xs text-slate-500 font-medium">{selectedOpportunity.author?.department || selectedOpportunity.department}</p>
                     </div>
@@ -917,16 +917,16 @@ export function PremiumOpportunities() {
                   {/* Grid Metadata */}
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
-                      <p className="text-[10px] font-black uppercase text-slate-400">Funding</p>
-                      <p className="text-xs font-extrabold text-slate-800 mt-0.5">{selectedOpportunity.funding || 'Fully Funded'}</p>
+                      <p className="text-2xs font-semibold uppercase text-slate-400">Funding</p>
+                      <p className="text-xs font-semibold text-slate-800 mt-0.5">{selectedOpportunity.funding || 'Fully Funded'}</p>
                     </div>
                     <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
-                      <p className="text-[10px] font-black uppercase text-slate-400">Positions</p>
-                      <p className="text-xs font-extrabold text-slate-800 mt-0.5">{selectedOpportunity.positionsCount || 1} Available</p>
+                      <p className="text-2xs font-semibold uppercase text-slate-400">Positions</p>
+                      <p className="text-xs font-semibold text-slate-800 mt-0.5">{selectedOpportunity.positionsCount || 1} Available</p>
                     </div>
                     <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
-                      <p className="text-[10px] font-black uppercase text-slate-400">Work Mode</p>
-                      <p className="text-xs font-extrabold text-slate-800 mt-0.5">{selectedOpportunity.mode || 'On Campus'}</p>
+                      <p className="text-2xs font-semibold uppercase text-slate-400">Work Mode</p>
+                      <p className="text-xs font-semibold text-slate-800 mt-0.5">{selectedOpportunity.mode || 'On Campus'}</p>
                     </div>
                   </div>
 
@@ -941,7 +941,7 @@ export function PremiumOpportunities() {
                   {/* Eligibility List */}
                   {selectedOpportunity.eligibility && selectedOpportunity.eligibility.length > 0 && (
                     <div>
-                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-2">Eligible Candidates</h4>
+                      <h4 className="text-xs font-medium capitalize text-slate-400 mb-2">Eligible Candidates</h4>
                       <div className="flex flex-wrap gap-2">
                         {selectedOpportunity.eligibility.map((el, i) => (
                           <span key={i} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold">
@@ -954,7 +954,7 @@ export function PremiumOpportunities() {
 
                   {/* Description & Requirements */}
                   <div>
-                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-2">Description & Requirements</h4>
+                    <h4 className="text-xs font-medium capitalize text-slate-400 mb-2">Description & Requirements</h4>
                     <div className="text-xs text-slate-700 leading-relaxed font-medium whitespace-pre-wrap bg-slate-50 p-4 rounded-2xl border border-slate-100">
                       {selectedOpportunity.description}
                     </div>
@@ -962,7 +962,7 @@ export function PremiumOpportunities() {
 
                   {/* Application Method details */}
                   <div className="p-4 bg-blue-50/60 border border-blue-100 rounded-2xl text-xs text-slate-700">
-                    <p className="font-bold text-[#0C4DA2] mb-1">Application Method:</p>
+                    <p className="font-bold text-brand mb-1">Application Method:</p>
                     <p className="font-medium">
                       {selectedOpportunity.applicationMethod === 'External Application Link' 
                         ? `Submit via portal: ${selectedOpportunity.applicationUrl || 'External Portal'}`
@@ -983,7 +983,7 @@ export function PremiumOpportunities() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => setSelectedOpportunity(null)}
-                      className="px-5 py-2.5 border border-slate-200 rounded-2xl text-xs font-extrabold uppercase text-slate-600 hover:bg-slate-100 cursor-pointer"
+                      className="px-5 py-2.5 border border-slate-200 rounded-2xl text-xs font-semibold uppercase text-slate-600 hover:bg-slate-100 cursor-pointer"
                     >
                       Close
                     </button>
@@ -993,7 +993,7 @@ export function PremiumOpportunities() {
                         setSelectedOpportunity(null);
                       }}
                       disabled={isExpired(selectedOpportunity.deadline)}
-                      className="px-6 py-2.5 bg-[#0C4DA2] hover:bg-[#042654] text-white text-xs font-extrabold uppercase tracking-wider rounded-2xl shadow-md cursor-pointer disabled:opacity-50"
+                      className="px-6 py-2.5 bg-brand hover:bg-brand-strong text-white text-xs font-medium capitalize rounded-2xl shadow-md cursor-pointer disabled:opacity-50"
                     >
                       {isExpired(selectedOpportunity.deadline) ? 'Expired' : 'Apply Now'}
                     </button>
@@ -1016,7 +1016,7 @@ export function PremiumOpportunities() {
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsDrawerOpen(false)}
-              className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 cursor-pointer"
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 cursor-pointer"
             />
             
             {/* Drawer Content */}
@@ -1025,18 +1025,18 @@ export function PremiumOpportunities() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 right-0 w-full sm:max-w-xl bg-white border-l border-slate-200 z-50 p-6 sm:p-8 shadow-2xl flex flex-col justify-between overflow-y-auto text-left"
+              className="fixed inset-y-0 right-0 w-full sm:max-w-xl bg-surface border-l border-slate-200 z-50 p-6 sm:p-8 shadow-2xl flex flex-col justify-between overflow-y-auto text-left"
             >
               <div>
                 {/* Drawer Header */}
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-2xl bg-[#0C4DA2]/10 flex items-center justify-center shrink-0">
-                      <GraduationCap className="w-5 h-5 text-[#0C4DA2]" />
+                    <div className="w-10 h-10 rounded-2xl bg-brand/10 flex items-center justify-center shrink-0">
+                      <GraduationCap className="w-5 h-5 text-brand" />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-base text-slate-900 leading-none">Publish Opportunity</h3>
-                      <p className="text-[10px] text-[#0C4DA2] font-black uppercase tracking-wider mt-1">Research Portal</p>
+                      <h3 className="font-semibold text-base text-slate-900 leading-none">Publish Opportunity</h3>
+                      <p className="text-xs text-brand font-medium capitalize mt-1">Research Portal</p>
                     </div>
                   </div>
                   <button 
@@ -1052,26 +1052,26 @@ export function PremiumOpportunities() {
                   
                   {/* Position Title */}
                   <div className="space-y-1.5">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    <label className="block text-xs font-medium text-slate-500 capitalize">
                       Position Title <span className="text-rose-500">*</span>
                     </label>
                     <input
                       type="text"
                       {...register('title')}
                       placeholder="e.g. PhD Position in Quantum Computing and Photonic Devices"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0C4DA2] focus:ring-2 focus:ring-[#0C4DA2]/20 transition-all placeholder:text-slate-400"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all placeholder:text-slate-400"
                     />
-                    {errors.title && <p className="text-[10px] text-rose-500 font-bold mt-1">{errors.title.message as string}</p>}
+                    {errors.title && <p className="text-2xs text-rose-500 font-bold mt-1">{errors.title.message as string}</p>}
                   </div>
 
                   {/* Opportunity Type Dropdown */}
                   <div className="space-y-1.5">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    <label className="block text-xs font-medium text-slate-500 capitalize">
                       Opportunity Type <span className="text-rose-500">*</span>
                     </label>
                     <select
                       {...register('opportunityType')}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0C4DA2] focus:ring-2 focus:ring-[#0C4DA2]/20 transition-all cursor-pointer"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all cursor-pointer"
                     >
                       {OPPORTUNITY_TYPES.map((t) => (
                         <option key={t} value={t}>{t}</option>
@@ -1083,14 +1083,14 @@ export function PremiumOpportunities() {
 
                   {/* Searchable Research Domains Multi-Tag */}
                   <div className="space-y-1.5">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    <label className="block text-xs font-medium text-slate-500 capitalize">
                       Research Domains / Taxonomy <span className="text-rose-500">*</span>
                     </label>
                     
                     {/* Selected Domain Badges */}
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {domainTags.map((tag) => (
-                        <span key={tag} className="inline-flex items-center gap-1 px-3 py-1 bg-[#0C4DA2]/10 text-[#0C4DA2] border border-[#0C4DA2]/20 rounded-xl text-xs font-bold">
+                        <span key={tag} className="inline-flex items-center gap-1 px-3 py-1 bg-brand/10 text-brand border border-brand/20 rounded-xl text-xs font-bold">
                           {tag}
                           <button type="button" onClick={() => handleRemoveDomainTag(tag)} className="hover:text-rose-600">
                             <X className="w-3 h-3" />
@@ -1107,9 +1107,9 @@ export function PremiumOpportunities() {
                           type="button"
                           onClick={() => handleAddDomainTag(domain)}
                           className={cn(
-                            "px-2.5 py-1 rounded-lg text-[10px] font-bold border transition-colors cursor-pointer",
+                            "px-2.5 py-1 rounded-lg text-2xs font-bold border transition-colors cursor-pointer",
                             domainTags.includes(domain) 
-                              ? "bg-[#0C4DA2] text-white border-[#0C4DA2]" 
+                              ? "bg-brand text-white border-brand" 
                               : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
                           )}
                         >
@@ -1125,7 +1125,7 @@ export function PremiumOpportunities() {
                         value={customDomainInput}
                         onChange={(e) => setCustomDomainInput(e.target.value)}
                         placeholder="Add custom domain..."
-                        className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0C4DA2]"
+                        className="flex-1 px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand"
                       />
                       <button
                         type="button"
@@ -1141,26 +1141,26 @@ export function PremiumOpportunities() {
                   <div className="grid grid-cols-2 gap-4">
                     {/* Positions Count */}
                     <div className="space-y-1.5">
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      <label className="block text-xs font-medium text-slate-500 capitalize">
                         Positions Available <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="number"
                         min={1}
                         {...register('positionsCount')}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0C4DA2]"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand"
                       />
-                      {errors.positionsCount && <p className="text-[10px] text-rose-500 font-bold">{errors.positionsCount.message as string}</p>}
+                      {errors.positionsCount && <p className="text-2xs text-rose-500 font-bold">{errors.positionsCount.message as string}</p>}
                     </div>
 
                     {/* Funding Select */}
                     <div className="space-y-1.5">
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      <label className="block text-xs font-medium text-slate-500 capitalize">
                         Funding Status
                       </label>
                       <select
                         {...register('funding')}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0C4DA2]"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand"
                       >
                         {FUNDING_OPTIONS.map((f) => (
                           <option key={f} value={f}>{f}</option>
@@ -1171,20 +1171,20 @@ export function PremiumOpportunities() {
 
                   {/* Funding Details (Optional) */}
                   <div className="space-y-1.5">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    <label className="block text-xs font-medium text-slate-500 capitalize">
                       Funding Details (Optional)
                     </label>
                     <input
                       type="text"
                       {...register('fundingDetails')}
                       placeholder="e.g. ₹35,000/month fellowship for 3 years"
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0C4DA2]"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand"
                     />
                   </div>
 
                   {/* Multi-Select Eligibility Checkboxes */}
                   <div className="space-y-1.5">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    <label className="block text-xs font-medium text-slate-500 capitalize">
                       Eligible Candidates
                     </label>
                     <div className="grid grid-cols-2 gap-2 bg-slate-50 p-3 rounded-2xl border border-slate-200">
@@ -1195,7 +1195,7 @@ export function PremiumOpportunities() {
                           className="flex items-center gap-2 cursor-pointer py-1"
                         >
                           <div className={`w-4 h-4 rounded border flex items-center justify-center ${
-                            eligibilityTags.includes(option) ? 'bg-[#0C4DA2] border-[#0C4DA2]' : 'border-slate-300'
+                            eligibilityTags.includes(option) ? 'bg-brand border-brand' : 'border-slate-300'
                           }`}>
                             {eligibilityTags.includes(option) && <Check className="w-3 h-3 text-white" />}
                           </div>
@@ -1208,24 +1208,24 @@ export function PremiumOpportunities() {
                   {/* Application Deadline & Work Mode */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      <label className="block text-xs font-medium text-slate-500 capitalize">
                         Application Deadline
                       </label>
                       <input
                         type="date"
                         min={todayISO}
                         {...register('deadline')}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0C4DA2]"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand"
                       />
                     </div>
 
                     <div className="space-y-1.5">
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      <label className="block text-xs font-medium text-slate-500 capitalize">
                         Work Mode
                       </label>
                       <select
                         {...register('mode')}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0C4DA2]"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand"
                       >
                         {MODE_OPTIONS.map((m) => (
                           <option key={m} value={m}>{m}</option>
@@ -1236,26 +1236,26 @@ export function PremiumOpportunities() {
 
                   {/* Description & Requirements */}
                   <div className="space-y-1.5">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    <label className="block text-xs font-medium text-slate-500 capitalize">
                       Opportunity Description & Requirements <span className="text-rose-500">*</span>
                     </label>
                     <textarea
                       rows={5}
                       {...register('description')}
                       placeholder="Describe the research project, responsibilities, required qualifications, expected outcomes, funding details, and application process..."
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0C4DA2] focus:ring-2 focus:ring-[#0C4DA2]/20 transition-all placeholder:text-slate-400 resize-none"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all placeholder:text-slate-400 resize-none"
                     />
-                    {errors.description && <p className="text-[10px] text-rose-500 font-bold">{errors.description.message as string}</p>}
+                    {errors.description && <p className="text-2xs text-rose-500 font-bold">{errors.description.message as string}</p>}
                   </div>
 
                   {/* Application Method Select */}
                   <div className="space-y-1.5">
-                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    <label className="block text-xs font-medium text-slate-500 capitalize">
                       Application Method
                     </label>
                     <select
                       {...register('applicationMethod')}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0C4DA2]"
+                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand"
                     >
                       {APPLICATION_METHODS.map((m) => (
                         <option key={m} value={m}>{m}</option>
@@ -1266,28 +1266,28 @@ export function PremiumOpportunities() {
                   {/* Dynamic External Link or Email Field */}
                   {selectedAppMethod === 'External Application Link' && (
                     <div className="space-y-1.5">
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      <label className="block text-xs font-medium text-slate-500 capitalize">
                         Application URL
                       </label>
                       <input
                         type="url"
                         {...register('applicationUrl')}
                         placeholder="https://srmist.edu.in/careers/research-slot-102"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0C4DA2]"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand"
                       />
                     </div>
                   )}
 
                   {selectedAppMethod === 'Email' && (
                     <div className="space-y-1.5">
-                      <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                      <label className="block text-xs font-medium text-slate-500 capitalize">
                         Application Email
                       </label>
                       <input
                         type="email"
                         {...register('applicationEmail')}
                         placeholder="supervisor@srmist.edu.in"
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-[#0C4DA2]"
+                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-800 focus:outline-none focus:border-brand"
                       />
                     </div>
                   )}
@@ -1297,17 +1297,17 @@ export function PremiumOpportunities() {
                     <button
                       type="button"
                       onClick={() => setIsDrawerOpen(false)}
-                      className="px-5 py-3 border border-slate-200 rounded-2xl text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors text-xs font-extrabold uppercase tracking-wider cursor-pointer"
+                      className="px-5 py-3 border border-slate-200 rounded-2xl text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors text-xs font-medium capitalize cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="px-6 py-3 bg-[#0C4DA2] hover:bg-[#042654] text-white text-xs font-extrabold uppercase tracking-wider rounded-2xl shadow-md shadow-blue-900/20 transition-all active:scale-95 flex items-center space-x-2 cursor-pointer disabled:opacity-50"
+                      className="px-6 py-3 bg-brand hover:bg-brand-strong text-white text-xs font-medium capitalize rounded-2xl shadow-md  transition-all active:scale-95 flex items-center space-x-2 cursor-pointer disabled:opacity-50"
                     >
                       {isSubmitting ? (
-                        <span className="w-4 h-4 border-2 border-white border-t-transparent animate-spin rounded-full" />
+                        <span className="w-4 h-4 border-2 border-surface border-t-transparent animate-spin rounded-full" />
                       ) : (
                         <>
                           <Check className="w-4 h-4 shrink-0" />

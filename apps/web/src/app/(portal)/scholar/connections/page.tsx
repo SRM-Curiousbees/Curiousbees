@@ -128,16 +128,16 @@ export default function ScholarConnectionsPage() {
   return (
     <DashboardShell>
       {/* 🚀 Notion-style Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#001E4C] via-[#002868] to-[#004495] cb-honeycomb-dark border border-[#004495]/15 p-6 md:p-8 shadow-xl text-left">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-[#FEC727]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-12 bottom-0 w-72 h-72 bg-[#004495]/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="theme-static relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-900 via-brand-900 to-brand-800 cb-honeycomb-dark border border-brand-800/15 p-6 md:p-8 shadow-xl text-left">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute left-12 bottom-0 w-72 h-72 bg-brand-800/20 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3 flex-1 min-w-0">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FEC727]/25 text-[#FEC727] border border-[#FEC727]/30 text-[10px] font-bold uppercase tracking-wider">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-gold/25 text-gold border border-gold/30 text-xs font-medium capitalize">
               Academic Directory
             </span>
-            <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-white tracking-tight leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-display font-semibold text-white tracking-tight leading-tight">
               Expert Matchmaking & Synergy Directory
             </h1>
             <p className="text-xs sm:text-sm text-white/80 font-medium max-w-xl leading-relaxed">
@@ -148,21 +148,21 @@ export default function ScholarConnectionsPage() {
       </div>
 
       {/* 🚀 Filter Controls Bar */}
-      <div className="cb-card p-5 bg-white/90 dark:bg-[#101D30] border border-slate-200/80 dark:border-white/[0.08] backdrop-blur-md flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 text-left">
+      <div className="cb-card p-5 bg-surface/90 border border-slate-200/80 backdrop-blur-md flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 text-left">
         <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center gap-4 flex-1">
-          <span className="font-label-caps text-[10px] uppercase tracking-wider text-slate-400 dark:text-[#718096] font-bold pt-1">
+          <span className="font-label-caps text-xs capitalize text-slate-400 font-medium pt-1">
             Filter Directory:
           </span>
 
           {/* Search Input field */}
           <div className="relative min-w-[200px] flex-1 max-w-sm">
-            <Search className="w-4 h-4 text-slate-400 dark:text-[#718096] absolute left-0 top-2.5" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-0 top-2.5" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search name or bio keywords..."
-              className="w-full bg-transparent border-0 border-b border-slate-200 dark:border-white/[0.08] focus:border-primary dark:focus:border-[#3B82F6] focus:ring-0 pl-7 pb-2 pt-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA] placeholder:text-slate-400 dark:placeholder:text-[#718096] transition-colors"
+              className="w-full bg-transparent border-0 border-b border-slate-200 focus:border-primary focus:ring-0 pl-7 pb-2 pt-2 text-xs font-semibold text-slate-800 placeholder:text-slate-400 transition-colors"
             />
           </div>
 
@@ -181,11 +181,11 @@ export default function ScholarConnectionsPage() {
                   }
                 }
               }}
-              className="w-full bg-transparent border-0 border-b border-slate-200 dark:border-white/[0.08] focus:border-primary dark:focus:border-[#3B82F6] focus:ring-0 pb-2 pt-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA] transition-colors cursor-pointer pr-8"
+              className="w-full bg-transparent border-0 border-b border-slate-200 focus:border-primary focus:ring-0 pb-2 pt-2 text-xs font-semibold text-slate-800 transition-colors cursor-pointer pr-8"
             >
-              <option value="" className="dark:bg-[#101D30]">All Faculties</option>
+              <option value="" className="">All Faculties</option>
               {faculties.map((fac) => (
-                <option key={fac.id} value={fac.name} className="dark:bg-[#101D30]">{fac.name}</option>
+                <option key={fac.id} value={fac.name} className="">{fac.name}</option>
               ))}
             </select>
           </div>
@@ -195,11 +195,11 @@ export default function ScholarConnectionsPage() {
             <select
               value={selectedDept}
               onChange={(e) => setSelectedDept(e.target.value)}
-              className="w-full bg-transparent border-0 border-b border-slate-200 dark:border-white/[0.08] focus:border-primary dark:focus:border-[#3B82F6] focus:ring-0 pb-2 pt-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA] transition-colors cursor-pointer pr-8"
+              className="w-full bg-transparent border-0 border-b border-slate-200 focus:border-primary focus:ring-0 pb-2 pt-2 text-xs font-semibold text-slate-800 transition-colors cursor-pointer pr-8"
             >
-              <option value="" className="dark:bg-[#101D30]">All Departments</option>
+              <option value="" className="">All Departments</option>
               {availableDepartments.map((dept) => (
-                <option key={dept.id} value={dept.name} className="dark:bg-[#101D30]">
+                <option key={dept.id} value={dept.name} className="">
                   {dept.code ? `${dept.code} - ` : ''}{dept.name}
                 </option>
               ))}
@@ -211,11 +211,11 @@ export default function ScholarConnectionsPage() {
             <select
               value={selectedInterest}
               onChange={(e) => setSelectedInterest(e.target.value)}
-              className="w-full bg-transparent border-0 border-b border-slate-200 dark:border-white/[0.08] focus:border-primary dark:focus:border-[#3B82F6] focus:ring-0 pb-2 pt-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA] transition-colors cursor-pointer pr-8"
+              className="w-full bg-transparent border-0 border-b border-slate-200 focus:border-primary focus:ring-0 pb-2 pt-2 text-xs font-semibold text-slate-800 transition-colors cursor-pointer pr-8"
             >
-              <option value="" className="dark:bg-[#101D30]">All Research Domains</option>
+              <option value="" className="">All Research Domains</option>
               {allUniqueInterests.map((interest) => (
-                <option key={interest} value={interest} className="dark:bg-[#101D30]">#{interest}</option>
+                <option key={interest} value={interest} className="">#{interest}</option>
               ))}
             </select>
           </div>
@@ -225,7 +225,7 @@ export default function ScholarConnectionsPage() {
         {(searchQuery || selectedFaculty || selectedDept || selectedInterest) && (
           <button
             onClick={() => { setSearchQuery(''); setSelectedFaculty(''); setSelectedDept(''); setSelectedInterest(''); }}
-            className="text-primary dark:text-[#3B82F6] hover:text-primary/80 dark:hover:text-[#60A5FA] text-xs font-semibold flex items-center gap-1 shrink-0 self-end md:self-auto cursor-pointer"
+            className="text-primary hover:text-primary/80 text-xs font-semibold flex items-center gap-1 shrink-0 self-end md:self-auto cursor-pointer"
           >
             <X className="w-3.5 h-3.5" />
             <span>Clear Filters</span>
@@ -237,14 +237,14 @@ export default function ScholarConnectionsPage() {
       <div className="space-y-6">
         {isLoading ? (
           <div className="py-20 flex flex-col items-center justify-center space-y-3">
-            <Loader2 className="w-8 h-8 text-primary dark:text-[#3B82F6] animate-spin" />
-            <p className="text-xs text-slate-400 dark:text-[#718096] uppercase tracking-wider font-semibold">Syncing directory node data...</p>
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <p className="text-xs text-slate-400 capitalize font-medium">Syncing directory node data...</p>
           </div>
         ) : filteredResearchers.length === 0 ? (
-          <div className="cb-card border border-slate-200/50 dark:border-white/[0.08] rounded-xl py-20 text-center bg-white/95 dark:bg-[#132238]">
-            <Users className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-            <h4 className="text-slate-900 dark:text-[#F5F7FA] font-bold text-base">No Matching Scholars Found</h4>
-            <p className="text-slate-500 dark:text-[#A7B3C5] text-xs max-w-xs mx-auto mt-2 leading-relaxed font-semibold">
+          <div className="cb-card border border-slate-200/50 rounded-xl py-20 text-center bg-surface/95">
+            <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+            <h4 className="text-slate-900 font-bold text-base">No Matching Scholars Found</h4>
+            <p className="text-slate-500 text-xs max-w-xs mx-auto mt-2 leading-relaxed font-semibold">
               We couldn't find any researchers matching your specified parameters. Try clearing some filters.
             </p>
           </div>
@@ -255,26 +255,26 @@ export default function ScholarConnectionsPage() {
               return (
                 <div 
                   key={researcher.id}
-                  className="cb-card rounded-xl p-5 flex flex-col justify-between hover:border-primary/50 dark:hover:border-blue-500/50 transition-all group duration-200 text-left bg-white dark:bg-[#132238] border border-slate-200/80 dark:border-white/[0.08]"
+                  className="cb-card rounded-xl p-5 flex flex-col justify-between hover:border-primary/50 transition-all group duration-200 text-left bg-surface border border-slate-200/80"
                 >
                   <div className="space-y-4">
                     
                     {/* Card Identity Header */}
-                    <div className="flex items-start justify-between border-b border-slate-100 dark:border-white/[0.06] pb-3 gap-3">
+                    <div className="flex items-start justify-between border-b border-slate-100 pb-3 gap-3">
                       <div className="flex items-center space-x-3 min-w-0">
-                        <div className="w-11 h-11 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 bg-primary/5 dark:bg-blue-950/40 flex items-center justify-center shrink-0">
+                        <div className="w-11 h-11 rounded-full overflow-hidden border border-slate-200 bg-primary/5 flex items-center justify-center shrink-0">
                           {researcher.image ? (
                             <img src={researcher.image} alt={researcher.name || undefined} className="w-full h-full object-cover" />
                           ) : (
-                            <span className="text-sm font-bold text-primary dark:text-[#3B82F6]">{getInitials(researcher.name)}</span>
+                            <span className="text-sm font-bold text-primary">{getInitials(researcher.name)}</span>
                           )}
                         </div>
                         <div className="min-w-0">
-                          <h3 className="text-sm font-bold text-slate-900 dark:text-[#F5F7FA] truncate group-hover:text-primary dark:group-hover:text-[#3B82F6] transition-colors">
+                          <h3 className="text-sm font-bold text-slate-900 truncate group-hover:text-primary transition-colors">
                             {researcher.name}
                           </h3>
                           <div className="flex items-center flex-wrap gap-2 mt-1">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-semibold uppercase bg-slate-100 dark:bg-[#0B1728] text-slate-600 dark:text-[#A7B3C5] border border-slate-200 dark:border-white/[0.08] leading-none">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-2xs font-semibold uppercase bg-slate-100 text-slate-600 border border-slate-200 leading-none">
                               {researcher.role === 'SUPERVISOR' ? (
                                 <>
                                   <GraduationCap className="w-2.5 h-2.5 mr-0.5" />
@@ -287,8 +287,8 @@ export default function ScholarConnectionsPage() {
                                 </>
                               )}
                             </span>
-                            <span className="text-[10px] text-slate-400 dark:text-[#718096] font-medium flex items-center shrink-0">
-                              <MapPin className="w-3 h-3 mr-0.5 text-slate-400 dark:text-[#718096]" />
+                            <span className="text-2xs text-slate-400 font-medium flex items-center shrink-0">
+                              <MapPin className="w-3 h-3 mr-0.5 text-slate-400" />
                               {researcher.departmentRef?.faculty?.campus?.name || researcher.campus || 'SRMIST Main Campus'}
                             </span>
                           </div>
@@ -297,35 +297,35 @@ export default function ScholarConnectionsPage() {
 
                       {/* Compatibility synergy Match badge */}
                       <div className="text-right shrink-0">
-                        <div className="px-2 py-1 bg-slate-50 dark:bg-[#0B1728] border border-slate-100 dark:border-white/[0.08] rounded-lg text-center shadow-sm">
-                          <span className="text-[7px] font-bold text-slate-400 dark:text-[#718096] uppercase tracking-widest block leading-none mb-0.5">synergy</span>
-                          <span className="text-xs font-mono font-bold text-primary dark:text-[#38BDF8] leading-none">{compatibilityScore}%</span>
+                        <div className="px-2 py-1 bg-slate-50 border border-slate-100 rounded-lg text-center shadow-sm">
+                          <span className="text-xs font-medium text-slate-400 capitalize block leading-none mb-0.5">synergy</span>
+                          <span className="text-xs font-mono font-bold text-primary leading-none">{compatibilityScore}%</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Department Block */}
                     <div>
-                      <p className="text-[9px] font-bold text-slate-400 dark:text-[#718096] uppercase tracking-wider leading-none">Academic Department</p>
-                      <p className="text-xs text-slate-700 dark:text-[#E2E8F0] font-semibold leading-normal mt-1 max-w-sm truncate">
+                      <p className="text-xs font-medium text-slate-400 capitalize leading-none">Academic Department</p>
+                      <p className="text-xs text-slate-700 font-semibold leading-normal mt-1 max-w-sm truncate">
                         🏫 {researcher.departmentRef?.name || researcher.department || 'Academic Department Not Specified'}
                         {researcher.departmentRef?.faculty?.name ? ` · ${researcher.departmentRef.faculty.name}` : ''}
                       </p>
                     </div>
 
                     {/* Bio Paragraph */}
-                    <p className="text-slate-500 dark:text-[#A7B3C5] text-xs leading-relaxed line-clamp-3 min-h-[54px]">
+                    <p className="text-slate-500 text-xs leading-relaxed line-clamp-3 min-h-[54px]">
                       {researcher.bio || 'This academic member has recently joined the portal to bootstrap their interdisciplinary research.'}
                     </p>
                   </div>
 
                   {/* Card Footer actions and tags */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-100 dark:border-white/[0.06] pt-3 mt-4 gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between border-t border-slate-100 pt-3 mt-4 gap-3">
                     <div className="flex flex-wrap gap-1">
                       {researcher.interests?.slice(0, 3).map((item: any) => (
                         <span 
                           key={item.interest?.name || item.interestId}
-                          className="px-2 py-0.5 bg-slate-50 dark:bg-[#0B1728] text-[10px] text-slate-550 dark:text-[#A7B3C5] rounded border border-slate-200/50 dark:border-white/[0.08] font-semibold"
+                          className="px-2 py-0.5 bg-slate-50 text-2xs text-slate-550 rounded border border-slate-200/50 font-semibold"
                         >
                           #{item.interest?.name || 'Research'}
                         </span>
@@ -334,7 +334,7 @@ export default function ScholarConnectionsPage() {
 
                     <button
                       onClick={() => setInvitee(researcher)}
-                      className="px-4 py-1.5 bg-primary dark:bg-[#2563EB] hover:bg-primary/95 dark:hover:bg-blue-600 text-white rounded-lg text-xs transition-colors shrink-0 self-end sm:self-auto font-bold cursor-pointer"
+                      className="px-4 py-1.5 bg-primary hover:bg-primary/95 text-white rounded-lg text-xs transition-colors shrink-0 self-end sm:self-auto font-bold cursor-pointer"
                     >
                       Invite Synergy
                     </button>
@@ -364,38 +364,38 @@ export default function ScholarConnectionsPage() {
               animate={{ y: 0 }}
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] bg-white dark:bg-[#101D30] border-t border-slate-200 dark:border-white/[0.10] rounded-t-2xl p-6 shadow-2xl flex flex-col space-y-5 text-left max-w-xl mx-auto"
+              className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] bg-surface border-t border-slate-200 rounded-t-2xl p-6 shadow-2xl flex flex-col space-y-5 text-left max-w-xl mx-auto"
             >
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-white/[0.08] pb-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded bg-primary/10 dark:bg-blue-600/20 border border-primary/20 dark:border-blue-700/30 flex items-center justify-center text-primary dark:text-[#3B82F6]">
+                  <div className="w-8 h-8 rounded bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
                     <Compass className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="font-display font-bold text-sm text-slate-800 dark:text-[#F5F7FA] leading-none">Synergy Proposal</h3>
-                    <p className="text-[9px] text-slate-400 dark:text-[#718096] font-bold uppercase mt-1">Intranet Workspace Collaboration</p>
+                    <h3 className="font-display font-bold text-sm text-slate-800 leading-none">Synergy Proposal</h3>
+                    <p className="text-2xs text-slate-400 font-bold uppercase mt-1">Intranet Workspace Collaboration</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setInvitee(null)}
-                  className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-[#132238] transition cursor-pointer"
+                  className="p-1 rounded-full hover:bg-slate-100 transition cursor-pointer"
                 >
-                  <X className="w-4 h-4 text-slate-450 dark:text-[#718096]" />
+                  <X className="w-4 h-4 text-slate-450" />
                 </button>
               </div>
 
               <form onSubmit={handleSendInvite} className="space-y-4">
-                <div className="p-4 bg-slate-50 dark:bg-[#0B1728] border border-slate-200/50 dark:border-white/[0.08] rounded-xl flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 bg-primary/5 dark:bg-blue-950/40 flex items-center justify-center">
+                <div className="p-4 bg-slate-50 border border-slate-200/50 rounded-xl flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-full overflow-hidden border border-slate-200 bg-primary/5 flex items-center justify-center">
                     {invitee.image ? (
                       <img src={invitee.image} alt={invitee.name || undefined} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-xs font-bold text-primary dark:text-[#3B82F6]">{getInitials(invitee.name)}</span>
+                      <span className="text-xs font-bold text-primary">{getInitials(invitee.name)}</span>
                     )}
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800 dark:text-[#F5F7FA] leading-none">{invitee.name}</h4>
-                    <p className="text-[10px] text-slate-500 dark:text-[#A7B3C5] font-medium mt-1 truncate max-w-[320px]">
+                    <h4 className="text-xs font-bold text-slate-800 leading-none">{invitee.name}</h4>
+                    <p className="text-2xs text-slate-500 font-medium mt-1 truncate max-w-[320px]">
                       🏫 {invitee.departmentRef?.name || invitee.department || 'Academic Department Not Specified'}
                       {invitee.departmentRef?.faculty?.name ? ` · ${invitee.departmentRef.faculty.name}` : ''}
                     </p>
@@ -403,29 +403,29 @@ export default function ScholarConnectionsPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-[11px] font-bold text-slate-450 dark:text-[#718096] uppercase tracking-wider">Synergy Message</label>
+                  <label className="block text-xs font-medium text-slate-450 capitalize">Synergy Message</label>
                   <textarea
                     rows={4}
                     required
                     value={inviteMessage}
                     onChange={(e) => setInviteMessage(e.target.value)}
                     placeholder="Describe your synergy hypothesis, share resources you bring, or pitch a co-authored grant proposal..."
-                    className="w-full bg-transparent dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-lg p-3 font-sans text-xs leading-relaxed text-slate-800 dark:text-[#F5F7FA] placeholder:text-slate-400 dark:placeholder:text-[#718096] focus:border-primary dark:focus:border-[#3B82F6] focus:ring-1 focus:ring-primary/20 outline-none transition-colors"
+                    className="w-full bg-transparent border border-slate-200 rounded-lg p-3 font-sans text-xs leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-primary focus:ring-1 focus:ring-primary/20 outline-none transition-colors"
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-white/[0.08]">
+                <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setInvitee(null)}
-                    className="px-5 py-2.5 rounded-lg text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#A7B3C5] hover:bg-slate-100 dark:hover:bg-[#132238] transition-colors"
+                    className="px-5 py-2.5 rounded-lg text-xs font-medium capitalize text-slate-500 hover:bg-slate-100 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={inviteSubmitting}
-                    className="px-6 py-2.5 rounded-lg bg-primary dark:bg-[#2563EB] hover:bg-primary/95 dark:hover:bg-blue-600 text-white text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50"
+                    className="px-6 py-2.5 rounded-lg bg-primary hover:bg-primary/95 text-white text-xs font-medium capitalize transition-all flex items-center gap-1.5 cursor-pointer shadow disabled:opacity-50"
                   >
                     {inviteSubmitting ? (
                       <Loader2 className="w-4 h-4 animate-spin text-white" />

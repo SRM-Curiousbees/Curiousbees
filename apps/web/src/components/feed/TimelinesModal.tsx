@@ -146,7 +146,7 @@ export default function TimelinesModal({ isOpen, onClose, onTopicToggle }: Timel
             className="fixed inset-0 z-50 flex items-start justify-center pt-[5vh] sm:pt-[10vh] px-4"
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
           >
-            <div className="w-full max-w-[520px] bg-white rounded-3xl shadow-[0_25px_60px_rgba(0,0,0,0.25)] max-h-[80vh] flex flex-col overflow-hidden">
+            <div className="w-full max-w-[520px] bg-surface rounded-3xl shadow-xl max-h-[80vh] flex flex-col overflow-hidden">
 
               {/* ─── HEADER ─── */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 shrink-0">
@@ -157,10 +157,10 @@ export default function TimelinesModal({ isOpen, onClose, onTopicToggle }: Timel
                   >
                     <X className="w-5 h-5" />
                   </button>
-                  <h2 className="text-base font-black text-slate-900 tracking-tight">Timelines</h2>
+                  <h2 className="text-base font-semibold text-slate-900 tracking-tight">Timelines</h2>
                 </div>
                 {followedCount > 0 && (
-                  <span className="text-[11px] font-bold text-[#0C4DA2] bg-[#0C4DA2]/10 px-2.5 py-1 rounded-full">
+                  <span className="text-2xs font-bold text-brand bg-brand/10 px-2.5 py-1 rounded-full">
                     {followedCount} following
                   </span>
                 )}
@@ -175,7 +175,7 @@ export default function TimelinesModal({ isOpen, onClose, onTopicToggle }: Timel
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search"
-                    className="w-full bg-slate-100/80 border border-slate-200/60 rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#0C4DA2]/40 focus:ring-2 focus:ring-[#0C4DA2]/10 transition-all"
+                    className="w-full bg-slate-100/80 border border-slate-200/60 rounded-xl pl-10 pr-4 py-2.5 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-surface focus:border-brand/40 focus:ring-2 focus:ring-brand/10 transition-all"
                   />
                   <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
                   {searchQuery && (
@@ -203,7 +203,7 @@ export default function TimelinesModal({ isOpen, onClose, onTopicToggle }: Timel
                       onClick={() => toggleCategory(category)}
                       className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer"
                     >
-                      <h3 className="text-sm font-black text-slate-900 tracking-tight">{category}</h3>
+                      <h3 className="text-sm font-semibold text-slate-900 tracking-tight">{category}</h3>
                       {collapsedCategories[category] ? (
                         <ChevronDown className="w-5 h-5 text-slate-400" />
                       ) : (
@@ -241,8 +241,8 @@ export default function TimelinesModal({ isOpen, onClose, onTopicToggle }: Timel
                                   onClick={() => handleToggleTopic(topic.id)}
                                   className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-all cursor-pointer active:scale-90 ${
                                     isFollowed
-                                      ? 'bg-[#0C4DA2] text-white shadow-sm'
-                                      : 'bg-[#0C4DA2] text-white shadow-sm hover:bg-[#0a3f8a]'
+                                      ? 'bg-brand text-white shadow-sm'
+                                      : 'bg-brand text-white shadow-sm hover:bg-brand-strong'
                                   }`}
                                 >
                                   {isFollowed ? (

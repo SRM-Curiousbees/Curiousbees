@@ -166,12 +166,12 @@ export function EditResearcherProfileDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl border border-[#E4E9F2] shadow-2xl max-w-xl w-full overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-surface rounded-2xl border border-slate-200 shadow-2xl max-w-xl w-full overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div>
-            <h3 className="text-lg font-extrabold text-[#17233D]">Edit Profile</h3>
+            <h3 className="text-lg font-semibold text-slate-900">Edit Profile</h3>
             <p className="text-xs text-slate-500 font-medium">
               Update your public profile details and research focus.
             </p>
@@ -190,7 +190,7 @@ export function EditResearcherProfileDrawer({
             onClick={() => setActiveTab('PROFILE')}
             className={`px-4 py-2.5 text-xs font-extrabold border-b-2 transition-colors cursor-pointer ${
               activeTab === 'PROFILE'
-                ? 'border-[#0C4DA2] text-[#0C4DA2]'
+                ? 'border-brand text-brand'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -200,7 +200,7 @@ export function EditResearcherProfileDrawer({
             onClick={() => setActiveTab('LINKS')}
             className={`px-4 py-2.5 text-xs font-extrabold border-b-2 transition-colors cursor-pointer ${
               activeTab === 'LINKS'
-                ? 'border-[#0C4DA2] text-[#0C4DA2]'
+                ? 'border-brand text-brand'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -226,7 +226,7 @@ export function EditResearcherProfileDrawer({
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
+                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
                   />
                 </div>
                 <div>
@@ -248,7 +248,7 @@ export function EditResearcherProfileDrawer({
                       setSelectedDepartmentId('');
                     }}
                     disabled={isLoadingOrg}
-                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] cursor-pointer disabled:bg-slate-50 disabled:text-slate-400"
+                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer disabled:bg-slate-50 disabled:text-slate-400"
                   >
                     <option value="">Select Faculty...</option>
                     {faculties.map((f) => (
@@ -262,7 +262,7 @@ export function EditResearcherProfileDrawer({
                     value={selectedDepartmentId}
                     onChange={(e) => setSelectedDepartmentId(e.target.value)}
                     disabled={isLoadingOrg || !selectedFacultyId}
-                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] cursor-pointer disabled:bg-slate-50 disabled:text-slate-400"
+                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer disabled:bg-slate-50 disabled:text-slate-400"
                   >
                     <option value="">Select Department...</option>
                     {departments
@@ -283,7 +283,7 @@ export function EditResearcherProfileDrawer({
                   placeholder={isAdmin ? 'Describe your institutional role and oversight areas...' : 'Describe your research focus, methodology, or academic statement...'}
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  className="w-full text-xs font-semibold p-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
+                  className="w-full text-xs font-semibold p-3 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
                 />
               </div>
 
@@ -296,13 +296,13 @@ export function EditResearcherProfileDrawer({
                   placeholder="Artificial Intelligence, Research Policy, Analytics"
                   value={interestsText}
                   onChange={(e) => setInterestsText(e.target.value)}
-                  className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
+                  className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
                 />
               </div>
 
               {!isAdmin && (
                 <div className="pt-3 border-t border-slate-100 space-y-3">
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#0C4DA2]">
+                  <h4 className="text-xs font-medium capitalize text-brand">
                     Current Research Project
                   </h4>
 
@@ -313,7 +313,7 @@ export function EditResearcherProfileDrawer({
                       placeholder="e.g. AI-Based Research Collaboration Framework"
                       value={researchTitle}
                       onChange={(e) => setResearchTitle(e.target.value)}
-                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
+                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
                     />
                   </div>
 
@@ -325,7 +325,7 @@ export function EditResearcherProfileDrawer({
                         placeholder="e.g. Artificial Intelligence"
                         value={researchArea}
                         onChange={(e) => setResearchArea(e.target.value)}
-                        className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
+                        className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
                       />
                     </div>
 
@@ -334,7 +334,7 @@ export function EditResearcherProfileDrawer({
                       <select
                         value={currentStage}
                         onChange={(e) => setCurrentStage(e.target.value)}
-                        className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
+                        className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
                       >
                         {STAGES.map((stg) => (
                           <option key={stg.id} value={stg.id}>
@@ -352,7 +352,7 @@ export function EditResearcherProfileDrawer({
                       placeholder="Short summary of current project methodology and goals..."
                       value={abstract}
                       onChange={(e) => setAbstract(e.target.value)}
-                      className="w-full text-xs font-semibold p-3 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
+                      className="w-full text-xs font-semibold p-3 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
                     />
                   </div>
                 </div>
@@ -362,16 +362,16 @@ export function EditResearcherProfileDrawer({
 
           {activeTab === 'LINKS' && (
             <div className="text-center py-8 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-3">
-              <Globe className="w-8 h-8 text-[#0C4DA2] mx-auto" />
+              <Globe className="w-8 h-8 text-brand mx-auto" />
               <div className="space-y-1">
-                <h4 className="text-sm font-extrabold text-[#17233D]">Manage External Research Profiles</h4>
+                <h4 className="text-sm font-semibold text-slate-900">Manage External Research Profiles</h4>
                 <p className="text-xs text-slate-500">
                   Configure ORCID, Google Scholar, ResearchGate, GitHub, and LinkedIn profile URLs.
                 </p>
               </div>
               <button
                 onClick={onOpenLinksEditor}
-                className="px-5 py-2.5 bg-[#0C4DA2] hover:bg-[#042654] text-white font-extrabold text-xs rounded-xl shadow-2xs transition-all inline-flex items-center gap-2 cursor-pointer"
+                className="px-5 py-2.5 bg-brand hover:bg-brand-strong text-white font-semibold text-xs rounded-xl shadow-2xs transition-all inline-flex items-center gap-2 cursor-pointer"
               >
                 <Globe className="w-4 h-4" />
                 <span>Open Links Manager</span>
@@ -384,7 +384,7 @@ export function EditResearcherProfileDrawer({
         <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-extrabold rounded-xl transition-colors cursor-pointer"
+            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
           >
             Cancel
           </button>
@@ -394,7 +394,7 @@ export function EditResearcherProfileDrawer({
               type="submit"
               form="edit-profile-form"
               disabled={isSubmitting}
-              className="px-6 py-2.5 bg-[#0C4DA2] hover:bg-[#042654] text-white text-xs font-extrabold rounded-xl shadow-2xs transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+              className="px-6 py-2.5 bg-brand hover:bg-brand-strong text-white text-xs font-semibold rounded-xl shadow-2xs transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>

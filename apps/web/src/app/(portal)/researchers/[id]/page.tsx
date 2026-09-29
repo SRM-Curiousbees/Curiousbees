@@ -21,7 +21,7 @@ export default function ResearcherProfilePage() {
   if (isLoadingProfile) {
     return (
       <div className="min-h-screen flex items-center justify-center gap-2 text-slate-500">
-        <Loader2 className="w-8 h-8 text-[#0C4DA2] animate-spin" />
+        <Loader2 className="w-8 h-8 text-brand animate-spin" />
         <span className="text-sm font-bold">Loading profile...</span>
       </div>
     );
@@ -33,7 +33,7 @@ export default function ResearcherProfilePage() {
         <h2 className="text-xl font-bold text-slate-900">Unable to load researcher profile</h2>
         <button 
           onClick={() => refetchProfile()} 
-          className="px-6 py-2.5 bg-[#0C4DA2] text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+          className="px-6 py-2.5 bg-brand text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
         >
           Retry
         </button>
@@ -45,7 +45,7 @@ export default function ResearcherProfilePage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center space-y-4">
         <h2 className="text-2xl font-bold text-slate-900">Researcher Not Found</h2>
-        <button onClick={() => router.push('/researchers')} className="text-[#0C4DA2] font-bold hover:underline cursor-pointer">
+        <button onClick={() => router.push('/researchers')} className="text-brand font-bold hover:underline cursor-pointer">
           Return to Researchers
         </button>
       </div>
@@ -60,7 +60,7 @@ export default function ResearcherProfilePage() {
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 pt-4">
         <button 
           onClick={() => router.push('/researchers')}
-          className="flex items-center gap-2 text-[#6B7890] hover:text-[#0C4DA2] transition-colors text-xs font-bold uppercase tracking-wider cursor-pointer"
+          className="flex items-center gap-2 text-slate-500 hover:text-brand transition-colors text-xs font-medium capitalize cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Researchers
         </button>

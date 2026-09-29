@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../auth/supabase.service';
 import { Role, UserStatus } from '@prisma/client';
 import * as xlsx from 'xlsx';
-import { SUPERADMIN_EMAIL } from './admin.constants';
+import { assertKeepsAnActiveAdmin, assertNotSelf, assertProvisionableEmail, isEmailAllowedForImport, parseUserStatus } from './admin-safety';
 
 @Injectable()
 export class AdminScholarsService {
@@ -97,7 +97,8 @@ export class AdminScholarsService {
   }
 
   async createScholar(adminId: string, data: any) {
-    const email = data.email.toLowerCase();
+    const email = String(data.email).trim().toLowerCase();
+    assertProvisionableEmail(email);
     
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -170,6 +171,11 @@ export class AdminScholarsService {
   async updateScholarStatus(adminId: string, id: string, status: UserStatus) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Scholar not found.');
+    status = parseUserStatus(status);
+    if (status !== user.status) {
+      assertNotSelf(adminId, id, 'change the status of');
+      await assertKeepsAnActiveAdmin(this.prisma, user, { status });
+    }
 
     const updated = await this.prisma.user.update({
       where: { id },
@@ -206,6 +212,7 @@ export class AdminScholarsService {
   async updateScholar(adminId: string, id: string, data: any) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Scholar not found.');
+    if (data.email) assertProvisionableEmail(data.email);
 
     let departmentName = user.department;
     let facultyName = user.faculty;
@@ -270,6 +277,7 @@ export class AdminScholarsService {
 
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Scholar not found.');
+    await assertKeepsAnActiveAdmin(this.prisma, user, { deleted: true });
 
     await this.prisma.$transaction([
       this.prisma.scholarSupervisorRequest.deleteMany({ where: { OR: [{ scholarId: id }, { supervisorId: id }] } }),
@@ -322,6 +330,7 @@ export class AdminScholarsService {
       const supervisorStr = String(row.supervisor || row.Supervisor || '').trim().toLowerCase();
 
       if (!email) { report.failedCount++; report.errors.push({ row: rowNum, message: 'Missing email' }); continue; }
+      if (!isEmailAllowedForImport(email)) { report.failedCount++; report.errors.push({ row: rowNum, email, message: 'Email domain is not in ALLOWED_EMAIL_DOMAINS' }); continue; }
       if (!name) { report.failedCount++; report.errors.push({ row: rowNum, email, message: 'Missing name' }); continue; }
       if (userEmails.has(email)) { report.failedCount++; report.errors.push({ row: rowNum, email, message: 'User already exists' }); continue; }
 

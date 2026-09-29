@@ -9,3 +9,6 @@ export const ROLE_COOKIE_NAME = 'cb-role';
 /** Maximum active scholars a Research Supervisor can guide */
 export const MAX_SCHOLARS_PER_SUPERVISOR = 6;
 
+/** Permanent Root Administrator email for CuriousBees platform */
+export const ROOT_ADMIN_EMAIL = 'srmcuriousbees@gmail.com';
+

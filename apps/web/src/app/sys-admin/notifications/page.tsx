@@ -72,10 +72,10 @@ export default function AdminNotificationsPage() {
           <p className="text-sm text-emerald-600 mt-1">All targeted users will see it in their notification feed.</p>
         </motion.div>
       ) : (
-        <div className="bg-white border border-slate-200/70 rounded-2xl p-6 shadow-sm space-y-5">
+        <div className="bg-surface border border-slate-200/70 rounded-2xl p-6 shadow-sm space-y-5">
           {/* Target audience */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
+            <label className="block text-xs font-medium capitalize text-slate-500 mb-3">
               Target Audience
             </label>
             <div className="grid grid-cols-3 gap-2">
@@ -97,7 +97,7 @@ export default function AdminNotificationsPage() {
 
           {/* Title */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
+            <label className="block text-xs font-medium capitalize text-slate-500 mb-2">
               Notification Title
             </label>
             <input
@@ -113,7 +113,7 @@ export default function AdminNotificationsPage() {
 
           {/* Message */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">
+            <label className="block text-xs font-medium capitalize text-slate-500 mb-2">
               Message
             </label>
             <textarea
@@ -135,7 +135,7 @@ export default function AdminNotificationsPage() {
           {/* Preview */}
           {(title || message) && (
             <div className="border border-slate-200 rounded-xl p-4 bg-slate-50">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
+              <p className="text-xs font-medium capitalize text-slate-400 mb-2 flex items-center gap-1.5">
                 <Megaphone className="w-3 h-3" /> Preview
               </p>
               <p className="text-sm font-semibold text-slate-800">{title || 'Untitled'}</p>
@@ -148,7 +148,7 @@ export default function AdminNotificationsPage() {
             id="admin-send-notification-btn"
             onClick={handleSend}
             disabled={loading || !title.trim() || !message.trim()}
-            className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-sm shadow-blue-600/20 cursor-pointer"
+            className="w-full py-3 bg-brand hover:bg-brand-strong disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all shadow-sm  cursor-pointer"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             {loading ? 'Sending…' : 'Send Notification'}

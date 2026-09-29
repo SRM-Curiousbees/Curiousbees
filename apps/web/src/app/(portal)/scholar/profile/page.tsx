@@ -30,7 +30,7 @@ export default function ScholarProfilePage() {
   if (loading && !currentUser) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-slate-500">
-        <Loader2 className="w-8 h-8 text-[#0C4DA2] animate-spin" />
+        <Loader2 className="w-8 h-8 text-brand animate-spin" />
         <span className="text-sm font-bold">Loading profile...</span>
       </div>
     );
@@ -43,7 +43,7 @@ export default function ScholarProfilePage() {
         <p className="text-xs text-slate-500">{error}</p>
         <button
           onClick={loadProfile}
-          className="px-6 py-2.5 bg-[#0C4DA2] hover:bg-[#042654] text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
+          className="px-6 py-2.5 bg-brand hover:bg-brand-strong text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
         >
           Retry
         </button>

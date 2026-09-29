@@ -1,24 +1,15 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  X, 
-  Calendar, 
-  MapPin, 
-  Globe, 
-  Users, 
-  Clock, 
-  User, 
-  Edit2, 
-  Trash2, 
-  Share2, 
-  ExternalLink,
-  Building2
-} from 'lucide-react';
+import { Calendar, Edit2, ExternalLink, MapPin, Share2, Trash2, User } from 'lucide-react';
 import { Event } from '@curiousbees/types';
 import { useStore } from '@/store/useStore';
 import { formatVenueDisplay } from '@/constants/srmVenues';
+import { Dialog } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ROLE_LABEL } from '@/lib/navigation';
+import { eventCategory } from '@/lib/event-categories';
 
 type PrismaEvent = Event & {
   status: 'DRAFT' | 'PUBLISHED' | 'REVIEW_REQUIRED' | 'FAILED';
@@ -95,12 +86,9 @@ export default function EventDetailModal({
     : null;
 
   // Author details
-  const authorName = event.author?.name || event.speaker || 'SRMIST Directorate';
-  const authorRole = event.author?.role 
-    ? (event.author.role === 'RESEARCH_SUPERVISOR' ? 'Research Supervisor' : 'Research Scholar')
-    : 'Faculty Lead';
-  const authorDept = event.author?.department || event.department || 'SRMIST Research Directorate';
-  const authorAvatar = event.author?.image || `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=0C4DA2&color=fff&size=64`;
+  const authorName = event.author?.name || event.speaker || null;
+  const authorRole = event.author?.role ? ROLE_LABEL[event.author.role] || null : null;
+  const authorDept = event.author?.department || event.department || null;
 
   const registrationUrl = event.registrationLink 
     ? (event.registrationLink.startsWith('http://') || event.registrationLink.startsWith('https://') 
@@ -124,214 +112,91 @@ export default function EventDetailModal({
 
   const venueInfo = formatVenueDisplay(event.venue);
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
+  const category = eventCategory(event.eventType);
+
+  const rows: { label: string; icon: React.ElementType; value: React.ReactNode }[] = [
+    { label: 'When', icon: Calendar, value: <>{formattedEventDate}{event.time && <span className="block text-ink-secondary">{event.time}</span>}</> },
+    {
+      label: 'Where',
+      icon: MapPin,
+      value: venueInfo.title ? (
         <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs cursor-pointer"
-          />
-
-          {/* Modal Container */}
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none text-left">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.96, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.96, y: 10 }}
-              transition={{ type: 'spring', damping: 26, stiffness: 350 }}
-              className="w-full max-w-xl max-h-[90vh] bg-white rounded-2xl shadow-xl flex flex-col pointer-events-auto overflow-hidden border border-slate-200"
-            >
-              {/* ─── 1. MODAL HEADER ─── */}
-              <div className="p-5 sm:p-6 border-b border-slate-100 bg-white shrink-0">
-                <div className="flex items-center justify-between gap-3 mb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-[#0C4DA2] border border-blue-100 px-2.5 py-0.5 rounded-md">
-                      {event.eventType || 'Research Event'}
-                    </span>
-                    {registrationUrl && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-800 border border-emerald-100 px-2.5 py-0.5 rounded-md flex items-center gap-1">
-                        <ExternalLink className="w-3 h-3 text-emerald-600" />
-                        Registration Link
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    {canEdit && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => onEdit?.(event)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                          title="Edit Event"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onDelete?.(event.id)}
-                          className="p-1.5 rounded-lg text-rose-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                          title="Delete Event"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </>
-                    )}
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 leading-snug tracking-tight">
-                  {event.title}
-                </h2>
-              </div>
-
-              {/* ─── 2. MODAL BODY ─── */}
-              <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1 bg-white">
-                
-                {/* Posted By Author Bar */}
-                <div className="flex items-center justify-between p-3.5 bg-slate-50 border border-slate-100 rounded-xl">
-                  <div className="flex items-center space-x-3">
-                    <img 
-                      src={authorAvatar} 
-                      alt={authorName} 
-                      className="w-9 h-9 rounded-full border border-slate-200 shrink-0"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-slate-900">{authorName}</span>
-                        <span className="text-[9px] font-bold text-[#0C4DA2] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100">
-                          {authorRole}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-500 font-medium">{authorDept}</p>
-                    </div>
-                  </div>
-                  {formattedPostedDate && (
-                    <div className="text-right shrink-0">
-                      <span className="block text-[9px] font-bold text-slate-400 uppercase">POSTED ON</span>
-                      <span className="text-[11px] font-semibold text-slate-600">{formattedPostedDate}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* External Registration Link Card */}
-                {registrationUrl && (
-                  <div className="p-3.5 bg-blue-50/60 border border-blue-100 rounded-xl flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <span className="block text-[9px] font-bold text-[#0C4DA2] uppercase tracking-wider">OFFICIAL REGISTRATION LINK</span>
-                      <p className="text-xs font-medium text-slate-700 truncate mt-0.5">{registrationUrl}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handleOpenRegistration}
-                      className="px-3.5 py-1.5 bg-[#0C4DA2] hover:bg-[#042654] text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
-                    >
-                      <span>Open Form</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
-
-                {/* Event Metadata Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  
-                  {/* DATE & TIME */}
-                  <div className="p-3.5 bg-slate-50/80 border border-slate-100 rounded-xl space-y-1">
-                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">DATE & TIME</span>
-                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-[#0C4DA2] shrink-0" />
-                      <span>{formattedEventDate}</span>
-                    </div>
-                    <div className="text-[11px] font-medium text-slate-600 flex items-center gap-1.5 pl-5">
-                      <Clock className="w-3 h-3 text-slate-400 shrink-0" />
-                      <span>{event.time || '10:00 AM - 11:30 AM'}</span>
-                    </div>
-                  </div>
-
-                  {/* VENUE / LOCATION */}
-                  <div className="p-3.5 bg-slate-50/80 border border-slate-100 rounded-xl space-y-1">
-                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">VENUE / LOCATION</span>
-                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-[#0C4DA2] shrink-0" />
-                      <span className="truncate">{venueInfo.title}</span>
-                    </div>
-                    {venueInfo.subtitle && (
-                      <p className="text-[11px] font-medium text-slate-600 pl-5 truncate">{venueInfo.subtitle}</p>
-                    )}
-                    {venueInfo.details && (
-                      <p className="text-[10px] font-semibold text-slate-400 pl-5">{venueInfo.details}</p>
-                    )}
-                  </div>
-
-                  {/* ORGANIZER / DEPARTMENT */}
-                  <div className="p-3.5 bg-slate-50/80 border border-slate-100 rounded-xl space-y-1">
-                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">ORGANIZER / DEPARTMENT</span>
-                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <Building2 className="w-3.5 h-3.5 text-[#0C4DA2] shrink-0" />
-                      <span className="truncate">{authorDept}</span>
-                    </div>
-                  </div>
-
-                  {/* TIMEZONE */}
-                  <div className="p-3.5 bg-slate-50/80 border border-slate-100 rounded-xl space-y-1">
-                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">TIMEZONE</span>
-                    <div className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                      <Globe className="w-3.5 h-3.5 text-[#0C4DA2] shrink-0" />
-                      <span>Asia/Kolkata (IST)</span>
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* DESCRIPTION & AGENDA */}
-                <div className="space-y-1.5">
-                  <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">EVENT DESCRIPTION & AGENDA</span>
-                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-xs font-normal text-slate-700 leading-relaxed whitespace-pre-line">
-                    {event.description || 'Academic research seminar detailing upcoming methodologies, technical sessions, and interdisciplinary collaboration opportunities.'}
-                  </div>
-                </div>
-
-              </div>
-
-              {/* ─── 3. MODAL FOOTER ─── */}
-              <div className="p-4 sm:p-5 bg-slate-50/60 border-t border-slate-100 flex items-center justify-between gap-3 shrink-0">
-                <button
-                  type="button"
-                  onClick={handleShare}
-                  className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <Share2 className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Share Event</span>
-                </button>
-
-                {registrationUrl && (
-                  <button
-                    type="button"
-                    onClick={handleOpenRegistration}
-                    className="px-5 py-2 bg-[#0C4DA2] hover:bg-[#042654] text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
-                  >
-                    <span>Register / Official Registration</span>
-                    <ExternalLink className="w-3.5 h-3.5 text-amber-300" />
-                  </button>
-                )}
-              </div>
-
-            </motion.div>
-          </div>
+          {venueInfo.title}
+          {venueInfo.subtitle && <span className="block text-ink-secondary">{venueInfo.subtitle}</span>}
+          {venueInfo.details && <span className="block text-ink-muted">{venueInfo.details}</span>}
         </>
+      ) : 'Venue to be announced',
+    },
+    {
+      label: 'Organiser',
+      icon: User,
+      value: authorName ? (
+        <>
+          {authorName}
+          {(authorRole || authorDept) && <span className="block text-ink-secondary">{[authorRole, authorDept].filter(Boolean).join(' · ')}</span>}
+        </>
+      ) : 'Not specified',
+    },
+  ];
+
+  return (
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      size="lg"
+      title={event.title}
+      description={
+        <span className="flex flex-wrap items-center gap-2">
+          {category ? <Badge tone={category.tone}>{category.label}</Badge> : event.eventType && <Badge>{event.eventType}</Badge>}
+          {formattedPostedDate && <span className="text-ink-muted">Posted {formattedPostedDate}</span>}
+        </span>
+      }
+      footer={
+        <>
+          <div className="mr-auto flex gap-2">
+            {canEdit && onEdit && (
+              <Button variant="secondary" onClick={() => onEdit(event)}>
+                <Edit2 aria-hidden />
+                Edit
+              </Button>
+            )}
+            {canEdit && onDelete && (
+              <Button variant="ghost" onClick={() => onDelete(event.id)} className="text-danger-700 hover:bg-danger-50 hover:text-danger-800">
+                <Trash2 aria-hidden />
+                Delete
+              </Button>
+            )}
+          </div>
+          <Button variant="secondary" onClick={handleShare}>
+            <Share2 aria-hidden />
+            Copy link
+          </Button>
+          {registrationUrl && (
+            <Button onClick={handleOpenRegistration}>
+              Register
+              <ExternalLink aria-hidden />
+            </Button>
+          )}
+        </>
+      }
+    >
+      <dl className="divide-y divide-line rounded-xl border border-line">
+        {rows.map(({ label, icon: Icon, value }) => (
+          <div key={label} className="flex gap-3 px-4 py-3 text-sm">
+            <dt className="flex w-24 shrink-0 items-center gap-2 self-start text-ink-muted">
+              <Icon className="size-4" aria-hidden />
+              {label}
+            </dt>
+            <dd className="min-w-0 font-medium text-ink">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      {event.description && (
+        <div className="mt-5">
+          <h3 className="text-sm font-semibold text-ink">About this event</h3>
+          <p className="mt-1.5 whitespace-pre-wrap text-[15px] leading-relaxed text-ink-secondary">{event.description}</p>
+        </div>
       )}
-    </AnimatePresence>
+    </Dialog>
   );
 }

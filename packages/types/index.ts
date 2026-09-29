@@ -366,7 +366,12 @@ export interface WorkspaceFile {
   id: string;
   workspaceId: string;
   name: string;
-  url: string;
+  /** External link for link-type files; null for uploaded files. */
+  url?: string | null;
+  /** Private S3 object key for uploaded files. Download via the API, never directly. */
+  storageKey?: string | null;
+  contentType?: string | null;
+  /** Bytes */
   size: number;
   uploadedById: string;
   uploadedAt: Date | string;

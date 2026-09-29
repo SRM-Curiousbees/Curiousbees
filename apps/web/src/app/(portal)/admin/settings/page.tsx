@@ -51,7 +51,7 @@ export default function AdminSettingsPage() {
   if (loading || !settings) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-2 text-slate-400">
-        <Loader2 className="w-6 h-6 animate-spin text-[#0C4DA2]" />
+        <Loader2 className="w-6 h-6 animate-spin text-brand" />
         <p className="text-xs font-bold">Loading institutional configurations...</p>
       </div>
     );
@@ -60,22 +60,22 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto py-2 select-none">
       {/* Header */}
-      <div className="border-b border-slate-200/80 dark:border-white/[0.08] pb-4">
+      <div className="border-b border-slate-200/80 pb-4">
         <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200">
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-purple-50 text-purple-700 border border-purple-200">
             System Administration
           </span>
         </div>
-        <h1 className="text-2xl font-black text-slate-900 dark:text-[#F5F7FA] tracking-tight mt-1">
+        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
           Institutional System Settings
         </h1>
-        <p className="text-xs text-slate-500 dark:text-[#A7B3C5] font-semibold mt-0.5">
+        <p className="text-xs text-slate-500 font-semibold mt-0.5">
           Configure institutional domains, authentication rules, Brevo email settings, and security retention.
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-slate-200/80 dark:border-white/[0.08] pb-1">
+      <div className="flex items-center gap-1 border-b border-slate-200/80 pb-1">
         {[
           { id: 'GENERAL', label: 'General Identity', icon: Settings },
           { id: 'AUTH', label: 'Authentication & SSO', icon: Lock },
@@ -88,10 +88,10 @@ export default function AdminSettingsPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                'flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap',
+                'flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap',
                 activeTab === tab.id
-                  ? 'bg-[#0C4DA2] text-white dark:bg-[#2563EB] shadow-2xs'
-                  : 'text-slate-600 dark:text-[#A7B3C5] hover:bg-slate-100 dark:hover:bg-[#132238]'
+                  ? 'bg-brand text-white shadow-2xs'
+                  : 'text-slate-600 hover:bg-slate-100'
               )}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -102,11 +102,11 @@ export default function AdminSettingsPage() {
       </div>
 
       {/* Content Form Cards */}
-      <div className="bg-white dark:bg-[#07111F] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-6 shadow-2xs space-y-6">
+      <div className="bg-surface border border-slate-200/80 rounded-2xl p-6 shadow-2xs space-y-6">
         {activeTab === 'GENERAL' && (
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-[#F5F7FA] block mb-1">
+              <label className="text-xs font-bold text-slate-700 block mb-1">
                 Institution Legal Name
               </label>
               <input
@@ -118,12 +118,12 @@ export default function AdminSettingsPage() {
                     general: { ...formValues.general, institutionName: e.target.value },
                   })
                 }
-                className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA]"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-[#F5F7FA] block mb-1">
+              <label className="text-xs font-bold text-slate-700 block mb-1">
                 Institution Code
               </label>
               <input
@@ -135,12 +135,12 @@ export default function AdminSettingsPage() {
                     general: { ...formValues.general, institutionCode: e.target.value },
                   })
                 }
-                className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA] uppercase"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 uppercase"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-[#F5F7FA] block mb-1">
+              <label className="text-xs font-bold text-slate-700 block mb-1">
                 Primary Institution Domain
               </label>
               <input
@@ -152,14 +152,14 @@ export default function AdminSettingsPage() {
                     general: { ...formValues.general, domain: e.target.value },
                   })
                 }
-                className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA]"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800"
               />
             </div>
 
             <button
               onClick={() => handleSaveCategory('GENERAL', 'general', formValues.general)}
               disabled={saving}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold bg-[#0C4DA2] text-white cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-brand text-white cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
               <span>Save General Settings</span>
@@ -169,10 +169,10 @@ export default function AdminSettingsPage() {
 
         {activeTab === 'AUTH' && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-[#0B1728] rounded-xl border border-slate-200/80 dark:border-white/[0.08]">
+            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200/80">
               <div>
-                <h4 className="text-xs font-bold text-slate-900 dark:text-[#F5F7FA]">Google Workspace SSO</h4>
-                <p className="text-[11px] text-slate-400">Allow researchers to sign in via institutional Google accounts.</p>
+                <h4 className="text-xs font-bold text-slate-900">Google Workspace SSO</h4>
+                <p className="text-2xs text-slate-400">Allow researchers to sign in via institutional Google accounts.</p>
               </div>
               <input
                 type="checkbox"
@@ -186,12 +186,12 @@ export default function AdminSettingsPage() {
                     },
                   })
                 }
-                className="w-4 h-4 text-[#0C4DA2]"
+                className="w-4 h-4 text-brand"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-[#F5F7FA] block mb-1">
+              <label className="text-xs font-bold text-slate-700 block mb-1">
                 Allowed Email Domain Whitelist (comma separated)
               </label>
               <input
@@ -206,14 +206,14 @@ export default function AdminSettingsPage() {
                     },
                   })
                 }
-                className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA]"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800"
               />
             </div>
 
             <button
               onClick={() => handleSaveCategory('AUTH', 'authentication', formValues.authentication)}
               disabled={saving}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold bg-[#0C4DA2] text-white cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-brand text-white cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
               <span>Save Authentication Rules</span>
@@ -224,7 +224,7 @@ export default function AdminSettingsPage() {
         {activeTab === 'EMAIL' && (
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-[#F5F7FA] block mb-1">
+              <label className="text-xs font-bold text-slate-700 block mb-1">
                 Brevo Sender Name
               </label>
               <input
@@ -236,12 +236,12 @@ export default function AdminSettingsPage() {
                     email: { ...formValues.email, senderName: e.target.value },
                   })
                 }
-                className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA]"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-[#F5F7FA] block mb-1">
+              <label className="text-xs font-bold text-slate-700 block mb-1">
                 Brevo Sender Email Address
               </label>
               <input
@@ -253,14 +253,14 @@ export default function AdminSettingsPage() {
                     email: { ...formValues.email, senderEmail: e.target.value },
                   })
                 }
-                className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA]"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800"
               />
             </div>
 
             <button
               onClick={() => handleSaveCategory('EMAIL', 'email', formValues.email)}
               disabled={saving}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold bg-[#0C4DA2] text-white cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-brand text-white cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
               <span>Save Email Configuration</span>
@@ -271,7 +271,7 @@ export default function AdminSettingsPage() {
         {activeTab === 'SECURITY' && (
           <div className="space-y-4">
             <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-[#F5F7FA] block mb-1">
+              <label className="text-xs font-bold text-slate-700 block mb-1">
                 Audit Trail Retention Period (Days)
               </label>
               <input
@@ -286,14 +286,14 @@ export default function AdminSettingsPage() {
                     },
                   })
                 }
-                className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 dark:text-[#F5F7FA]"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800"
               />
             </div>
 
             <button
               onClick={() => handleSaveCategory('SECURITY', 'security', formValues.security)}
               disabled={saving}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold bg-[#0C4DA2] text-white cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-brand text-white cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
               <span>Save Security Policies</span>

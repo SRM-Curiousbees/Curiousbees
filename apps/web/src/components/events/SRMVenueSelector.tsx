@@ -141,24 +141,22 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
 
   return (
     <div className="space-y-2 relative" ref={dropdownRef}>
-      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-        VENUE / LOCATION
-      </label>
+      <span id="venue-label" className="block text-sm font-medium text-ink">Venue</span>
 
       {/* Selected Card or Dropdown Trigger */}
       {currentDisplay && !isOpen ? (
-        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between transition-all hover:border-[#0C4DA2]/50">
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-center justify-between transition-all hover:border-brand/50">
           <div className="flex items-start space-x-3 min-w-0">
-            <div className="w-8 h-8 rounded-lg bg-[#0C4DA2]/10 border border-[#0C4DA2]/20 flex items-center justify-center shrink-0 mt-0.5">
-              <Building2 className="w-4 h-4 text-[#0C4DA2]" />
+            <div className="w-8 h-8 rounded-lg bg-brand/10 border border-brand/20 flex items-center justify-center shrink-0 mt-0.5">
+              <Building2 className="w-4 h-4 text-brand" />
             </div>
             <div className="min-w-0">
               <h4 className="text-xs font-bold text-slate-900 truncate">{currentDisplay.title}</h4>
               {currentDisplay.subtitle && (
-                <p className="text-[11px] font-medium text-slate-500 truncate">{currentDisplay.subtitle}</p>
+                <p className="text-2xs font-medium text-slate-500 truncate">{currentDisplay.subtitle}</p>
               )}
               {currentDisplay.details && (
-                <span className="inline-block mt-1 text-[10px] font-semibold text-[#0C4DA2] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
+                <span className="inline-block mt-1 text-2xs font-semibold text-brand bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
                   {currentDisplay.details}
                 </span>
               )}
@@ -169,7 +167,7 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
             <button
               type="button"
               onClick={() => setIsOpen(true)}
-              className="px-2.5 py-1.5 text-[11px] font-bold text-[#0C4DA2] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+              className="px-2.5 py-1.5 text-2xs font-bold text-brand hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
             >
               Change
             </button>
@@ -187,9 +185,11 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full px-3.5 py-2.5 bg-white border ${
-            error ? 'border-red-400' : 'border-slate-200'
-          } rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0C4DA2] focus:ring-1 focus:ring-[#0C4DA2] transition-all flex items-center justify-between cursor-pointer min-h-[44px]`}
+          aria-labelledby="venue-label"
+          aria-invalid={!!error}
+          className={`w-full px-3.5 py-2.5 bg-surface border ${
+            error ? 'border-danger-500' : 'border-line-strong'
+          } rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all flex items-center justify-between cursor-pointer min-h-[44px]`}
         >
           <span className={selectedVenue || isCustom ? 'font-semibold text-slate-900' : 'text-slate-400'}>
             Select SRM KTR venue...
@@ -200,22 +200,22 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
 
       {/* Custom Venue Input Fields */}
       {isCustom && !isOpen && (
-        <div className="space-y-3 pt-2 pl-1 border-l-2 border-[#0C4DA2]/30">
+        <div className="space-y-3 pt-2 pl-1 border-l-2 border-brand/30">
           <div>
-            <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
-              CUSTOM VENUE NAME <span className="text-red-500">*</span>
+            <label className="mb-1 block text-sm font-medium text-ink">
+              Custom venue name <span className="text-danger-600" aria-hidden>*</span>
             </label>
             <input
               type="text"
               value={customName}
               onChange={(e) => updateCustomValue(e.target.value, customDetails)}
               placeholder="E.g. Department Seminar Hall 3"
-              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0C4DA2] focus:ring-1 focus:ring-[#0C4DA2]"
+              className="cb-input"
             />
           </div>
 
           <div>
-            <label className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+            <label className="mb-1 block text-sm font-medium text-ink">
               OPTIONAL LOCATION DETAILS
             </label>
             <input
@@ -223,7 +223,7 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
               value={customDetails}
               onChange={(e) => updateCustomValue(customName, e.target.value)}
               placeholder="E.g. Bio Engineering Block · 3rd Floor"
-              className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0C4DA2] focus:ring-1 focus:ring-[#0C4DA2]"
+              className="cb-input"
             />
           </div>
         </div>
@@ -231,7 +231,7 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
 
       {/* Dropdown Popover */}
       {isOpen && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden flex flex-col max-h-80 text-left">
+        <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden flex flex-col max-h-80 text-left">
           {/* Search Box */}
           <div className="p-2 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10">
             <div className="relative">
@@ -241,7 +241,7 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search venue, building, room or capacity..."
-                className="w-full pl-9 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-[#0C4DA2]"
+                className="w-full pl-9 pr-3 py-1.5 bg-surface border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:outline-none focus:border-brand"
                 autoFocus
               />
             </div>
@@ -253,7 +253,7 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
             {/* GROUP 1: MAJOR VENUES */}
             {filteredMajorVenues.length > 0 && (
               <div className="py-1">
-                <div className="px-3 py-1.5 text-[9px] font-extrabold text-[#0C4DA2] uppercase tracking-widest bg-slate-50/80 rounded-md mb-1">
+                <div className="mb-1 rounded-md px-3 py-1.5 text-xs font-medium text-ink-muted">
                   SRM KTR — MAJOR VENUES
                 </div>
                 {filteredMajorVenues.map((v) => (
@@ -264,15 +264,15 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
                     className="w-full px-3 py-2 text-left hover:bg-blue-50/70 rounded-lg transition-colors flex items-center justify-between group cursor-pointer"
                   >
                     <div className="min-w-0 pr-2">
-                      <div className="text-xs font-bold text-slate-800 group-hover:text-[#0C4DA2] flex items-center gap-1.5">
+                      <div className="text-xs font-bold text-slate-800 group-hover:text-brand flex items-center gap-1.5">
                         <span>{v.name}</span>
                       </div>
-                      <div className="text-[10px] font-medium text-slate-500 truncate mt-0.5">
+                      <div className="text-2xs font-medium text-slate-500 truncate mt-0.5">
                         {v.building}{v.floor ? ` · ${v.floor}` : ''}
                       </div>
                     </div>
                     {v.capacity && (
-                      <span className="text-[9px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded shrink-0">
+                      <span className="text-2xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded shrink-0">
                         {v.capacity} seats
                       </span>
                     )}
@@ -284,7 +284,7 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
             {/* GROUP 2: TECH PARK 2 */}
             {filteredTechPark2Venues.length > 0 && (
               <div className="py-1">
-                <div className="px-3 py-1.5 text-[9px] font-extrabold text-[#0C4DA2] uppercase tracking-widest bg-slate-50/80 rounded-md mb-1">
+                <div className="mb-1 rounded-md px-3 py-1.5 text-xs font-medium text-ink-muted">
                   SRM KTR — TECH PARK 2
                 </div>
                 {filteredTechPark2Venues.map((v) => (
@@ -295,14 +295,14 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
                     className="w-full px-3 py-2 text-left hover:bg-blue-50/70 rounded-lg transition-colors flex items-center justify-between group cursor-pointer"
                   >
                     <div className="min-w-0 pr-2">
-                      <div className="text-xs font-bold text-slate-800 group-hover:text-[#0C4DA2]">
+                      <div className="text-xs font-bold text-slate-800 group-hover:text-brand">
                         {v.name}
                       </div>
-                      <div className="text-[10px] font-medium text-slate-500 truncate mt-0.5">
+                      <div className="text-2xs font-medium text-slate-500 truncate mt-0.5">
                         {v.building}{v.floor ? ` · ${v.floor}` : ''}
                       </div>
                     </div>
-                    <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
+                    <span className="text-2xs font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded shrink-0">
                       {v.floor}
                     </span>
                   </button>
@@ -322,10 +322,10 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
               <button
                 type="button"
                 onClick={handleSelectCustom}
-                className="w-full px-3 py-2.5 text-left hover:bg-amber-50/80 rounded-lg transition-colors flex items-center justify-between text-[#0C4DA2] font-bold text-xs cursor-pointer"
+                className="w-full px-3 py-2.5 text-left hover:bg-amber-50/80 rounded-lg transition-colors flex items-center justify-between text-brand font-bold text-xs cursor-pointer"
               >
-                <span>OTHER / CUSTOM VENUE</span>
-                <span className="text-[10px] font-medium text-slate-400">Enter manually →</span>
+                <span>Other venue</span>
+                <span className="text-2xs font-medium text-slate-400">Enter manually →</span>
               </button>
             </div>
 
@@ -334,7 +334,7 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
       )}
 
       {error && (
-        <p className="text-[10px] text-red-500 font-semibold">{error}</p>
+        <p role="alert" className="text-sm text-danger-700">{error}</p>
       )}
     </div>
   );

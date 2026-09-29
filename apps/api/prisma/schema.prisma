@@ -6,7 +6,8 @@ datasource db {
 
 generator client {
   provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x", "linux-musl", "linux-musl-openssl-3.0.x"]
+  // native = developer machines; musl targets = the node:22-alpine images (amd64 + arm64/Graviton)
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl-arm64-openssl-3.0.x"]
 }
 
 enum Role {
@@ -530,7 +531,11 @@ model WorkspaceFile {
   id            String                  @id @default(cuid())
   workspaceId   String
   name          String
-  url           String
+  /// External link (http/https) for link-type files. Null for uploaded files.
+  url           String?
+  /// Object key in the private S3 bucket for uploaded files. Never a public URL.
+  storageKey    String?                 @unique
+  contentType   String?
   size          Int                     @default(0)
   uploadedById  String
   uploadedAt    DateTime                @default(now())

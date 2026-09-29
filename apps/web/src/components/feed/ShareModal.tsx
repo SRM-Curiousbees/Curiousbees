@@ -288,24 +288,24 @@ export default function ShareModal({ isOpen, onClose, thread, onShareSuccess }: 
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 40, scale: 0.97 }}
               transition={{ type: 'spring', damping: 28, stiffness: 380 }}
-              className="w-full sm:w-[480px] rounded-t-3xl sm:rounded-3xl bg-white dark:bg-[#101D30] border border-slate-200 dark:border-white/[0.10] shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col max-h-[90vh] pointer-events-auto"
+              className="w-full sm:w-[480px] rounded-t-3xl sm:rounded-3xl bg-surface border border-slate-200 shadow-xl overflow-hidden flex flex-col max-h-[90vh] pointer-events-auto"
             >
             {/* Drag handle on mobile */}
             <div className="flex justify-center pt-3 sm:hidden">
-              <div className="w-10 h-1 rounded-full bg-slate-200 dark:bg-slate-700" />
+              <div className="w-10 h-1 rounded-full bg-slate-200" />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 dark:border-white/[0.08] shrink-0">
+            <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-slate-100 shrink-0">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-[#0C4DA2]/10 dark:bg-blue-600/20 flex items-center justify-center">
-                  <Share2 className="w-4 h-4 text-[#0C4DA2] dark:text-[#3B82F6]" />
+                <div className="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center">
+                  <Share2 className="w-4 h-4 text-brand" />
                 </div>
-                <h2 className="text-base font-black text-slate-900 dark:text-[#F5F7FA]">Share Post</h2>
+                <h2 className="text-base font-semibold text-slate-900">Share Post</h2>
               </div>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full hover:bg-slate-100 dark:hover:bg-[#172942] flex items-center justify-center text-slate-400 dark:text-[#A7B3C5] hover:text-slate-700 dark:hover:text-white transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -314,34 +314,34 @@ export default function ShareModal({ isOpen, onClose, thread, onShareSuccess }: 
             {/* Scrollable Area */}
             <div className="overflow-y-auto overflow-x-hidden flex-1 pb-safe">
               {/* Post Preview */}
-            <div className="mx-5 mt-4 p-4 rounded-2xl bg-slate-50 dark:bg-[#0B1728] border border-slate-200/80 dark:border-white/[0.08]">
+            <div className="mx-5 mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-200/80">
               <div className="flex items-center gap-2.5 mb-2">
-                <div className="w-8 h-8 rounded-full bg-[#0C4DA2] dark:bg-[#2563EB] flex items-center justify-center text-white text-[10px] font-black shrink-0">
+                <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-white text-2xs font-semibold shrink-0">
                   {initials}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold text-slate-900 dark:text-[#F5F7FA] truncate">
+                  <p className="text-xs font-bold text-slate-900 truncate">
                     {thread.author?.name || 'CuriousBees Scholar'}
                   </p>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[9px] font-black uppercase tracking-wide bg-[#0C4DA2]/10 dark:bg-blue-600/20 text-[#0C4DA2] dark:text-[#38BDF8] px-1.5 py-0.5 rounded-full">
+                    <span className="text-2xs font-semibold uppercase tracking-wide bg-brand/10 text-brand px-1.5 py-0.5 rounded-full">
                       {getTypeLabel(thread.rawType)}
                     </span>
                     {thread.author?.department && (
-                      <span className="text-[9px] text-slate-400 dark:text-[#718096] font-semibold truncate">
+                      <span className="text-2xs text-slate-400 font-semibold truncate">
                         {thread.author.department}
                       </span>
                     )}
                   </div>
                 </div>
               </div>
-              <p className="text-xs text-slate-600 dark:text-[#E2E8F0] font-medium leading-relaxed line-clamp-2">
+              <p className="text-xs text-slate-600 font-medium leading-relaxed line-clamp-2">
                 {postExcerpt}
               </p>
               {thread.tags && thread.tags.length > 0 && (
                 <div className="flex gap-1 mt-2 flex-wrap">
                   {thread.tags.slice(0, 3).map(tag => (
-                    <span key={tag} className="text-[9px] text-[#0C4DA2] dark:text-[#38BDF8] font-bold">#{tag}</span>
+                    <span key={tag} className="text-2xs text-brand font-bold">#{tag}</span>
                   ))}
                 </div>
               )}
@@ -353,7 +353,7 @@ export default function ShareModal({ isOpen, onClose, thread, onShareSuccess }: 
                 <button
                   onClick={handleNativeShare}
                   disabled={isSharing}
-                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#0C4DA2] to-[#1a63c8] dark:from-[#2563EB] dark:to-[#1d4ed8] text-white text-sm font-black flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-brand to-brand-600 text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all active:scale-[0.98] cursor-pointer theme-static"
                 >
                   <Share2 className="w-4 h-4" />
                   {isSharing ? 'Opening…' : 'Share via…'}
@@ -363,7 +363,7 @@ export default function ShareModal({ isOpen, onClose, thread, onShareSuccess }: 
 
             {/* Platform Grid */}
             <div className="px-5 mt-4 pb-6">
-              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-[#718096] mb-3">
+              <p className="text-xs font-medium capitalize text-slate-400 mb-3">
                 {isMobileWithShare ? 'Or share to' : 'Share to'}
               </p>
               <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
@@ -371,16 +371,16 @@ export default function ShareModal({ isOpen, onClose, thread, onShareSuccess }: 
                   <button
                     key={platform.id}
                     onClick={() => handlePlatform(platform.id)}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-slate-200/60 dark:border-white/[0.08] dark:hover:bg-[#172942] ${platform.bgHover} transition-all active:scale-95 cursor-pointer group`}
+                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border border-slate-200/60 ${platform.bgHover} transition-all active:scale-95 cursor-pointer group`}
                   >
-                    <div className="w-9 h-9 rounded-xl bg-white dark:bg-[#0B1728] shadow-sm border border-slate-100 dark:border-white/[0.08] flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <div className="w-9 h-9 rounded-xl bg-surface shadow-sm border border-slate-100 flex items-center justify-center group-hover:scale-105 transition-transform">
                       {platform.id === 'COPY_LINK' && copied ? (
                         <Check className="w-5 h-5 text-emerald-500" />
                       ) : (
                         platform.icon
                       )}
                     </div>
-                    <span className="text-[9px] font-bold text-slate-600 dark:text-[#A7B3C5] text-center leading-tight">
+                    <span className="text-2xs font-bold text-slate-600 text-center leading-tight">
                       {platform.id === 'COPY_LINK' && copied ? 'Copied!' : platform.label}
                     </span>
                   </button>
@@ -389,12 +389,12 @@ export default function ShareModal({ isOpen, onClose, thread, onShareSuccess }: 
             </div>
 
             {/* Post URL pill */}
-            <div className="mx-5 mb-5 flex items-center gap-2 bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl px-3 py-2 shrink-0">
-              <ExternalLink className="w-3.5 h-3.5 text-slate-400 dark:text-[#718096] shrink-0" />
-              <p className="text-[11px] text-slate-500 dark:text-[#A7B3C5] font-semibold truncate flex-1">{postUrl}</p>
+            <div className="mx-5 mb-5 flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 shrink-0">
+              <ExternalLink className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <p className="text-2xs text-slate-500 font-semibold truncate flex-1">{postUrl}</p>
               <button
                 onClick={() => handlePlatform('COPY_LINK')}
-                className="text-[10px] font-black text-[#0C4DA2] dark:text-[#3B82F6] hover:underline shrink-0 cursor-pointer"
+                className="text-2xs font-semibold text-brand hover:underline shrink-0 cursor-pointer"
               >
                 {copied ? '✅ Copied' : 'Copy'}
               </button>

@@ -59,9 +59,9 @@ export function ResearcherProfileHero({
   const interests: string[] = Array.isArray(rawInterests) ? rawInterests : [];
 
   return (
-    <div className="bg-white border border-[#E4E9F2] rounded-2xl overflow-hidden shadow-xs relative">
+    <div className="bg-surface border border-slate-200 rounded-2xl overflow-hidden shadow-xs relative">
       {/* Institutional Top Header Accent Strip */}
-      <div className="h-32 md:h-36 w-full bg-[#001E4C] relative overflow-hidden flex items-center justify-between px-6 md:px-8">
+      <div className="h-32 md:h-36 w-full bg-brand-900 relative overflow-hidden theme-static flex items-center justify-between px-6 md:px-8">
         {/* Etched Honeycomb Graphic Texture */}
         <svg
           className="absolute inset-0 w-full h-full opacity-15 pointer-events-none"
@@ -76,7 +76,7 @@ export function ResearcherProfileHero({
         </svg>
 
         <div className="relative z-10 flex items-center gap-2 px-3 py-1 bg-white/10 backdrop-blur-xs border border-white/20 rounded-full text-white text-xs font-semibold">
-          <ShieldCheck className="w-4 h-4 text-[#FEC727]" />
+          <ShieldCheck className="w-4 h-4 text-gold" />
           <span>SRMIST Institutional Verified</span>
         </div>
 
@@ -95,27 +95,27 @@ export function ResearcherProfileHero({
           <div className="flex flex-col sm:flex-row sm:items-end gap-5">
             {/* Circular Profile Photo */}
             <div className="relative -mt-14 md:-mt-16 shrink-0">
-              <div className="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-white shadow-md overflow-hidden bg-slate-100 ring-2 ring-[#0C4DA2]/20">
+              <div className="w-28 h-28 md:w-32 md:h-32 rounded-full border-4 border-surface shadow-md overflow-hidden bg-slate-100 ring-2 ring-brand/20">
                 <img src={getProfileImageUrl(user)} alt={name} className="w-full h-full object-cover" />
               </div>
               <div
-                className="absolute bottom-1 right-1 p-1 bg-[#FEC727] text-[#17233D] rounded-full border-2 border-white shadow-xs"
+                className="theme-static absolute bottom-1 right-1 p-1 bg-gold text-slate-900 rounded-full border-2 border-surface shadow-xs"
                 title="Verified Institutional Researcher"
               >
-                <CheckCircle2 className="w-4 h-4 fill-[#17233D] text-[#FEC727]" />
+                <CheckCircle2 className="w-4 h-4 fill-slate-900 text-gold" />
               </div>
             </div>
 
             {/* Researcher Info */}
             <div className="space-y-1.5 pt-1 sm:pt-0">
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h1 className="text-2xl md:text-3xl font-extrabold text-[#17233D] tracking-tight">{name}</h1>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-[#0C4DA2] border border-blue-100">
+                <h1 className="text-2xl md:text-3xl font-semibold text-slate-900 tracking-tight">{name}</h1>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-brand border border-blue-100">
                   {designation}
                 </span>
               </div>
 
-              <p className="text-sm font-bold text-[#0C4DA2]">
+              <p className="text-sm font-bold text-brand">
                 {roleLabel} · {department}
               </p>
 
@@ -146,7 +146,7 @@ export function ResearcherProfileHero({
             {isOwnProfile ? (
               <button
                 onClick={onEditClick}
-                className="px-5 py-2.5 bg-[#0C4DA2] hover:bg-[#042654] text-white font-extrabold text-xs md:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                className="px-5 py-2.5 bg-brand hover:bg-brand-strong text-white font-semibold text-xs md:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
               >
                 <Edit3 className="w-4 h-4" />
                 <span>Edit Profile</span>
@@ -157,7 +157,7 @@ export function ResearcherProfileHero({
                 {collabStatus === 'ACTIVE' ? (
                   <button
                     onClick={() => onOpenNexus && onOpenNexus(activeCollabId || undefined)}
-                    className="px-5 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs md:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                    className="px-5 py-2.5 bg-success hover:bg-success-strong text-white font-semibold text-xs md:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
                     <BookOpen className="w-4 h-4" />
                     <span>Open Nexus</span>
@@ -165,21 +165,21 @@ export function ResearcherProfileHero({
                 ) : collabStatus === 'PENDING_SENT' ? (
                   <button
                     disabled
-                    className="px-5 py-2.5 bg-amber-100 text-amber-900 border border-amber-300 font-extrabold text-xs md:text-sm rounded-xl cursor-not-allowed flex items-center justify-center gap-2 opacity-90"
+                    className="px-5 py-2.5 bg-amber-100 text-amber-900 border border-amber-300 font-semibold text-xs md:text-sm rounded-xl cursor-not-allowed flex items-center justify-center gap-2 opacity-90"
                   >
                     <span>Collaboration Pending</span>
                   </button>
                 ) : collabStatus === 'PENDING_RECEIVED' ? (
                   <button
                     onClick={() => router.push('/nexus')}
-                    className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs md:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                    className="px-5 py-2.5 bg-warning hover:bg-warning-strong text-white font-semibold text-xs md:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
                     <span>Review Request</span>
                   </button>
                 ) : (
                   <button
                     onClick={onInitiateCollab}
-                    className="px-5 py-2.5 bg-[#0C4DA2] hover:bg-[#042654] text-white font-extrabold text-xs md:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                    className="px-5 py-2.5 bg-brand hover:bg-brand-strong text-white font-semibold text-xs md:text-sm rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
                   >
                     <UserPlus className="w-4 h-4" />
                     <span>Collaborate</span>
@@ -195,16 +195,16 @@ export function ResearcherProfileHero({
                         <span>Supervisor Assigned</span>
                       </div>
                     ) : supervisionStatus === 'PENDING' ? (
-                      <div className="px-4 py-2.5 bg-[#FFC828]/20 text-[#855D00] border border-[#FFC828]/40 font-bold text-xs md:text-sm rounded-xl flex items-center gap-1.5 shadow-2xs">
-                        <span className="w-2 h-2 rounded-full bg-[#B88608] animate-pulse" />
+                      <div className="px-4 py-2.5 bg-gold/20 text-amber-700 border border-gold/40 font-bold text-xs md:text-sm rounded-xl flex items-center gap-1.5 shadow-2xs">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
                         <span>Request Pending</span>
                       </div>
                     ) : onRequestSupervision ? (
                       <button
                         onClick={onRequestSupervision}
-                        className="px-4 py-2.5 bg-[#0C4DA2] hover:bg-[#003370] text-white font-bold text-xs md:text-sm rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
+                        className="px-4 py-2.5 bg-brand hover:bg-brand-strong text-white font-bold text-xs md:text-sm rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95"
                       >
-                        <ShieldCheck className="w-4 h-4 text-[#FFC828]" />
+                        <ShieldCheck className="w-4 h-4 text-gold" />
                         <span>Request Supervisor</span>
                       </button>
                     ) : null}
@@ -217,7 +217,7 @@ export function ResearcherProfileHero({
 
         {/* Research Interests Tags */}
         <div className="pt-4 border-t border-slate-100 flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1">Interests:</span>
+          <span className="text-xs font-medium text-slate-500 capitalize mr-1">Interests:</span>
           {interests.map((interest, idx) => (
             <span
               key={idx}

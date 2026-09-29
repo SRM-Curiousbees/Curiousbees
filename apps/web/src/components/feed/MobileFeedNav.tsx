@@ -3,87 +3,55 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  Home, 
-  Compass, 
-  PlusCircle, 
-  Bell, 
-  User, 
-  Search,
-  Sparkles
-} from 'lucide-react';
-import Logo from '../Logo';
+import { Bell, Compass, Home, PenSquare, User } from 'lucide-react';
 import { useStore } from '@/store/useStore';
+import { cn } from '@/lib/utils';
 
-interface MobileFeedNavProps {
-  onOpenCreate?: () => void;
-}
-
-export default function MobileFeedNav({ onOpenCreate }: MobileFeedNavProps) {
+/** Bottom tab bar for the feed on phones (the global top bar handles the header). */
+export default function MobileFeedNav({ onOpenCreate }: { onOpenCreate?: () => void }) {
   const pathname = usePathname();
   const { currentUser, unreadCount } = useStore();
+  const profileHref = currentUser?.role === 'RESEARCH_SCHOLAR' ? '/scholar/profile' : '/profile';
 
-  const isScholar = currentUser?.role === 'RESEARCH_SCHOLAR';
+  const tabs = [
+    { href: '/feed', label: 'Feed', icon: Home, active: pathname === '/feed' },
+    { href: '/researchers', label: 'Explore', icon: Compass, active: pathname === '/researchers' },
+    { href: '/notifications', label: 'Alerts', icon: Bell, active: pathname === '/notifications', badge: unreadCount },
+    { href: profileHref, label: 'Profile', icon: User, active: pathname === '/profile' || pathname === '/scholar/profile' },
+  ];
+
+  const item = 'relative flex h-14 flex-1 flex-col items-center justify-center gap-0.5 text-2xs font-medium';
 
   return (
-    <>
-      {/* ─── MOBILE TOP HEADER ─── */}
-      <header className="md:hidden sticky top-0 bg-white/95 backdrop-blur-md border-b border-slate-200 z-30 px-4 py-2.5 flex items-center justify-between">
-        <Logo showText={true} size={28} />
-        
-        <div className="flex items-center gap-3">
-          <Link href="/notifications" className="p-2 rounded-full text-slate-600 hover:bg-slate-100 relative">
-            <Bell className="w-5 h-5 text-slate-700" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 min-w-[14px] h-3.5 px-1 bg-[#0C4DA2] text-white text-[8px] font-black rounded-full flex items-center justify-center border border-white">
-                {unreadCount > 99 ? '99+' : unreadCount}
+    <nav
+      aria-label="Feed navigation"
+      className="fixed inset-x-0 bottom-0 z-sticky flex border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+    >
+      {tabs.slice(0, 2).map(({ href, label, icon: Icon, active }) => (
+        <Link key={href} href={href} aria-current={active ? 'page' : undefined} className={cn(item, active ? 'text-brand' : 'text-ink-muted')}>
+          <Icon className="size-5" aria-hidden />
+          {label}
+        </Link>
+      ))}
+      <button type="button" onClick={onOpenCreate} className={cn(item, 'text-ink-muted')}>
+        <span className="flex size-9 items-center justify-center rounded-full bg-brand text-white shadow-md">
+          <PenSquare className="size-[18px]" aria-hidden />
+        </span>
+        <span className="sr-only">Write a post</span>
+      </button>
+      {tabs.slice(2).map(({ href, label, icon: Icon, active, badge }) => (
+        <Link key={href} href={href} aria-current={active ? 'page' : undefined} className={cn(item, active ? 'text-brand' : 'text-ink-muted')}>
+          <span className="relative">
+            <Icon className="size-5" aria-hidden />
+            {!!badge && badge > 0 && (
+              <span className="absolute -right-2 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand px-1 text-2xs font-semibold leading-none text-white ring-2 ring-surface">
+                {badge > 99 ? '99+' : badge}
               </span>
             )}
-          </Link>
-        </div>
-      </header>
-
-      {/* ─── MOBILE BOTTOM BAR ─── */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 px-6 py-2 flex items-center justify-between shadow-lg">
-        <Link 
-          href="/feed" 
-          className={`flex flex-col items-center gap-1 ${pathname === '/feed' ? 'text-[#0C4DA2]' : 'text-slate-500'}`}
-        >
-          <Home className="w-5 h-5" />
-          <span className="text-[10px] font-bold">Home</span>
+          </span>
+          {label}
         </Link>
-
-        <Link 
-          href="/researchers" 
-          className={`flex flex-col items-center gap-1 ${pathname === '/researchers' ? 'text-[#0C4DA2]' : 'text-slate-500'}`}
-        >
-          <Compass className="w-5 h-5" />
-          <span className="text-[10px] font-bold">Explore</span>
-        </Link>
-
-        <button 
-          onClick={onOpenCreate}
-          className="flex flex-col items-center gap-1 text-[#0C4DA2] active:scale-95 transition-transform"
-        >
-          <PlusCircle className="w-7 h-7 fill-[#0C4DA2] text-white" />
-        </button>
-
-        <Link 
-          href="/notifications" 
-          className={`flex flex-col items-center gap-1 ${pathname === '/notifications' ? 'text-[#0C4DA2]' : 'text-slate-500'}`}
-        >
-          <Bell className="w-5 h-5" />
-          <span className="text-[10px] font-bold">Notifs</span>
-        </Link>
-
-        <Link 
-          href={isScholar ? '/scholar/profile' : '/profile'} 
-          className={`flex flex-col items-center gap-1 ${(pathname === '/profile' || pathname === '/scholar/profile') ? 'text-[#0C4DA2]' : 'text-slate-500'}`}
-        >
-          <User className="w-5 h-5" />
-          <span className="text-[10px] font-bold">Profile</span>
-        </Link>
-      </nav>
-    </>
+      ))}
+    </nav>
   );
 }

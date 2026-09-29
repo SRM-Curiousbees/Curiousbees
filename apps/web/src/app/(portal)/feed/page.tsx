@@ -40,6 +40,8 @@ import ReportPostModal from '@/components/feed/ReportPostModal';
 import ConfirmDeleteModal from '@/components/feed/ConfirmDeleteModal';
 import ShareModal from '@/components/feed/ShareModal';
 import TimelinesModal from '@/components/feed/TimelinesModal';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/empty-state';
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 
@@ -121,7 +123,6 @@ function ScholarFeedContent() {
   const [sharingPost, setSharingPost] = useState<any | null>(null);
   const [shareCounts, setShareCounts] = useState<Record<string, number>>({});
   const [selectedResearcher, setSelectedResearcher] = useState<any | null>(null);
-  const [mobileComposerOpen, setMobileComposerOpen] = useState(false);
   
   // Fetch threads and counts when URL params change
   useEffect(() => {
@@ -336,204 +337,182 @@ function ScholarFeedContent() {
 
   // ─── RENDER ───────────────────────────────────────────────────────────────
 
+  const focusComposer = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => document.getElementById('feed-composer')?.focus(), 250);
+  };
+
+  const TABS = [
+    { id: 'foryou', label: 'For you' },
+    { id: 'following', label: 'Following' },
+    { id: 'discover', label: 'Discover' },
+  ] as const;
+
   return (
-    <div className="w-full min-h-screen -mt-4 md:-mt-6 -mx-4 md:-mx-8 select-none">
-      {/* Mobile Navigation */}
-      <MobileFeedNav onOpenCreate={() => setMobileComposerOpen(true)} />
+    <div className="mx-auto grid max-w-[1120px] items-start gap-8 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <MobileFeedNav onOpenCreate={focusComposer} />
 
-      {/* ─── MAIN 3-COLUMN LAYOUT ─── */}
-      <div className="w-full max-w-none mx-auto flex gap-0">
+      <section aria-labelledby="feed-title" className="min-w-0">
+        <div className="mb-5 flex flex-col gap-4">
+          <div>
+            <h1 id="feed-title" className="text-2xl font-semibold tracking-tight text-ink">Research feed</h1>
+            <p className="mt-1 text-sm text-ink-secondary">Updates, papers and questions from researchers across SRMIST.</p>
+          </div>
 
-        {/* ─── CENTER COLUMN (FEED TIMELINE) ─── */}
-        <main className="flex-1 min-w-0 border-x border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#07111F] min-h-screen">
+          <form onSubmit={handleSearchSubmit} role="search" className="relative">
+            <label htmlFor="feed-search" className="sr-only">Search the research feed</label>
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" aria-hidden />
+            <input
+              id="feed-search"
+              type="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search posts, papers and people"
+              className="cb-input h-10 pl-9 pr-9"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                aria-label="Clear search"
+                onClick={() => {
+                  setSearchQuery('');
+                  router.push(`?type=${currentType}`);
+                }}
+                className="absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-ink-muted hover:bg-neutral-100 hover:text-ink"
+              >
+                <X className="size-4" />
+              </button>
+            )}
+          </form>
 
-          {/* ─── STICKY HEADER ─── */}
-          <div className="sticky top-0 bg-white/95 dark:bg-[#07111F]/95 backdrop-blur-md z-20">
-            {/* Search Box */}
-            <form onSubmit={handleSearchSubmit} className="px-4 pb-2 pt-3">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search research, researchers, publications..."
-                  className="w-full bg-slate-100/60 dark:bg-[#0B1728] border border-slate-200/50 dark:border-white/[0.08] rounded-full pl-9 pr-8 py-1.5 text-xs font-medium text-slate-900 dark:text-[#F5F7FA] placeholder:text-slate-400 dark:placeholder:text-[#718096] focus:outline-none focus:bg-white dark:focus:bg-[#101D30] focus:border-[#0C4DA2]/40 dark:focus:border-blue-500/40 focus:ring-2 focus:ring-[#0C4DA2]/10 transition-all"
-                />
-                <button type="submit" className="absolute left-3 top-2 text-slate-400 dark:text-[#718096] cursor-pointer">
-                  <Search className="w-3.5 h-3.5" />
-                </button>
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery('');
-                      router.push(`?type=${currentType}`);
-                    }}
-                    className="absolute right-3 top-2 text-slate-400 dark:text-[#718096] hover:text-rose-500 transition-colors cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
-              </div>
-            </form>
-
-            {/* Tabs */}
-            <div className="flex items-center border-b border-slate-200/80 dark:border-white/[0.08] bg-white dark:bg-[#07111F]">
-              {['foryou', 'following', 'discover'].map((tab) => {
-                const labels = { foryou: 'For You', following: 'Following', discover: 'Discover' };
-                const isActive = activeTab === tab;
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div role="tablist" aria-label="Feed" className="inline-flex rounded-lg border border-line bg-surface-muted p-0.5">
+              {TABS.map((tab) => {
+                const isActive = activeTab === tab.id;
                 return (
                   <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab as any)}
-                    className={`flex-1 flex items-center justify-center transition-colors cursor-pointer hover:bg-slate-50/80 dark:hover:bg-[#132238] ${
-                      isActive ? 'text-slate-900 dark:text-[#F5F7FA] font-black' : 'text-slate-500 dark:text-[#A7B3C5] font-bold hover:text-slate-700 dark:hover:text-[#F5F7FA]'
+                    key={tab.id}
+                    role="tab"
+                    aria-selected={isActive}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`h-8 rounded-md px-3.5 text-sm font-medium transition-colors duration-fast ${
+                      isActive ? 'bg-surface text-ink shadow-xs' : 'text-ink-muted hover:text-ink'
                     }`}
                   >
-                    <div className="relative py-3 px-1 text-[13px] flex items-center justify-center">
-                      <span>{labels[tab as keyof typeof labels]}</span>
-                      {isActive && (
-                        <motion.div
-                          layoutId="feed-tab-indicator"
-                          className="absolute bottom-0 inset-x-0 h-[4px] bg-[#0C4DA2] dark:bg-[#3B82F6] rounded-full"
-                          transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                        />
-                      )}
-                    </div>
+                    {tab.label}
                   </button>
                 );
               })}
             </div>
-            
-            {/* Horizontal Filter Chips */}
-            <div className="overflow-x-auto custom-scrollbar border-b border-slate-200/60 dark:border-white/[0.08] bg-slate-50/50 dark:bg-[#0B1728]">
-              <div className="flex items-center gap-1.5 p-2.5 min-w-max">
-                {TYPE_FILTERS.map((filter) => {
-                  const Icon = filter.icon;
-                  const isActive = currentType === filter.value;
-                  return (
-                    <button
-                      key={filter.value}
-                      onClick={() => handleTypeFilter(filter.value)}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer border ${
-                        isActive
-                          ? 'bg-[#0C4DA2] dark:bg-[#2563EB] text-white border-[#0C4DA2] dark:border-transparent shadow-sm'
-                          : 'bg-white dark:bg-[#132238] text-slate-600 dark:text-[#A7B3C5] border-slate-200 dark:border-white/[0.08] hover:border-slate-300 dark:hover:border-white/[0.16] hover:bg-slate-50 dark:hover:bg-[#172942]'
-                      }`}
-                    >
-                      {Icon && <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-white/80' : 'text-slate-400 dark:text-[#718096]'}`} />}
-                      {filter.label}
-                    </button>
-                  );
-                })}
-              </div>
+          </div>
+
+          <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0" aria-label="Filter by post type">
+            <div className="flex min-w-max items-center gap-1.5">
+              {TYPE_FILTERS.map((filter) => {
+                const Icon = filter.icon;
+                const isActive = currentType === filter.value;
+                return (
+                  <button
+                    key={filter.value}
+                    onClick={() => handleTypeFilter(filter.value)}
+                    aria-pressed={isActive}
+                    className={`inline-flex h-8 items-center gap-1.5 rounded-full border px-3 text-sm transition-colors duration-fast ${
+                      isActive
+                        ? 'border-ink bg-ink font-medium text-ink-inverse'
+                        : 'border-line bg-surface text-ink-secondary hover:border-line-strong hover:text-ink'
+                    }`}
+                  >
+                    {Icon && <Icon className="size-3.5" aria-hidden />}
+                    {filter.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
+        </div>
 
-          {/* ─── COMPACT COMPOSER ─── */}
-          <CompactComposer onPostCreated={handlePostCreated} />
+        <CompactComposer onPostCreated={handlePostCreated} />
 
-          {/* ─── FEED STREAM ─── */}
-          <div className="divide-y-0">
-            {/* Loading State */}
-            {isLoading && filteredThreads.length === 0 && !feedError ? (
-              <FeedSkeleton count={4} />
-            ) : feedError && filteredThreads.length === 0 ? (
-              /* Error State */
-              <div className="px-6 py-16 text-center flex flex-col items-center">
-                <div className="w-14 h-14 bg-rose-50 dark:bg-rose-950/30 border border-rose-100 dark:border-rose-800/40 rounded-full flex items-center justify-center mb-4 text-rose-500">
-                  <ShieldAlert className="w-7 h-7" />
-                </div>
-                <h4 className="text-sm font-extrabold text-slate-900 dark:text-[#F5F7FA] tracking-tight">Unable to load the research feed</h4>
-                <p className="text-xs text-slate-500 dark:text-[#A7B3C5] max-w-xs mt-2 leading-relaxed font-medium">
-                  {feedError}
-                </p>
-                <button 
-                  onClick={handleRefresh}
-                  className="mt-5 px-5 py-2 bg-[#0C4DA2] dark:bg-[#2563EB] hover:bg-[#0a3f8a] dark:hover:bg-blue-600 text-white font-bold rounded-full text-xs transition-all shadow-sm cursor-pointer flex items-center gap-2"
-                >
-                  <RefreshCcw className="w-3.5 h-3.5" />
-                  <span>Try again</span>
-                </button>
-              </div>
-            ) : filteredThreads.length === 0 ? (
-              /* Empty State */
-              <div className="px-6 py-16 text-center flex flex-col items-center">
-                <div className="w-14 h-14 bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-800/40 rounded-2xl flex items-center justify-center mb-4 text-[#0C4DA2] dark:text-[#3B82F6]">
-                  {urlSearch ? <Search className="w-6 h-6" /> : <Sparkles className="w-6 h-6" />}
-                </div>
-
-                {urlSearch ? (
-                  <>
-                    <h4 className="text-sm font-extrabold text-slate-900 dark:text-[#F5F7FA]">No results for &ldquo;{urlSearch}&rdquo;</h4>
-                    <p className="text-xs text-slate-500 dark:text-[#A7B3C5] mt-1 font-medium">Try a different search term or browse all posts.</p>
-                    <button
-                      onClick={() => { setSearchQuery(''); router.push('/feed'); }}
-                      className="mt-4 px-5 py-2 bg-slate-100 dark:bg-[#101D30] text-slate-700 dark:text-[#F5F7FA] border border-slate-200 dark:border-white/[0.08] font-bold rounded-full text-xs cursor-pointer"
-                    >
+        <div className="mt-4 space-y-3">
+          {isLoading && filteredThreads.length === 0 && !feedError ? (
+            <FeedSkeleton count={3} />
+          ) : feedError && filteredThreads.length === 0 ? (
+            <div className="rounded-2xl border border-line bg-surface">
+              <EmptyState
+                icon={ShieldAlert}
+                title="The research feed didn't load"
+                description="This is usually a temporary connection problem. Your posts are safe."
+                action={
+                  <Button variant="secondary" onClick={handleRefresh}>
+                    <RefreshCcw aria-hidden />
+                    Try again
+                  </Button>
+                }
+              />
+            </div>
+          ) : filteredThreads.length === 0 ? (
+            <div className="rounded-2xl border border-line bg-surface">
+              {urlSearch ? (
+                <EmptyState
+                  icon={Search}
+                  title={`No results for "${urlSearch}"`}
+                  description="Try a different term, or clear the search to see all posts."
+                  action={
+                    <Button variant="secondary" onClick={() => { setSearchQuery(''); router.push('/feed'); }}>
                       Clear search
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <h4 className="text-sm font-extrabold text-slate-900 dark:text-[#F5F7FA]">No research updates yet</h4>
-                    <p className="text-xs text-slate-500 dark:text-[#A7B3C5] mt-1 font-medium max-w-xs leading-relaxed">
-                      Your research network is getting started. Follow researchers and research domains to personalize your feed.
-                    </p>
-                    <div className="flex gap-2 mt-5">
-                      <Link
-                        href="/researchers"
-                        className="px-4 py-2 bg-[#0C4DA2] dark:bg-[#2563EB] text-white font-bold rounded-full text-xs cursor-pointer"
-                      >
-                        Explore Researchers
-                      </Link>
-                      <Link
-                        href="/researchers"
-                        className="px-4 py-2 bg-slate-100 dark:bg-[#101D30] text-slate-700 dark:text-[#F5F7FA] border border-slate-200 dark:border-white/[0.08] font-bold rounded-full text-xs cursor-pointer"
-                      >
-                        Browse Domains
-                      </Link>
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              /* Posts Stream */
-              filteredThreads.map((thread) => (
-                <ResearchPostCard
-                  key={thread.id}
-                  post={thread}
-                  onAuthorClick={(author) => setSelectedResearcher(author)}
-                  onShareClick={(post) => handleShare(post)}
-                  onReportClick={(post) => setReportingPost(post)}
-                  onDeleteClick={(post) => setDeletingPost(post)}
-                  onEditClick={(post) => setEditingPost(post)}
+                    </Button>
+                  }
                 />
-              ))
-            )}
+              ) : (
+                <EmptyState
+                  icon={Sparkles}
+                  title="Nothing here yet"
+                  description={
+                    activeTab === 'following'
+                      ? 'Posts from researchers and topics you follow will appear here.'
+                      : 'Follow researchers and research areas to shape this feed, or share your first update above.'
+                  }
+                  action={
+                    <Link href="/researchers" className={buttonVariants({ variant: 'secondary' })}>
+                      Find researchers
+                    </Link>
+                  }
+                />
+              )}
+            </div>
+          ) : (
+            filteredThreads.map((thread) => (
+              <ResearchPostCard
+                key={thread.id}
+                post={thread}
+                onAuthorClick={(author) => setSelectedResearcher(author)}
+                onShareClick={(post) => handleShare(post)}
+                onReportClick={(post) => setReportingPost(post)}
+                onDeleteClick={(post) => setDeletingPost(post)}
+                onEditClick={(post) => setEditingPost(post)}
+              />
+            ))
+          )}
 
-            {/* Loading more indicator */}
-            {isLoading && filteredThreads.length > 0 && (
-              <div className="flex items-center justify-center py-6 text-slate-400">
-                <Loader2 className="w-5 h-5 animate-spin" />
-              </div>
-            )}
-          </div>
-        </main>
+          {isLoading && filteredThreads.length > 0 && (
+            <div className="flex justify-center py-6 text-ink-muted" role="status">
+              <Loader2 className="size-5 animate-spin" aria-label="Loading more posts" />
+            </div>
+          )}
+        </div>
+      </section>
 
-        {/* ─── RIGHT COLUMN (DISCOVERY SIDEBAR) ─── */}
-        <aside className="hidden lg:block w-[360px] xl:w-[400px] shrink-0 sticky top-0 h-screen overflow-y-auto p-4 scrollbar-thin">
-          <ResearchDiscoverySidebar
-            onSearchChange={(q) => {
-              setSearchQuery(q);
-            }}
-            onTagClick={handleTagClick}
-          />
-        </aside>
-      </div>
+      <aside className="sticky top-[calc(var(--layout-header)+2rem)] hidden max-h-[calc(100dvh-var(--layout-header)-4rem)] overflow-y-auto xl:block" aria-label="Discover">
+        <ResearchDiscoverySidebar
+          onSearchChange={(q) => {
+            setSearchQuery(q);
+          }}
+          onTagClick={handleTagClick}
+        />
+      </aside>
 
       {/* ─── FLOATING ACTION BUTTON ─── */}
-      <FeedFAB />
+      <FeedFAB onWrite={focusComposer} />
 
       {/* ─── MODALS ─── */}
       {editingPost && (
@@ -571,8 +550,8 @@ function ScholarFeedContent() {
         researcher={selectedResearcher}
       />
 
-      {/* Bottom padding for mobile nav */}
-      <div className="h-20 md:hidden" />
+      {/* Space for the mobile tab bar */}
+      <div className="h-16 md:hidden xl:col-span-2" aria-hidden />
     </div>
   );
 }

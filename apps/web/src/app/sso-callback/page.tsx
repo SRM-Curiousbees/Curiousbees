@@ -11,9 +11,9 @@ export default function SsoCallbackPage() {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-[#e6e6fa] flex items-center justify-center font-sans">
+    <div className="min-h-screen bg-slate-200 flex items-center justify-center font-sans">
       <div className="text-center space-y-4">
-        <div className="w-10 h-10 border-4 border-[#0C4DA2] border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <div className="w-10 h-10 border-4 border-brand border-t-transparent rounded-full animate-spin mx-auto"></div>
         <p className="text-sm text-slate-600 font-medium">Completing secure authentication...</p>
       </div>
     </div>

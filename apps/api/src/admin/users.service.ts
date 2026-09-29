@@ -2,11 +2,11 @@ import { Injectable, BadRequestException, NotFoundException, ForbiddenException,
 import { PrismaService } from '../prisma/prisma.service';
 import { Role, UserStatus } from '@prisma/client';
 import { AuditHelperService } from './audit-helper';
+import { assertKeepsAnActiveAdmin, assertNotRootAdmin, assertNotSelf, parseRole } from './admin-safety';
 
 @Injectable()
 export class AdminUsersService {
   private readonly logger = new Logger(AdminUsersService.name);
-  private readonly SUPERADMIN_EMAIL = 'r.matheshwaran.io@gmail.com';
 
   constructor(
     private prisma: PrismaService,
@@ -209,9 +209,9 @@ export class AdminUsersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found.');
 
-    if (user.email.toLowerCase() === this.SUPERADMIN_EMAIL) {
-      throw new ForbiddenException('The superadmin account cannot be suspended.');
-    }
+    assertNotRootAdmin(user.email, 'suspended');
+    assertNotSelf(actor.id, userId, 'suspend');
+    await assertKeepsAnActiveAdmin(this.prisma, user, { status: UserStatus.SUSPENDED });
 
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
@@ -283,9 +283,9 @@ export class AdminUsersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found.');
 
-    if (user.email.toLowerCase() === this.SUPERADMIN_EMAIL) {
-      throw new ForbiddenException('The superadmin account cannot be deactivated.');
-    }
+    assertNotRootAdmin(user.email, 'deactivated');
+    assertNotSelf(actor.id, userId, 'deactivate');
+    await assertKeepsAnActiveAdmin(this.prisma, user, { status: UserStatus.DEACTIVATED });
 
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
@@ -322,9 +322,10 @@ export class AdminUsersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found.');
 
-    if (user.email.toLowerCase() === this.SUPERADMIN_EMAIL) {
-      throw new ForbiddenException('The superadmin role cannot be changed.');
-    }
+    assertNotRootAdmin(user.email, 'demoted or reassigned');
+    newRole = parseRole(newRole);
+    assertNotSelf(actor.id, userId, 'change the role of');
+    await assertKeepsAnActiveAdmin(this.prisma, user, { role: newRole });
 
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
@@ -432,9 +433,8 @@ export class AdminUsersService {
       throw new NotFoundException('User not found.');
     }
 
-    if (user.email.toLowerCase() === 'r.matheshwaran.io@gmail.com') {
-      throw new ForbiddenException('The superadmin account cannot be deleted.');
-    }
+    assertNotRootAdmin(user.email, 'deleted');
+    await assertKeepsAnActiveAdmin(this.prisma, user, { deleted: true });
 
     // If supervisor, detach scholars
     await this.prisma.user.updateMany({

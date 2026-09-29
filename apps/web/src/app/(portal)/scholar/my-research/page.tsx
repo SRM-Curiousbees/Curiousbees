@@ -13,7 +13,7 @@ export default function LegacyScholarMyResearchRedirect() {
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center font-sans">
       <div className="space-y-2">
-        <div className="w-6 h-6 border-2 border-[#0C4DA2] border-t-transparent rounded-full animate-spin mx-auto" />
+        <div className="w-6 h-6 border-2 border-brand border-t-transparent rounded-full animate-spin mx-auto" />
         <p className="text-xs font-bold text-slate-500">Redirecting to My Research Command Center...</p>
       </div>
     </div>

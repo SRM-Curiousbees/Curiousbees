@@ -5,6 +5,7 @@ import { Roles } from '../auth/roles/roles.decorator';
 import { Role } from '../auth/roles/role.enum';
 import { AdminAdminsService } from './admins.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { IMPORT_MAX_BYTES } from './admin-safety';
 import { UserStatus } from '@prisma/client';
 
 @Controller('admin/admins')
@@ -46,7 +47,7 @@ export class AdminAdminsController {
   }
 
   @Post('import')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: IMPORT_MAX_BYTES, files: 1 } }))
   async importAdmins(@UploadedFile() file: any, @Req() req: any) {
     if (!file) throw new BadRequestException('File is required');
     return this.adminsService.importAdmins(req.user.id, file.buffer, file.originalname);

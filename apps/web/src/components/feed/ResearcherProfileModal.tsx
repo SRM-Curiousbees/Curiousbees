@@ -100,34 +100,34 @@ export default function ResearcherProfileModal({
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            className="relative w-full max-w-md bg-white dark:bg-[#101D30] rounded-3xl border border-slate-200 dark:border-white/[0.10] shadow-[0_20px_60px_rgba(0,0,0,0.5)] overflow-hidden z-10 text-left p-6"
+            className="relative w-full max-w-md bg-surface rounded-3xl border border-slate-200 shadow-xl overflow-hidden z-10 text-left p-6"
           >
             {/* Close */}
             <button
               onClick={onClose}
-              className="absolute right-4 top-4 p-1.5 rounded-full text-slate-400 dark:text-[#A7B3C5] hover:bg-slate-100 dark:hover:bg-[#172942] transition-colors cursor-pointer"
+              className="absolute right-4 top-4 p-1.5 rounded-full text-slate-400 hover:bg-slate-100 transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
 
             {/* Profile Header */}
             <div className="flex flex-col items-center text-center pt-2 pb-4">
-              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#0C4DA2] dark:border-[#3B82F6] shadow-md mb-3 bg-slate-100 dark:bg-slate-800">
+              <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-brand shadow-md mb-3 bg-slate-100">
                 <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
               </div>
 
-              <h3 className="text-lg font-black text-slate-900 dark:text-[#F5F7FA] leading-tight">{name}</h3>
-              <p className="text-xs font-extrabold text-[#0C4DA2] dark:text-[#3B82F6] mt-1">{role}</p>
+              <h3 className="text-lg font-semibold text-slate-900 leading-tight">{name}</h3>
+              <p className="text-xs font-semibold text-brand mt-1">{role}</p>
 
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-[#A7B3C5] mt-1">
-                <Building className="w-3.5 h-3.5 text-slate-400 dark:text-[#718096]" />
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 mt-1">
+                <Building className="w-3.5 h-3.5 text-slate-400" />
                 <span>{department} · SRMIST</span>
               </div>
             </div>
 
             {/* Academic Bio / Focus */}
-            <div className="p-4 bg-slate-50 dark:bg-[#0B1728] rounded-2xl border border-slate-200/60 dark:border-white/[0.08] mb-5 text-xs text-slate-700 dark:text-[#E2E8F0] leading-relaxed font-medium">
-              <p className="font-bold text-slate-900 dark:text-[#F5F7FA] mb-1">Research Focus & Profile</p>
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/60 mb-5 text-xs text-slate-700 leading-relaxed font-medium">
+              <p className="font-bold text-slate-900 mb-1">Research Focus & Profile</p>
               {researcher.bio || `${name} is actively conducting research in ${department} at SRMIST, focusing on advanced methodology and interdisciplinary collaboration.`}
             </div>
 
@@ -137,13 +137,13 @@ export default function ResearcherProfileModal({
                 onClick={handleFollow}
                 className={`py-2.5 px-4 rounded-full text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   isFollowing
-                    ? 'bg-slate-100 dark:bg-[#132238] text-slate-700 dark:text-[#F5F7FA] border border-slate-300 dark:border-white/[0.08] hover:bg-slate-200 dark:hover:bg-[#172942]'
-                    : 'bg-[#0C4DA2] dark:bg-[#2563EB] hover:bg-[#042654] dark:hover:bg-blue-600 text-white shadow-md shadow-blue-900/20 active:scale-95'
+                    ? 'bg-slate-100 text-slate-700 border border-slate-300 hover:bg-slate-200'
+                    : 'bg-brand hover:bg-brand-strong text-white shadow-md  active:scale-95'
                 }`}
               >
                 {isFollowing ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
+                    <Check className="w-3.5 h-3.5 text-slate-600" />
                     <span>Following</span>
                   </>
                 ) : (
@@ -157,19 +157,19 @@ export default function ResearcherProfileModal({
               <button
                 onClick={handleCollabRequest}
                 disabled={isCollaborating || currentUser?.id === researcher.id}
-                className={`py-2.5 px-4 rounded-full text-white text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                className={`py-2.5 px-4 rounded-full text-xs font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
                   currentUser?.id === researcher.id
-                    ? 'bg-slate-300 dark:bg-slate-800 cursor-not-allowed text-slate-500'
+                    ? 'bg-slate-200 cursor-not-allowed text-slate-500'
                     : collabState === 'ACTIVE'
-                    ? 'bg-[#0C4DA2] dark:bg-blue-600 hover:bg-blue-800'
+                    ? 'bg-brand text-white hover:bg-brand-strong'
                     : collabState === 'PENDING_SENT'
-                    ? 'bg-amber-500 hover:bg-amber-600'
+                    ? 'bg-warning text-white hover:bg-warning-strong'
                     : collabState === 'PENDING_RECEIVED'
-                    ? 'bg-emerald-500 hover:bg-emerald-600'
-                    : 'bg-slate-900 dark:bg-[#2563EB] hover:bg-black dark:hover:bg-blue-600 active:scale-95'
+                    ? 'bg-success text-white hover:bg-success-strong'
+                    : 'bg-ink text-ink-inverse hover:bg-ink/90 active:scale-95'
                 }`}
               >
-                <Sparkles className={`w-3.5 h-3.5 ${collabState === 'ACTIVE' || collabState === 'PENDING_SENT' || collabState === 'PENDING_RECEIVED' ? 'text-white' : 'text-[#FEC727]'}`} />
+                <Sparkles className={`w-3.5 h-3.5 ${collabState === 'ACTIVE' || collabState === 'PENDING_SENT' || collabState === 'PENDING_RECEIVED' ? 'text-white' : 'text-gold'}`} />
                 <span>
                   {collabState === 'ACTIVE' ? 'Open Collab' : 
                    collabState === 'PENDING_SENT' ? 'Request Sent' :

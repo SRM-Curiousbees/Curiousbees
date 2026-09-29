@@ -1,38 +1,39 @@
 'use client';
 
+/**
+ * A scholar's own research record: thesis details, stage, milestones,
+ * supervisor and shared materials. Data and actions come from the research API.
+ */
+
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import { getProfileImageUrl } from '@/lib/avatar';
-import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import {
-  BookMarked,
-  CheckCircle2,
-  Clock,
   AlertTriangle,
-  ChevronRight,
-  User,
-  Building,
   Calendar,
-  Sparkles,
-  Plus,
-  Edit3,
-  FileText,
-  ExternalLink,
-  ShieldAlert,
-  ArrowRight,
   Check,
-  X,
-  Network,
+  CheckCircle2,
+  Edit3,
+  ExternalLink,
+  FileText,
   ListTodo,
-  TrendingUp,
-  Award,
-  HelpCircle,
-  FileCheck,
-  FolderOpen
+  Network,
+  Plus,
+  ShieldAlert,
+  User,
 } from 'lucide-react';
-import type { ResearchStage, ResearchStatus, MilestoneStatus, MilestonePriority } from '@curiousbees/types';
+import type { ResearchStage, ResearchStatus, MilestonePriority } from '@curiousbees/types';
+import { PageHeader } from '@/components/ui/page-header';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Card, CardHeader } from '@/components/ui/card';
+import { Badge, StatusBadge, type Tone } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog } from '@/components/ui/dialog';
+import { Field, DetailItem } from '@/components/ui/field';
 
 const STAGES: { key: ResearchStage; label: string; description: string }[] = [
   { key: 'PROPOSAL', label: 'Research Proposal', description: 'Thesis topic definition, objectives, and approval.' },
@@ -42,6 +43,38 @@ const STAGES: { key: ResearchStage; label: string; description: string }[] = [
   { key: 'EVALUATION', label: 'Evaluation', description: 'Empirical benchmarking, statistical analysis, and validation.' },
   { key: 'THESIS_PUBLICATION', label: 'Thesis / Publication', description: 'Final dissertation writing, peer-review submissions, and defense.' }
 ];
+
+type MilestoneTab = 'ALL' | 'UPCOMING' | 'IN_PROGRESS' | 'OVERDUE' | 'COMPLETED';
+
+const MILESTONE_TABS: { id: MilestoneTab; label: string }[] = [
+  { id: 'ALL', label: 'All' },
+  { id: 'UPCOMING', label: 'Upcoming' },
+  { id: 'IN_PROGRESS', label: 'In progress' },
+  { id: 'OVERDUE', label: 'Overdue' },
+  { id: 'COMPLETED', label: 'Completed' },
+];
+
+const PRIORITY_TONE: Record<string, Tone> = { HIGH: 'danger', MEDIUM: 'warning', LOW: 'neutral' };
+const PRIORITY_LABEL: Record<string, string> = { HIGH: 'High priority', MEDIUM: 'Medium priority', LOW: 'Low priority' };
+
+const stageLabel = (key?: string) => STAGES.find((s) => s.key === key)?.label ?? (key || '').replace(/_/g, ' ');
+
+function formatMonth(value?: string | Date | null) {
+  const d = value ? new Date(value) : null;
+  return d && !isNaN(d.getTime()) ? d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : '';
+}
+
+function formatDay(value?: string | Date | null) {
+  const d = value ? new Date(value) : null;
+  return d && !isNaN(d.getTime()) ? d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+}
+
+function formatDateTime(value?: string | Date | null) {
+  const d = value ? new Date(value) : null;
+  return d && !isNaN(d.getTime())
+    ? d.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+    : '';
+}
 
 export default function MyResearchCommandCenterPage() {
   const router = useRouter();
@@ -60,7 +93,7 @@ export default function MyResearchCommandCenterPage() {
   } = useStore();
 
   const [loading, setLoading] = useState(true);
-  const [activeMilestoneTab, setActiveMilestoneTab] = useState<'ALL' | 'UPCOMING' | 'IN_PROGRESS' | 'OVERDUE' | 'COMPLETED'>('ALL');
+  const [activeMilestoneTab, setActiveMilestoneTab] = useState<MilestoneTab>('ALL');
   
   // Modals
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
@@ -123,10 +156,10 @@ export default function MyResearchCommandCenterPage() {
     if (!myResearchProfile?.supervisor) {
       items.push({
         id: 'no-supervisor',
-        title: 'Supervision Connection Missing',
-        reason: 'Your account is not currently assigned to an approved Research Supervisor.',
+        title: 'No supervisor assigned',
+        reason: 'You are not yet linked to an approved research supervisor.',
         priority: 'HIGH',
-        actionText: 'Find Supervisor',
+        actionText: 'Find a supervisor',
         onClick: () => router.push('/researchers')
       });
     }
@@ -134,10 +167,10 @@ export default function MyResearchCommandCenterPage() {
     if (myResearchProfile?.title === 'Scholar Thesis Research Project' || !myResearchProfile?.abstract) {
       items.push({
         id: 'unconfigured-topic',
-        title: 'Configure Thesis Topic',
-        reason: 'Your research topic and abstract are currently set to default placeholder values.',
+        title: 'Add your thesis topic',
+        reason: 'Your thesis title or abstract has not been filled in yet.',
         priority: 'MEDIUM',
-        actionText: 'Update Topic',
+        actionText: 'Edit details',
         onClick: () => setIsEditProfileOpen(true)
       });
     }
@@ -148,11 +181,11 @@ export default function MyResearchCommandCenterPage() {
         if (dueDate < now) {
           items.push({
             id: `overdue-${m.id}`,
-            title: `Overdue Milestone: "${m.title}"`,
-            reason: `Milestone due date passed on ${dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}.`,
+            title: `Overdue: ${m.title}`,
+            reason: `Was due on ${dueDate.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}.`,
             priority: 'HIGH',
             date: dueDate.toLocaleDateString(),
-            actionText: 'Complete Milestone',
+            actionText: 'Mark complete',
             onClick: () => completeMilestone(m.id)
           });
         } else {
@@ -160,11 +193,11 @@ export default function MyResearchCommandCenterPage() {
           if (diffDays <= 7) {
             items.push({
               id: `due-soon-${m.id}`,
-              title: `Milestone Due Soon: "${m.title}"`,
-              reason: `Due in ${diffDays} day${diffDays === 1 ? '' : 's'} (${dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}).`,
+              title: `Due soon: ${m.title}`,
+              reason: `Due in ${diffDays} day${diffDays === 1 ? '' : 's'}, on ${dueDate.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}.`,
               priority: 'MEDIUM',
               date: dueDate.toLocaleDateString(),
-              actionText: 'View Milestone',
+              actionText: 'View milestones',
               onClick: () => setActiveMilestoneTab('UPCOMING')
             });
           }
@@ -233,854 +266,506 @@ export default function MyResearchCommandCenterPage() {
 
   if (!currentUser) return null;
 
-  // Strict Role Guard Page Rendering
+  // Supervisors and admins track scholars elsewhere; this page is the scholar's own record.
   if (!isScholar) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 text-center font-sans select-none">
-        <div className="max-w-md bg-white border border-slate-200 rounded-3xl p-8 shadow-sm space-y-4">
-          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 border border-rose-100 flex items-center justify-center mx-auto">
-            <ShieldAlert className="w-6 h-6" />
-          </div>
-          <h2 className="text-lg font-black text-slate-900">Access Restricted</h2>
-          <p className="text-xs text-slate-600 leading-relaxed font-medium">
-            The "My Research" command center is exclusively available for Research Scholars. Research Supervisors can monitor scholar progress in the Supervision Panel.
-          </p>
-          <div className="pt-2">
-            <button
-              onClick={() => router.push('/feed')}
-              className="px-6 py-2.5 bg-[#0C4DA2] text-white text-xs font-bold rounded-full hover:bg-blue-800 transition-all cursor-pointer"
-            >
-              Return to Research Feed
-            </button>
-          </div>
-        </div>
-      </div>
+      <Card className="mx-auto max-w-md">
+        <EmptyState
+          icon={ShieldAlert}
+          title="My Research is for research scholars"
+          description="Supervisors follow scholar progress from the Supervision Panel."
+          action={
+            <Link href="/feed" className={buttonVariants({ variant: 'secondary' })}>
+              Go to the research feed
+            </Link>
+          }
+        />
+      </Card>
     );
   }
 
   const supervisor = myResearchProfile?.supervisor;
+  const nexusHref = myResearchProfile?.activeCollabId ? `/nexus?collab=${myResearchProfile.activeCollabId}` : '/nexus';
+  const currentStage = STAGES[currentStageIndex];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-16 font-sans text-slate-900 select-none">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 space-y-6">
+    <div className="animate-fade-in">
+      <PageHeader
+        meta="Research"
+        title="My research"
+        description="Your thesis, its stage, milestones and supervision in one place."
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setIsEditProfileOpen(true)}>
+              <Edit3 aria-hidden />
+              Edit research details
+            </Button>
+            <Button onClick={() => setIsAddMilestoneOpen(true)}>
+              <Plus aria-hidden />
+              Add milestone
+            </Button>
+          </>
+        }
+      />
 
-        {/* ─── HEADER & STATUS BADGE ─── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-3xs">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="p-2 rounded-xl bg-blue-50 text-[#0C4DA2] border border-blue-100/60">
-                <BookMarked className="w-5 h-5" />
-              </span>
-              <div>
-                <h1 className="text-xl font-black tracking-tight text-slate-900 uppercase">My Research</h1>
-                <p className="text-xs font-medium text-slate-500 mt-0.5">
-                  Your research journey, progress, supervision, and upcoming milestones.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Status Pill */}
-            <div className={`px-3.5 py-1.5 rounded-full border text-xs font-black uppercase tracking-wider flex items-center gap-2 ${
-              myResearchProfile?.status === 'ACTIVE'
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                : myResearchProfile?.status === 'COMPLETED'
-                ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
-                : myResearchProfile?.status === 'ON_HOLD'
-                ? 'bg-amber-50 text-amber-700 border-amber-200'
-                : 'bg-slate-100 text-slate-600 border-slate-200'
-            }`}>
-              <span className={`w-2 h-2 rounded-full ${
-                myResearchProfile?.status === 'ACTIVE' ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
-              }`} />
-              {myResearchProfile?.status ? myResearchProfile.status.replace('_', ' ') : 'ACTIVE RESEARCH'}
-            </div>
-
-            <button
-              onClick={() => setIsEditProfileOpen(true)}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-250 transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <Edit3 className="w-3.5 h-3.5 text-slate-600" />
-              <span>Edit Topic</span>
-            </button>
+      {loading ? (
+        <div role="status" aria-label="Loading your research" className="space-y-6">
+          <Skeleton className="h-44 w-full rounded-2xl" />
+          <Skeleton className="h-28 w-full rounded-2xl" />
+          <div className="grid gap-6 lg:grid-cols-3">
+            <Skeleton className="h-72 rounded-2xl lg:col-span-2" />
+            <Skeleton className="h-72 rounded-2xl" />
           </div>
         </div>
-
-        {loading ? (
-          <div className="p-12 text-center bg-white border border-slate-200 rounded-2xl">
-            <div className="w-8 h-8 border-3 border-[#0C4DA2] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-xs font-bold text-slate-500">Loading your research command center...</p>
-          </div>
-        ) : (
-          <>
-            {/* ─── RESEARCH OVERVIEW HERO CARD ─── */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-7 shadow-3xs space-y-6">
-              <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
-                <div className="space-y-3 flex-1 min-w-0">
-                  <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-blue-50/80 border border-blue-100 text-[#0C4DA2] text-[11px] font-bold">
-                    <Building className="w-3.5 h-3.5" />
-                    <span>{myResearchProfile?.researchArea || 'Computer Applications'}</span>
-                  </div>
-
-                  <h2 className="text-lg sm:text-xl font-black text-slate-900 leading-snug">
-                    {myResearchProfile?.title || 'Scholar Thesis Research Project'}
-                  </h2>
-
-                  {myResearchProfile?.abstract && (
-                    <p className="text-xs text-slate-600 leading-relaxed font-medium bg-slate-50/70 p-3.5 rounded-xl border border-slate-150">
-                      {myResearchProfile.abstract}
-                    </p>
-                  )}
+      ) : (
+        <div className="space-y-6">
+          {/* Thesis overview */}
+          <Card>
+            <div className="grid grid-cols-1 gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
+              <div className="min-w-0 space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  {myResearchProfile?.researchArea && <Badge tone="brand">{myResearchProfile.researchArea}</Badge>}
+                  <StatusBadge status={myResearchProfile?.status || 'ACTIVE'} />
                 </div>
-
-                {/* Dates & Quick Context Meta */}
-                <div className="lg:w-72 bg-slate-50/80 border border-slate-200/80 rounded-xl p-4 space-y-3 text-xs shrink-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 font-medium">Current Stage</span>
-                    <span className="font-extrabold text-[#0C4DA2] uppercase tracking-wide">
-                      {myResearchProfile?.currentStage?.replace('_', ' ') || 'PROPOSAL'}
-                    </span>
-                  </div>
-                  <div className="h-px bg-slate-200/60" />
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 font-medium">Start Date</span>
-                    <span className="font-bold text-slate-800">
-                      {myResearchProfile?.startDate
-                        ? new Date(myResearchProfile.startDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                        : new Date(currentUser.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-500 font-medium">Target Defense</span>
-                    <span className="font-bold text-slate-800">
-                      {myResearchProfile?.expectedCompletionDate
-                        ? new Date(myResearchProfile.expectedCompletionDate).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                        : 'Unspecified'}
-                    </span>
-                  </div>
-                </div>
+                <h2 className="font-serif text-2xl font-semibold leading-tight tracking-tight text-ink">
+                  {myResearchProfile?.title || 'Untitled research'}
+                </h2>
+                {myResearchProfile?.abstract ? (
+                  <p className="max-w-prose text-base leading-relaxed text-ink-secondary">{myResearchProfile.abstract}</p>
+                ) : (
+                  <p className="text-sm text-ink-muted">
+                    No abstract yet.{' '}
+                    <button type="button" onClick={() => setIsEditProfileOpen(true)} className="font-medium text-brand hover:underline">
+                      Add one
+                    </button>
+                  </p>
+                )}
               </div>
+              <dl className="grid grid-cols-3 gap-4 border-t border-line pt-4 lg:grid-cols-1 lg:gap-3 lg:border-l lg:border-t-0 lg:pl-6 lg:pt-0">
+                <DetailItem label="Current stage">{currentStage.label}</DetailItem>
+                <DetailItem label="Started">{formatMonth(myResearchProfile?.startDate) || 'Not set'}</DetailItem>
+                <DetailItem label="Target completion">{formatMonth(myResearchProfile?.expectedCompletionDate) || 'Not set'}</DetailItem>
+              </dl>
             </div>
+          </Card>
 
-            {/* ─── RESEARCH PROGRESS TRACKER ─── */}
-            <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-3xs space-y-5">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4 text-[#0C4DA2]" />
-                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Research Lifecycle Stage</h3>
-                </div>
-                <span className="text-xs font-bold text-slate-500">
+          {/* Stage tracker */}
+          <Card>
+            <CardHeader
+              title="Research stage"
+              description={`${currentStage.label}: ${currentStage.description}`}
+              actions={
+                <span className="whitespace-nowrap text-sm tabular-nums text-ink-muted">
                   Stage {currentStageIndex + 1} of {STAGES.length}
                 </span>
-              </div>
-
-              {/* Step Flow Bar */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                {STAGES.map((stg, idx) => {
-                  const isCompleted = idx < currentStageIndex;
-                  const isCurrent = idx === currentStageIndex;
-
-                  return (
+              }
+            />
+            <ol className="grid grid-cols-2 gap-2 p-4 sm:grid-cols-3 lg:grid-cols-6">
+              {STAGES.map((stg, idx) => {
+                const isCompleted = idx < currentStageIndex;
+                const isCurrent = idx === currentStageIndex;
+                return (
+                  <li key={stg.key}>
                     <button
-                      key={stg.key}
+                      type="button"
+                      aria-current={isCurrent ? 'step' : undefined}
+                      title={isCurrent ? 'Current stage' : `Set ${stg.label} as your current stage`}
                       onClick={async () => {
                         if (idx !== currentStageIndex) {
                           await updateResearchProfile({ currentStage: stg.key });
                         }
                       }}
-                      className={`p-3.5 rounded-xl border text-left transition-all relative flex flex-col justify-between min-h-[110px] cursor-pointer ${
+                      className={cn(
+                        'flex h-full w-full items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors duration-fast',
                         isCurrent
-                          ? 'bg-blue-50/80 border-[#0C4DA2] shadow-xs'
+                          ? 'border-brand bg-brand-50 font-medium text-ink'
                           : isCompleted
-                          ? 'bg-emerald-50/40 border-emerald-200 hover:bg-emerald-50/70'
-                          : 'bg-slate-50/50 border-slate-200/70 hover:bg-slate-100/60 opacity-70'
-                      }`}
+                            ? 'border-line bg-surface text-ink-secondary hover:bg-surface-muted'
+                            : 'border-dashed border-line-strong bg-surface text-ink-muted hover:border-solid hover:bg-surface-muted',
+                      )}
                     >
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className={`text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center ${
-                            isCurrent
-                              ? 'bg-[#0C4DA2] text-white'
-                              : isCompleted
-                              ? 'bg-emerald-600 text-white'
-                              : 'bg-slate-200 text-slate-600'
-                          }`}>
-                            {isCompleted ? <Check className="w-3 h-3" /> : idx + 1}
-                          </span>
-                          <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                            isCurrent
-                              ? 'bg-blue-100 text-[#0C4DA2]'
-                              : isCompleted
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'text-slate-400'
-                          }`}>
-                            {isCurrent ? 'ACTIVE' : isCompleted ? 'DONE' : 'NEXT'}
-                          </span>
-                        </div>
-
-                        <h4 className={`text-xs font-bold leading-tight ${isCurrent ? 'text-[#0C4DA2]' : 'text-slate-800'}`}>
-                          {stg.label}
-                        </h4>
-                      </div>
-
-                      <p className="text-[10px] text-slate-500 line-clamp-2 mt-2 leading-tight">
-                        {stg.description}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* ─── TWO COLUMN MAIN SECTION ─── */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              
-              {/* LEFT COLUMN: Milestones & Attention Items (Spans 8 cols) */}
-              <div className="lg:col-span-8 space-y-6">
-
-                {/* ATTENTION REQUIRED CARD */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-3xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="w-4 h-4 text-amber-600" />
-                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Attention Required</h3>
-                    </div>
-                    {attentionItems.length > 0 && (
-                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-black">
-                        {attentionItems.length} ACTION{attentionItems.length > 1 ? 'S' : ''}
+                      <span
+                        aria-hidden
+                        className={cn(
+                          'flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums',
+                          isCurrent
+                            ? 'bg-brand text-white'
+                            : isCompleted
+                              ? 'bg-success-50 text-success-700 ring-1 ring-inset ring-success-200'
+                              : 'bg-surface-muted text-ink-muted ring-1 ring-inset ring-line',
+                        )}
+                      >
+                        {isCompleted ? <Check className="size-3.5" /> : idx + 1}
                       </span>
-                    )}
-                  </div>
+                      <span className="leading-snug">{stg.label}</span>
+                      {isCompleted && <span className="sr-only">(completed)</span>}
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </Card>
 
-                  {attentionItems.length === 0 ? (
-                    <div className="p-6 bg-emerald-50/50 border border-emerald-100 rounded-xl flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0">
-                        <CheckCircle2 className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-emerald-950">All caught up</h4>
-                        <p className="text-[11px] font-medium text-emerald-700 mt-0.5">No research actions require your attention.</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {attentionItems.map((item) => (
-                        <div
-                          key={item.id}
-                          className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left transition-all ${
-                            item.priority === 'HIGH'
-                              ? 'bg-rose-50/30 border-rose-200/70'
-                              : 'bg-amber-50/30 border-amber-200/70'
-                          }`}
-                        >
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${
-                                item.priority === 'HIGH' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-800'
-                              }`}>
-                                {item.priority} PRIORITY
-                              </span>
-                              <h4 className="text-xs font-extrabold text-slate-900">{item.title}</h4>
-                            </div>
-                            <p className="text-[11px] text-slate-600 font-medium">{item.reason}</p>
-                          </div>
-
-                          <button
-                            onClick={item.onClick}
-                            className="px-4 py-2 bg-slate-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-colors shrink-0 cursor-pointer self-start sm:self-auto"
-                          >
-                            {item.actionText}
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* RESEARCH MILESTONES CARD */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-3xs space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-                    <div className="flex items-center gap-2">
-                      <ListTodo className="w-4 h-4 text-[#0C4DA2]" />
-                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Research Milestones</h3>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setIsAddMilestoneOpen(true)}
-                        className="px-3 py-1.5 bg-[#0C4DA2] hover:bg-blue-800 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Add Milestone</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Filter Tabs */}
-                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-bold text-slate-600 select-none">
-                    {(['ALL', 'UPCOMING', 'IN_PROGRESS', 'OVERDUE', 'COMPLETED'] as const).map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveMilestoneTab(tab)}
-                        className={`px-3 py-1.5 rounded-lg border transition-all shrink-0 cursor-pointer ${
-                          activeMilestoneTab === tab
-                            ? 'bg-slate-900 text-white border-slate-900'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        {tab.replace('_', ' ')}
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Milestone Items */}
-                  {filteredMilestones.length === 0 ? (
-                    <div className="p-8 text-center bg-slate-50/60 border border-slate-200/60 rounded-xl space-y-2">
-                      <Clock className="w-6 h-6 text-slate-400 mx-auto" />
-                      <h4 className="text-xs font-bold text-slate-800">No research milestones found</h4>
-                      <p className="text-[11px] text-slate-500">
-                        {activeMilestoneTab === 'ALL'
-                          ? 'No milestones have been added to your research profile yet.'
-                          : `No ${activeMilestoneTab.toLowerCase().replace('_', ' ')} milestones found.`}
-                      </p>
-                      <button
-                        onClick={() => setIsAddMilestoneOpen(true)}
-                        className="mt-2 text-xs font-bold text-[#0C4DA2] hover:underline cursor-pointer"
-                      >
-                        + Create a new milestone
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {filteredMilestones.map((m) => {
-                        const isOverdue = m.status !== 'COMPLETED' && m.dueDate && new Date(m.dueDate) < new Date();
-
-                        return (
-                          <div
-                            key={m.id}
-                            className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left transition-all ${
-                              m.status === 'COMPLETED'
-                                ? 'bg-emerald-50/20 border-emerald-200/60 opacity-80'
-                                : isOverdue
-                                ? 'bg-rose-50/30 border-rose-200'
-                                : 'bg-slate-50/40 border-slate-200/80 hover:bg-slate-50'
-                            }`}
-                          >
-                            <div className="space-y-1 flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider border ${
-                                  m.priority === 'HIGH'
-                                    ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                    : m.priority === 'MEDIUM'
-                                    ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                    : 'bg-blue-50 text-blue-700 border-blue-200'
-                                }`}>
-                                  {m.priority}
-                                </span>
-
-                                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 text-[9px] font-bold uppercase tracking-wider">
-                                  {m.stage.replace('_', ' ')}
-                                </span>
-
-                                {isOverdue && (
-                                  <span className="px-1.5 py-0.5 rounded bg-rose-600 text-white text-[9px] font-black uppercase tracking-wider">
-                                    OVERDUE
-                                  </span>
-                                )}
-                              </div>
-
-                              <h4 className={`text-xs font-extrabold ${m.status === 'COMPLETED' ? 'line-through text-slate-500' : 'text-slate-900'}`}>
-                                {m.title}
-                              </h4>
-
-                              {m.description && (
-                                <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
-                                  {m.description}
-                                </p>
-                              )}
-
-                              {m.dueDate && (
-                                <p className="text-[10px] font-bold text-slate-500 flex items-center gap-1 pt-0.5">
-                                  <Calendar className="w-3 h-3 text-slate-400" />
-                                  <span>Due: {new Date(m.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                </p>
-                              )}
-                            </div>
-
-                            <div className="shrink-0 flex items-center gap-2">
-                              {m.status !== 'COMPLETED' && (
-                                <button
-                                  onClick={() => completeMilestone(m.id)}
-                                  className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
-                                >
-                                  <Check className="w-3.5 h-3.5" />
-                                  <span>Complete</span>
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* RECENT RESEARCH ACTIVITY TIMELINE */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-3xs space-y-4">
-                  <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-                    <Clock className="w-4 h-4 text-[#0C4DA2]" />
-                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">Recent Research Activity</h3>
-                  </div>
-
-                  {!myResearchActivities || myResearchActivities.length === 0 ? (
-                    <p className="text-xs text-slate-500 py-4 text-center italic font-medium">
-                      Your research activity will appear here as your work progresses.
-                    </p>
-                  ) : (
-                    <div className="space-y-4 relative before:absolute before:left-3.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
-                      {myResearchActivities.map((act) => (
-                        <div key={act.id} className="flex items-start gap-3 relative z-10 text-left">
-                          <div className="w-7 h-7 rounded-full bg-white border-2 border-[#0C4DA2] text-[#0C4DA2] flex items-center justify-center shrink-0 shadow-3xs mt-0.5">
-                            <Sparkles className="w-3.5 h-3.5" />
-                          </div>
-                          <div className="flex-1 min-w-0 bg-slate-50/70 p-3 rounded-xl border border-slate-150">
-                            <p className="text-xs font-bold text-slate-900 leading-snug">{act.description}</p>
-                            <span className="text-[10px] font-bold text-slate-400 mt-1 block">
-                              {new Date(act.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-              </div>
-
-              {/* RIGHT COLUMN: Supervisor Connection, Materials & Quick Actions (Spans 4 cols) */}
-              <div className="lg:col-span-4 space-y-6">
-
-                {/* SUPERVISOR CONNECTION CARD */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-3xs space-y-4">
-                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">
-                    Research Supervisor
-                  </h3>
-
-                  {!supervisor ? (
-                    <div className="p-4 bg-amber-50/60 border border-amber-200 rounded-xl space-y-2 text-left">
-                      <h4 className="text-xs font-bold text-amber-900">Your research supervision is not connected yet</h4>
-                      <p className="text-[11px] font-medium text-amber-700 leading-relaxed">
-                        Find a supervisor from your department to map your thesis supervision.
-                      </p>
-                      <button
-                        onClick={() => router.push('/researchers')}
-                        className="mt-2 w-full py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
-                      >
-                        Find a Supervisor
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4 text-left">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
-                          <img
-                            src={getProfileImageUrl(supervisor)}
-                            alt={supervisor.name}
-                            className="w-full h-full object-cover"
+          <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
+            <div className="space-y-6 lg:col-span-2">
+              {/* Needs attention */}
+              {attentionItems.length > 0 ? (
+                <Card>
+                  <CardHeader title="Needs attention" actions={<Badge tone="warning">{attentionItems.length} open</Badge>} />
+                  <ul className="divide-y divide-line">
+                    {attentionItems.map((item) => (
+                      <li key={item.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex min-w-0 gap-3">
+                          <AlertTriangle
+                            className={cn('mt-0.5 size-4 shrink-0', item.priority === 'HIGH' ? 'text-danger-600' : 'text-warning-600')}
+                            aria-hidden
                           />
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-ink">
+                              {item.title}
+                              <span className="sr-only"> ({item.priority === 'HIGH' ? 'high' : 'medium'} priority)</span>
+                            </p>
+                            <p className="mt-0.5 text-sm text-ink-secondary">{item.reason}</p>
+                          </div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <h4 className="text-sm font-extrabold text-slate-900 truncate">{supervisor.name}</h4>
-                          <p className="text-xs font-semibold text-[#0C4DA2]">
-                            {supervisor.supervisorProfile?.designation || 'Research Supervisor'}
-                          </p>
-                          <p className="text-[10px] font-bold text-slate-500 truncate">
-                            {supervisor.department || 'Computer Applications'}
-                          </p>
-                        </div>
-                      </div>
+                        <Button variant="secondary" size="sm" onClick={item.onClick} className="self-start sm:self-center">
+                          {item.actionText}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
+              ) : (
+                <div className="flex items-center gap-3 rounded-2xl border border-success-200 bg-success-50 px-5 py-4 text-sm">
+                  <CheckCircle2 className="size-5 shrink-0 text-success-600" aria-hidden />
+                  <p className="text-success-800">
+                    <span className="font-medium">You&apos;re up to date.</span> Nothing in your research needs attention right now.
+                  </p>
+                </div>
+              )}
 
-                      <div className="p-3 bg-slate-50 rounded-xl border border-slate-150 flex items-center justify-between text-xs font-bold">
-                        <span className="text-slate-500">Supervision Status</span>
-                        <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase">
-                          ACTIVE
-                        </span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2 pt-1">
-                        <Link
-                          href={`/researchers/${supervisor.id}`}
-                          className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl border border-slate-250 transition-colors text-center cursor-pointer"
-                        >
-                          View Profile
-                        </Link>
-
+              {/* Milestones */}
+              <Card>
+                <CardHeader
+                  title="Milestones"
+                  description="Chapters, reviews and submissions you are working towards."
+                  actions={
+                    <Button size="sm" variant="secondary" onClick={() => setIsAddMilestoneOpen(true)}>
+                      <Plus aria-hidden />
+                      Add
+                    </Button>
+                  }
+                />
+                <div className="border-b border-line px-5 py-3">
+                  <div role="tablist" aria-label="Filter milestones" className="-mx-1 flex gap-1 overflow-x-auto px-1">
+                    {MILESTONE_TABS.map((tab) => {
+                      const isActive = activeMilestoneTab === tab.id;
+                      return (
                         <button
-                          onClick={() => {
-                            if (myResearchProfile?.activeCollabId) {
-                              router.push(`/nexus?collab=${myResearchProfile.activeCollabId}`);
-                            } else {
-                              router.push('/nexus');
-                            }
-                          }}
-                          className="py-2.5 px-3 bg-[#0C4DA2] hover:bg-blue-800 text-white text-xs font-bold rounded-xl transition-colors text-center cursor-pointer flex items-center justify-center gap-1"
+                          key={tab.id}
+                          type="button"
+                          role="tab"
+                          aria-selected={isActive}
+                          onClick={() => setActiveMilestoneTab(tab.id)}
+                          className={cn(
+                            'h-8 shrink-0 rounded-lg px-3 text-sm transition-colors duration-fast',
+                            isActive ? 'bg-neutral-100 font-medium text-ink' : 'text-ink-muted hover:bg-neutral-100 hover:text-ink',
+                          )}
                         >
-                          <Network className="w-3.5 h-3.5" />
-                          <span>Open Nexus</span>
+                          {tab.label}
                         </button>
-                      </div>
-                    </div>
-                  )}
+                      );
+                    })}
+                  </div>
                 </div>
 
-                {/* RESEARCH MATERIALS CARD */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-3xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest">
-                      Research Materials
-                    </h3>
-                    <Link
-                      href="/nexus"
-                      className="text-[11px] font-bold text-[#0C4DA2] hover:underline"
-                    >
-                      View All
-                    </Link>
-                  </div>
-
-                  {!myResearchMaterials || myResearchMaterials.length === 0 ? (
-                    <p className="text-xs text-slate-500 py-3 text-center italic font-medium">
-                      No research documents or submissions attached yet.
-                    </p>
-                  ) : (
-                    <div className="space-y-2.5">
-                      {myResearchMaterials.slice(0, 5).map((mat) => (
-                        <a
-                          key={mat.id}
-                          href={mat.url || '#'}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-3 rounded-xl bg-slate-50 hover:bg-blue-50/40 border border-slate-200/80 transition-all flex items-center justify-between gap-2 group text-left"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <FileText className="w-4 h-4 text-[#0C4DA2] shrink-0" />
-                            <div className="truncate">
-                              <p className="text-xs font-bold text-slate-900 truncate group-hover:text-[#0C4DA2]">
-                                {mat.name}
-                              </p>
-                              <p className="text-[10px] font-medium text-slate-500 truncate">
-                                {mat.source} • {mat.size}
-                              </p>
+                {filteredMilestones.length === 0 ? (
+                  <EmptyState
+                    icon={ListTodo}
+                    title={activeMilestoneTab === 'ALL' ? 'No milestones yet' : `No ${MILESTONE_TABS.find((t) => t.id === activeMilestoneTab)?.label.toLowerCase()} milestones`}
+                    description={
+                      activeMilestoneTab === 'ALL'
+                        ? 'Break your thesis into milestones, such as a chapter draft or a review, and track each one to completion.'
+                        : 'Milestones appear here when they match this filter.'
+                    }
+                    action={
+                      activeMilestoneTab === 'ALL' && (
+                        <Button onClick={() => setIsAddMilestoneOpen(true)}>
+                          <Plus aria-hidden />
+                          Add your first milestone
+                        </Button>
+                      )
+                    }
+                  />
+                ) : (
+                  <ul className="divide-y divide-line">
+                    {filteredMilestones.map((m) => {
+                      const isOverdue = m.status !== 'COMPLETED' && m.dueDate && new Date(m.dueDate) < new Date();
+                      const isDone = m.status === 'COMPLETED';
+                      return (
+                        <li key={m.id} className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0 flex-1 space-y-1.5">
+                            <p className={cn('text-sm font-medium', isDone ? 'text-ink-muted line-through' : 'text-ink')}>{m.title}</p>
+                            {m.description && <p className="text-sm text-ink-secondary">{m.description}</p>}
+                            <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+                              <Badge tone={PRIORITY_TONE[m.priority] ?? 'neutral'}>{PRIORITY_LABEL[m.priority] ?? m.priority}</Badge>
+                              <Badge tone="neutral">{stageLabel(m.stage)}</Badge>
+                              {isOverdue ? <StatusBadge status="OVERDUE" /> : <StatusBadge status={m.status} />}
+                              {m.dueDate && (
+                                <span className="inline-flex items-center gap-1">
+                                  <Calendar className="size-3.5" aria-hidden />
+                                  Due <time dateTime={m.dueDate}>{formatDay(m.dueDate)}</time>
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0C4DA2] shrink-0" />
-                        </a>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                          {!isDone && (
+                            <Button variant="secondary" size="sm" onClick={() => completeMilestone(m.id)} className="shrink-0 self-start">
+                              <Check aria-hidden />
+                              Mark complete
+                            </Button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </Card>
 
-                {/* QUICK ACTIONS TOOLBAR */}
-                <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-3xs space-y-3 text-left">
-                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-widest border-b border-slate-100 pb-2">
-                    Quick Actions
-                  </h3>
-
-                  <div className="space-y-2">
-                    <button
-                      onClick={() => setIsEditProfileOpen(true)}
-                      className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 transition-colors flex items-center justify-between cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2">
-                        <TrendingUp className="w-3.5 h-3.5 text-[#0C4DA2]" />
-                        <span>Update Research Progress</span>
-                      </span>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-
-                    <button
-                      onClick={() => setIsAddMilestoneOpen(true)}
-                      className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 transition-colors flex items-center justify-between cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Plus className="w-3.5 h-3.5 text-[#0C4DA2]" />
-                        <span>Add Milestone</span>
-                      </span>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-
-                    {supervisor && (
-                      <Link
-                        href={`/researchers/${supervisor.id}`}
-                        className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 transition-colors flex items-center justify-between cursor-pointer"
-                      >
-                        <span className="flex items-center gap-2">
-                          <User className="w-3.5 h-3.5 text-[#0C4DA2]" />
-                          <span>Open Supervisor Profile</span>
-                        </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                      </Link>
-                    )}
-
-                    <button
-                      onClick={() => router.push(myResearchProfile?.activeCollabId ? `/nexus?collab=${myResearchProfile.activeCollabId}` : '/nexus')}
-                      className="w-full p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-xs font-bold text-slate-800 transition-colors flex items-center justify-between cursor-pointer"
-                    >
-                      <span className="flex items-center gap-2">
-                        <Network className="w-3.5 h-3.5 text-[#0C4DA2]" />
-                        <span>Open Nexus Workspace</span>
-                      </span>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-                    </button>
-                  </div>
-                </div>
-
-              </div>
+              {/* Activity */}
+              <Card>
+                <CardHeader title="Recent activity" />
+                {!myResearchActivities || myResearchActivities.length === 0 ? (
+                  <p className="px-5 py-6 text-sm text-ink-muted">Updates to your research record will be listed here.</p>
+                ) : (
+                  <ol className="space-y-4 px-5 py-4">
+                    {myResearchActivities.map((act) => (
+                      <li key={act.id} className="relative border-l-2 border-line pl-4">
+                        <p className="text-sm text-ink">{act.description}</p>
+                        <time dateTime={act.createdAt} className="mt-0.5 block text-xs text-ink-muted">
+                          {formatDateTime(act.createdAt)}
+                        </time>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </Card>
             </div>
+
+            <div className="space-y-6">
+              {/* Supervisor */}
+              <Card>
+                <CardHeader title="Supervisor" />
+                {!supervisor ? (
+                  <EmptyState
+                    icon={User}
+                    title="No supervisor yet"
+                    description="Find a supervisor in your department and send a supervision request."
+                    action={
+                      <Link href="/researchers" className={buttonVariants({ variant: 'primary', size: 'sm' })}>
+                        Find a supervisor
+                      </Link>
+                    }
+                    className="py-8"
+                  />
+                ) : (
+                  <div className="space-y-4 p-5">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={getProfileImageUrl(supervisor)}
+                        alt=""
+                        className="size-12 shrink-0 rounded-full border border-line bg-surface-muted object-cover"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-ink">{supervisor.name}</p>
+                        <p className="truncate text-sm text-ink-secondary">
+                          {supervisor.supervisorProfile?.designation || 'Research Supervisor'}
+                        </p>
+                        {supervisor.department && <p className="truncate text-xs text-ink-muted">{supervisor.department}</p>}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Link href={`/researchers/${supervisor.id}`} className={buttonVariants({ variant: 'secondary', size: 'sm' })}>
+                        View profile
+                      </Link>
+                      <Link href={nexusHref} className={buttonVariants({ variant: 'primary', size: 'sm' })}>
+                        <Network aria-hidden />
+                        Open Nexus
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </Card>
+
+              {/* Materials */}
+              <Card>
+                <CardHeader
+                  title="Research materials"
+                  actions={
+                    <Link href={nexusHref} className="text-sm font-medium text-brand hover:underline">
+                      Open Nexus
+                    </Link>
+                  }
+                />
+                {!myResearchMaterials || myResearchMaterials.length === 0 ? (
+                  <p className="px-5 py-6 text-sm text-ink-muted">Files shared in your Nexus workspace will appear here.</p>
+                ) : (
+                  <ul className="divide-y divide-line">
+                    {myResearchMaterials.slice(0, 5).map((mat) => {
+                      const body = (
+                        <>
+                          <FileText className="size-4 shrink-0 text-ink-muted" aria-hidden />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium text-ink">{mat.name}</span>
+                            <span className="block truncate text-xs text-ink-muted">{[mat.source, mat.size].filter(Boolean).join(' · ')}</span>
+                          </span>
+                        </>
+                      );
+                      return (
+                        <li key={mat.id}>
+                          {mat.url ? (
+                            <a
+                              href={mat.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="group flex items-center gap-3 px-5 py-3 transition-colors duration-fast hover:bg-surface-muted"
+                            >
+                              {body}
+                              <ExternalLink className="size-3.5 shrink-0 text-ink-muted group-hover:text-brand" aria-hidden />
+                              <span className="sr-only">(opens in a new tab)</span>
+                            </a>
+                          ) : (
+                            <div className="flex items-center gap-3 px-5 py-3">{body}</div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </Card>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit research details */}
+      <Dialog
+        open={isEditProfileOpen}
+        onClose={() => setIsEditProfileOpen(false)}
+        size="lg"
+        title="Edit research details"
+        description="Your supervisor sees these details on your profile and in the Supervision Panel."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsEditProfileOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" form="research-profile-form">
+              Save changes
+            </Button>
           </>
-        )}
-      </div>
-
-      {/* ─── EDIT PROFILE MODAL DRAWER ─── */}
-      <AnimatePresence>
-        {isEditProfileOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsEditProfileOpen(false)}
-              className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs cursor-pointer"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-xl z-10 overflow-hidden text-left p-6 space-y-4"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                  Edit Research Profile & Topic
-                </h3>
-                <button onClick={() => setIsEditProfileOpen(false)} className="p-1 text-slate-400 hover:text-slate-600">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSaveProfile} className="space-y-4 text-xs font-bold text-slate-700">
-                <div>
-                  <label className="block mb-1 font-extrabold text-slate-900">Thesis Topic / Title</label>
-                  <input
-                    type="text"
-                    required
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-1 font-extrabold text-slate-900">Research Domain / Area</label>
-                  <input
-                    type="text"
-                    required
-                    value={editArea}
-                    onChange={(e) => setEditArea(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-1 font-extrabold text-slate-900">Abstract Summary</label>
-                  <textarea
-                    rows={3}
-                    value={editAbstract}
-                    onChange={(e) => setEditAbstract(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2] leading-relaxed"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block mb-1 font-extrabold text-slate-900">Research Stage</label>
-                    <select
-                      value={editStage}
-                      onChange={(e) => setEditStage(e.target.value as ResearchStage)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
-                    >
-                      {STAGES.map((s) => (
-                        <option key={s.key} value={s.key}>{s.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block mb-1 font-extrabold text-slate-900">Overall Status</label>
-                    <select
-                      value={editStatus}
-                      onChange={(e) => setEditStatus(e.target.value as ResearchStatus)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
-                    >
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="ON_HOLD">ON HOLD</option>
-                      <option value="COMPLETED">COMPLETED</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block mb-1 font-extrabold text-slate-900">Start Date</label>
-                    <input
-                      type="date"
-                      value={editStartDate}
-                      onChange={(e) => setEditStartDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block mb-1 font-extrabold text-slate-900">Target Completion</label>
-                    <input
-                      type="date"
-                      value={editCompletionDate}
-                      onChange={(e) => setEditCompletionDate(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setIsEditProfileOpen(false)}
-                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl font-bold cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-2 bg-[#0C4DA2] hover:bg-blue-800 text-white rounded-xl font-bold cursor-pointer"
-                  >
-                    Save Changes
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+        }
+      >
+        <form id="research-profile-form" onSubmit={handleSaveProfile} className="space-y-4">
+          <Field label="Thesis title" htmlFor="rp-title" required>
+            <input id="rp-title" type="text" required value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="cb-input" />
+          </Field>
+          <Field label="Research area" htmlFor="rp-area" required hint="For example: Federated learning, Thin-film photovoltaics.">
+            <input id="rp-area" type="text" required value={editArea} onChange={(e) => setEditArea(e.target.value)} className="cb-input" />
+          </Field>
+          <Field label="Abstract" htmlFor="rp-abstract">
+            <textarea id="rp-abstract" rows={4} value={editAbstract} onChange={(e) => setEditAbstract(e.target.value)} className="cb-input resize-y" />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Current stage" htmlFor="rp-stage">
+              <select id="rp-stage" value={editStage} onChange={(e) => setEditStage(e.target.value as ResearchStage)} className="cb-input">
+                {STAGES.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Status" htmlFor="rp-status">
+              <select id="rp-status" value={editStatus} onChange={(e) => setEditStatus(e.target.value as ResearchStatus)} className="cb-input">
+                <option value="ACTIVE">Active</option>
+                <option value="ON_HOLD">On hold</option>
+                <option value="COMPLETED">Completed</option>
+              </select>
+            </Field>
+            <Field label="Start date" htmlFor="rp-start">
+              <input id="rp-start" type="date" value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} className="cb-input" />
+            </Field>
+            <Field label="Target completion" htmlFor="rp-end">
+              <input
+                id="rp-end"
+                type="date"
+                value={editCompletionDate}
+                min={editStartDate || undefined}
+                onChange={(e) => setEditCompletionDate(e.target.value)}
+                className="cb-input"
+              />
+            </Field>
           </div>
-        )}
-      </AnimatePresence>
+        </form>
+      </Dialog>
 
-      {/* ─── ADD MILESTONE MODAL DRAWER ─── */}
-      <AnimatePresence>
-        {isAddMilestoneOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsAddMilestoneOpen(false)}
-              className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs cursor-pointer"
+      {/* Add milestone */}
+      <Dialog
+        open={isAddMilestoneOpen}
+        onClose={() => setIsAddMilestoneOpen(false)}
+        size="lg"
+        title="Add milestone"
+        description="A concrete step towards your thesis, such as a chapter draft or a progress review."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsAddMilestoneOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" form="milestone-form">
+              Add milestone
+            </Button>
+          </>
+        }
+      >
+        <form id="milestone-form" onSubmit={handleCreateMilestoneSubmit} className="space-y-4">
+          <Field label="Title" htmlFor="ms-title" required>
+            <input
+              id="ms-title"
+              type="text"
+              required
+              placeholder="e.g. Chapter 2 draft to supervisor"
+              value={mTitle}
+              onChange={(e) => setMTitle(e.target.value)}
+              className="cb-input"
             />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative w-full max-w-lg bg-white border border-slate-200 rounded-3xl shadow-xl z-10 overflow-hidden text-left p-6 space-y-4"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider">
-                  Add Research Milestone
-                </h3>
-                <button onClick={() => setIsAddMilestoneOpen(false)} className="p-1 text-slate-400 hover:text-slate-600">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleCreateMilestoneSubmit} className="space-y-4 text-xs font-bold text-slate-700">
-                <div>
-                  <label className="block mb-1 font-extrabold text-slate-900">Milestone Title</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Literature Survey Chapter 2 Draft Submission"
-                    value={mTitle}
-                    onChange={(e) => setMTitle(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block mb-1 font-extrabold text-slate-900">Description / Key Deliverables</label>
-                  <textarea
-                    rows={2}
-                    placeholder="Provide details on target outcomes or requirements..."
-                    value={mDesc}
-                    onChange={(e) => setMDesc(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block mb-1 font-extrabold text-slate-900">Target Stage</label>
-                    <select
-                      value={mStage}
-                      onChange={(e) => setMStage(e.target.value as ResearchStage)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
-                    >
-                      {STAGES.map((s) => (
-                        <option key={s.key} value={s.key}>{s.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block mb-1 font-extrabold text-slate-900">Priority</label>
-                    <select
-                      value={mPriority}
-                      onChange={(e) => setMPriority(e.target.value as MilestonePriority)}
-                      className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
-                    >
-                      <option value="LOW">LOW</option>
-                      <option value="MEDIUM">MEDIUM</option>
-                      <option value="HIGH">HIGH</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block mb-1 font-extrabold text-slate-900">Due Date</label>
-                  <input
-                    type="date"
-                    value={mDueDate}
-                    onChange={(e) => setMDueDate(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setIsAddMilestoneOpen(false)}
-                    className="px-4 py-2 border border-slate-200 text-slate-600 rounded-xl font-bold cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-6 py-2 bg-[#0C4DA2] hover:bg-blue-800 text-white rounded-xl font-bold cursor-pointer"
-                  >
-                    Create Milestone
-                  </button>
-                </div>
-              </form>
-            </motion.div>
+          </Field>
+          <Field label="Details" htmlFor="ms-desc" hint="Optional. What does done look like?">
+            <textarea id="ms-desc" rows={3} value={mDesc} onChange={(e) => setMDesc(e.target.value)} className="cb-input resize-y" />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field label="Stage" htmlFor="ms-stage">
+              <select id="ms-stage" value={mStage} onChange={(e) => setMStage(e.target.value as ResearchStage)} className="cb-input">
+                {STAGES.map((s) => (
+                  <option key={s.key} value={s.key}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Priority" htmlFor="ms-priority">
+              <select id="ms-priority" value={mPriority} onChange={(e) => setMPriority(e.target.value as MilestonePriority)} className="cb-input">
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+              </select>
+            </Field>
+            <Field label="Due date" htmlFor="ms-due">
+              <input id="ms-due" type="date" value={mDueDate} onChange={(e) => setMDueDate(e.target.value)} className="cb-input" />
+            </Field>
           </div>
-        )}
-      </AnimatePresence>
+        </form>
+      </Dialog>
     </div>
   );
 }

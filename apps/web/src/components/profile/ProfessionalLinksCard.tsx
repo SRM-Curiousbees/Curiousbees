@@ -16,7 +16,7 @@ const PLATFORM_CONFIG: Record<string, { label: string; bg: string; text: string;
   RESEARCHGATE: { label: 'ResearchGate', bg: 'bg-teal-50', text: 'text-teal-900', border: 'border-teal-200' },
   GITHUB: { label: 'GitHub', bg: 'bg-slate-100', text: 'text-slate-900', border: 'border-slate-300' },
   LINKEDIN: { label: 'LinkedIn', bg: 'bg-sky-50', text: 'text-sky-900', border: 'border-sky-200' },
-  WEBSITE: { label: 'Personal Website', bg: 'bg-[#F0F4FA]', text: 'text-[#0C4DA2]', border: 'border-blue-200' },
+  WEBSITE: { label: 'Personal Website', bg: 'bg-blue-50', text: 'text-brand', border: 'border-blue-200' },
   PORTFOLIO: { label: 'Research Portfolio', bg: 'bg-amber-50', text: 'text-amber-900', border: 'border-amber-200' },
   YOUTUBE: { label: 'YouTube Channel', bg: 'bg-red-50', text: 'text-red-900', border: 'border-red-200' },
   TWITTER: { label: 'X / Twitter', bg: 'bg-slate-100', text: 'text-slate-900', border: 'border-slate-300' },
@@ -27,17 +27,17 @@ export function ProfessionalLinksCard({ links = [], isOwnProfile, onEditClick }:
   const visibleLinks = links.filter((l) => l.isVisible !== false);
 
   return (
-    <div className="bg-white border border-[#E4E9F2] rounded-2xl p-6 shadow-xs space-y-4">
+    <div className="bg-surface border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[#0C4DA2]">
-          <Globe className="w-4 h-4 text-[#0C4DA2]" />
+        <div className="flex items-center gap-2 text-xs font-medium capitalize text-brand">
+          <Globe className="w-4 h-4 text-brand" />
           <span>Professional & Research Links</span>
         </div>
 
         {isOwnProfile && onEditClick && (
           <button
             onClick={onEditClick}
-            className="text-xs font-bold text-[#0C4DA2] hover:underline flex items-center gap-1 cursor-pointer"
+            className="text-xs font-bold text-brand hover:underline flex items-center gap-1 cursor-pointer"
           >
             <Edit3 className="w-3.5 h-3.5" /> Edit Links
           </button>
@@ -63,7 +63,7 @@ export function ProfessionalLinksCard({ links = [], isOwnProfile, onEditClick }:
               >
                 <div className="flex items-center gap-2.5 min-w-0">
                   <Link2 className={`w-4 h-4 ${config.text} shrink-0`} />
-                  <span className={`text-xs font-extrabold ${config.text} truncate`}>
+                  <span className={`text-xs font-semibold ${config.text} truncate`}>
                     {link.label || config.label}
                   </span>
                 </div>

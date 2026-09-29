@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { getAllowedEmailDomains } from '../auth/email-policy';
 import { AuditHelperService } from './audit-helper';
 
 @Injectable()
@@ -52,6 +53,14 @@ export class AdminSettingsService {
     settings.forEach((s) => {
       map[s.key] = s.value;
     });
+
+    // Sign-in domains are enforced from server configuration, not from this table.
+    map.authentication = {
+      ...(map.authentication || {}),
+      allowedDomains: getAllowedEmailDomains(),
+      allowedDomainsSource: 'ALLOWED_EMAIL_DOMAINS (server configuration)',
+    };
+    map.email = { ...(map.email || {}), senderEmail: process.env.MAIL_FROM_EMAIL || null };
 
     return map;
   }

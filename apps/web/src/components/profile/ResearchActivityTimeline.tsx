@@ -20,10 +20,10 @@ export function ResearchActivityTimeline({ activities = [] }: ResearchActivityTi
   }
 
   return (
-    <div className="bg-white border border-[#E4E9F2] rounded-2xl p-6 shadow-xs space-y-4">
+    <div className="bg-surface border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[#0C4DA2]">
-          <Activity className="w-4 h-4 text-[#0C4DA2]" />
+        <div className="flex items-center gap-2 text-xs font-medium capitalize text-brand">
+          <Activity className="w-4 h-4 text-brand" />
           <span>Recent Research Activity</span>
         </div>
       </div>
@@ -31,10 +31,10 @@ export function ResearchActivityTimeline({ activities = [] }: ResearchActivityTi
       <div className="space-y-3 pt-1 relative before:absolute before:left-3 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200">
         {activities.map((act) => (
           <div key={act.id} className="flex items-start gap-3 relative pl-7">
-            <div className="absolute left-1.5 top-1.5 w-3 h-3 rounded-full bg-[#0C4DA2] ring-4 ring-blue-50" />
+            <div className="absolute left-1.5 top-1.5 w-3 h-3 rounded-full bg-brand ring-4 ring-blue-50" />
             <div className="space-y-0.5 flex-1 min-w-0">
-              <p className="text-xs font-bold text-[#17233D]">{act.description}</p>
-              <span className="text-[10px] font-semibold text-slate-400">
+              <p className="text-xs font-bold text-slate-900">{act.description}</p>
+              <span className="text-2xs font-semibold text-slate-400">
                 {new Date(act.createdAt).toLocaleDateString()}
               </span>
             </div>

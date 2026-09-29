@@ -3,12 +3,12 @@
 import React from 'react';
 
 function SkeletonPulse({ className }: { className?: string }) {
-  return <div className={`animate-pulse bg-slate-200/80 rounded-full ${className || ''}`} />;
+  return <div aria-hidden className={`cb-skeleton rounded-full ${className || ''}`} />;
 }
 
 export function PostSkeleton() {
   return (
-    <div className="bg-white border-b border-slate-200/80 p-4 sm:p-5">
+    <div className="rounded-2xl border border-line bg-surface p-5">
       <div className="flex items-start gap-3">
         <SkeletonPulse className="w-10 h-10 rounded-full shrink-0" />
         <div className="flex-1 space-y-3">
@@ -69,7 +69,7 @@ export function SidebarSkeleton() {
 
 export function FeedSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <div>
+    <div role="status" aria-label="Loading posts" className="space-y-3">
       {Array.from({ length: count }).map((_, i) => (
         <PostSkeleton key={i} />
       ))}

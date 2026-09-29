@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
+import { publicUrl } from '@/lib/site-url';
+import { isEmailDomainAllowed } from '@/lib/auth/email-domains';
 
 // 1. Define Public Routes
 const PUBLIC_PATH_PREFIXES = [
@@ -41,6 +43,7 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
+    pathname === '/healthz' ||
     pathname === '/favicon.ico' ||
     pathname === '/icon.png' ||
     pathname === '/apple-touch-icon.png' ||
@@ -57,7 +60,7 @@ export async function middleware(request: NextRequest) {
 
     // 2. If authenticated user visits login/sign-in pages, redirect to /feed
     if (user && (pathname === '/login' || pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up'))) {
-      return NextResponse.redirect(new URL('/feed', request.url));
+      return NextResponse.redirect(publicUrl('/feed', request.url));
     }
 
     // 3. If public path, allow through with refreshed session cookies
@@ -68,27 +71,15 @@ export async function middleware(request: NextRequest) {
     // 4. Protected Route: Require authenticated Supabase user
     if (!user) {
       console.log(`[MIDDLEWARE] Unauthenticated access to ${pathname}. Redirecting to /login`);
-      const loginUrl = new URL('/login', request.url);
+      const loginUrl = publicUrl('/login', request.url);
       loginUrl.searchParams.set('redirectTo', pathname);
       return NextResponse.redirect(loginUrl);
     }
 
-    // 5. Enforce allowed domain restriction
-    const email = user.email?.toLowerCase().trim() || '';
-    const allowedDomains = (
-      process.env.ALLOWED_EMAIL_DOMAINS ||
-      process.env.NEXT_PUBLIC_ALLOWED_EMAIL_DOMAINS ||
-      'gmail.com'
-    )
-      .split(',')
-      .map((d) => d.trim().toLowerCase())
-      .filter(Boolean);
-
-    const isAllowedDomain = allowedDomains.some((domain) => email.endsWith('@' + domain));
-
-    if (!isAllowedDomain) {
-      console.warn(`[MIDDLEWARE SECURITY] Blocking non-allowed email: ${email}`);
-      return NextResponse.redirect(new URL('/access-denied', request.url));
+    // 5. Early domain check for UX. The API is authoritative (domain policy + admin-provisioned account).
+    if (!isEmailDomainAllowed(user.email)) {
+      console.warn('[MIDDLEWARE SECURITY] Blocking non-allowed email domain.');
+      return NextResponse.redirect(publicUrl('/access-denied', request.url));
     }
 
     return supabaseResponse;
@@ -105,7 +96,9 @@ export async function middleware(request: NextRequest) {
 
 // Match all application paths except Next.js internals, API routes, and static assets
 export const config = {
+  // Node.js runtime: reads server-only configuration (APP_URL, ALLOWED_EMAIL_DOMAINS) at runtime.
+  runtime: 'nodejs',
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|icon.png|apple-touch-icon.png|logo.png|logo_icon.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)',
+    '/((?!api|healthz|_next/static|_next/image|favicon.ico|icon.png|apple-touch-icon.png|logo.png|logo_icon.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)',
   ],
 };

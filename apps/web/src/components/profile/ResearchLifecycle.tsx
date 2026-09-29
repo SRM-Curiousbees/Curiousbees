@@ -27,7 +27,7 @@ export function ResearchLifecycle({ currentStage = 'METHODOLOGY' }: ResearchLife
     <div className="w-full pt-2 pb-1">
       <div className="flex items-center justify-between text-xs font-bold text-slate-500 mb-3 px-1">
         <span>Research Progress Stage</span>
-        <span className="text-[#0C4DA2] font-extrabold uppercase">
+        <span className="text-brand font-semibold uppercase">
           Stage {currentIdx + 1} of 6: {STAGES[currentIdx]?.label}
         </span>
       </div>
@@ -53,11 +53,11 @@ export function ResearchLifecycle({ currentStage = 'METHODOLOGY' }: ResearchLife
               {/* Indicator Node */}
               <div
                 className={cn(
-                  'w-7 h-7 rounded-full flex items-center justify-center relative z-10 transition-all text-xs font-extrabold shadow-2xs',
+                  'w-7 h-7 rounded-full flex items-center justify-center relative z-10 transition-all text-xs font-semibold shadow-2xs',
                   isCompleted
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-success text-white'
                     : isCurrent
-                    ? 'bg-[#0C4DA2] text-white ring-4 ring-blue-100 scale-110'
+                    ? 'bg-brand text-white ring-4 ring-blue-100 scale-110'
                     : 'bg-slate-100 text-slate-400 border border-slate-300'
                 )}
               >
@@ -68,7 +68,7 @@ export function ResearchLifecycle({ currentStage = 'METHODOLOGY' }: ResearchLife
               <span
                 className={cn(
                   'text-xs font-bold leading-tight max-w-[90px]',
-                  isCurrent ? 'text-[#0C4DA2]' : isCompleted ? 'text-slate-700' : 'text-slate-400'
+                  isCurrent ? 'text-brand' : isCompleted ? 'text-slate-700' : 'text-slate-400'
                 )}
               >
                 {stage.label}
@@ -90,7 +90,7 @@ export function ResearchLifecycle({ currentStage = 'METHODOLOGY' }: ResearchLife
               className={cn(
                 'flex items-center gap-3 p-2.5 rounded-xl border text-xs font-bold transition-all',
                 isCurrent
-                  ? 'bg-blue-50/70 border-blue-200 text-[#0C4DA2]'
+                  ? 'bg-blue-50/70 border-blue-200 text-brand'
                   : isCompleted
                   ? 'bg-emerald-50/50 border-emerald-200 text-emerald-900'
                   : 'bg-slate-50 border-slate-200 text-slate-400'
@@ -98,11 +98,11 @@ export function ResearchLifecycle({ currentStage = 'METHODOLOGY' }: ResearchLife
             >
               <div
                 className={cn(
-                  'w-6 h-6 rounded-full flex items-center justify-center text-xs font-extrabold shrink-0',
+                  'w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold shrink-0',
                   isCompleted
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-success text-white'
                     : isCurrent
-                    ? 'bg-[#0C4DA2] text-white'
+                    ? 'bg-brand text-white'
                     : 'bg-slate-200 text-slate-500'
                 )}
               >
@@ -110,7 +110,7 @@ export function ResearchLifecycle({ currentStage = 'METHODOLOGY' }: ResearchLife
               </div>
               <span className="flex-1">{stage.label}</span>
               {isCurrent && (
-                <span className="px-2 py-0.5 rounded-md bg-[#0C4DA2] text-white text-[10px] uppercase font-extrabold tracking-wider">
+                <span className="px-2 py-0.5 rounded-md bg-brand text-white text-xs capitalize font-medium">
                   Current Stage
                 </span>
               )}

@@ -54,13 +54,13 @@ export default function EditPostModal({ isOpen, onClose, thread }: EditPostModal
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-lg bg-white dark:bg-[#101D30] border border-slate-200 dark:border-white/[0.10] rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.5)] z-50 overflow-hidden flex flex-col text-left"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-lg bg-surface border border-slate-200 rounded-3xl shadow-xl z-50 overflow-hidden flex flex-col text-left"
           >
-            <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-white/[0.08]">
-              <h2 className="text-xl font-black text-slate-900 dark:text-[#F5F7FA]">Edit Post</h2>
+            <div className="flex items-center justify-between p-6 border-b border-slate-100">
+              <h2 className="text-xl font-semibold text-slate-900">Edit Post</h2>
               <button 
                 onClick={onClose}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-[#172942] text-slate-500 dark:text-[#A7B3C5] transition-colors cursor-pointer"
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-500 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -70,7 +70,7 @@ export default function EditPostModal({ isOpen, onClose, thread }: EditPostModal
               <select 
                 value={type}
                 onChange={(e) => setType(e.target.value as any)}
-                className="px-4 py-2 bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.10] rounded-xl text-sm font-bold text-slate-700 dark:text-[#F5F7FA] outline-none focus:ring-2 focus:ring-[#0C4DA2]/20 focus:border-[#0C4DA2] dark:focus:border-blue-500 transition-all"
+                className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
               >
                 <option value="RESEARCH_UPDATE">Research Update</option>
                 <option value="PUBLICATION">Publication</option>
@@ -84,21 +84,21 @@ export default function EditPostModal({ isOpen, onClose, thread }: EditPostModal
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="What do you want to share?"
-                className="w-full min-h-[150px] p-4 bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.10] rounded-2xl text-slate-800 dark:text-[#F5F7FA] text-sm outline-none resize-none focus:bg-white dark:focus:bg-[#0B1728] focus:ring-2 focus:ring-[#0C4DA2]/20 focus:border-[#0C4DA2] dark:focus:border-blue-500 transition-all placeholder:text-slate-400 dark:placeholder:text-[#718096]"
+                className="w-full min-h-[150px] p-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 text-sm outline-none resize-none focus:bg-surface focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all placeholder:text-slate-400"
               />
             </div>
 
             <div className="p-6 pt-0 flex justify-end gap-3">
               <button
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-full text-sm font-bold text-slate-600 dark:text-[#A7B3C5] bg-slate-100 dark:bg-[#132238] hover:bg-slate-200 dark:hover:bg-[#172942] border border-transparent dark:border-white/[0.08] transition-colors cursor-pointer"
+                className="px-5 py-2.5 rounded-full text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 border border-transparent transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || !content.trim()}
-                className="px-6 py-2.5 bg-[#0C4DA2] dark:bg-[#2563EB] hover:bg-[#042654] dark:hover:bg-blue-600 text-white text-sm font-black rounded-full flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="px-6 py-2.5 bg-brand hover:bg-brand-strong text-white text-sm font-semibold rounded-full flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
                 Save Changes

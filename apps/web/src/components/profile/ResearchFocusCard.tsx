@@ -15,16 +15,16 @@ export function ResearchFocusCard({ areas, isOwnProfile, onEditClick }: Research
     : ['Artificial Intelligence', 'Machine Learning', 'Computer Vision', 'Data Analytics', 'Knowledge Graphs'];
 
   return (
-    <div className="bg-white border border-[#E4E9F2] rounded-2xl p-6 shadow-xs space-y-4">
+    <div className="bg-surface border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-[#0C4DA2]">
-          <Layers className="w-4 h-4 text-[#0C4DA2]" />
+        <div className="flex items-center gap-2 text-xs font-medium capitalize text-brand">
+          <Layers className="w-4 h-4 text-brand" />
           <span>Primary Research Areas</span>
         </div>
         {isOwnProfile && onEditClick && (
           <button
             onClick={onEditClick}
-            className="text-xs font-bold text-[#0C4DA2] hover:underline flex items-center gap-1 cursor-pointer"
+            className="text-xs font-bold text-brand hover:underline flex items-center gap-1 cursor-pointer"
           >
             <Edit3 className="w-3.5 h-3.5" /> Edit
           </button>
@@ -35,9 +35,9 @@ export function ResearchFocusCard({ areas, isOwnProfile, onEditClick }: Research
         {primaryAreas.map((area, idx) => (
           <div
             key={idx}
-            className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-[#17233D] flex items-center gap-2 shadow-2xs hover:border-blue-200 hover:bg-blue-50/50 transition-all"
+            className="px-3.5 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-900 flex items-center gap-2 shadow-2xs hover:border-blue-200 hover:bg-blue-50/50 transition-all"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0C4DA2]" />
+            <span className="w-1.5 h-1.5 rounded-full bg-brand" />
             <span>{area}</span>
           </div>
         ))}

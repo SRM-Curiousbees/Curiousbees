@@ -43,18 +43,18 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
 
   const styles = {
     success: {
-      bg: 'bg-emerald-500/10 dark:bg-[#101D30] border-emerald-500/20 dark:border-emerald-500/30 shadow-2xl',
-      icon: <CheckCircle2 className="h-5 w-5 text-emerald-500 dark:text-emerald-400" />,
+      bg: 'bg-emerald-500/10 border-emerald-500/20 shadow-2xl',
+      icon: <CheckCircle2 className="h-5 w-5 text-emerald-500" />,
       progress: 'bg-emerald-500',
     },
     error: {
-      bg: 'bg-rose-500/10 dark:bg-[#101D30] border-rose-500/20 dark:border-rose-500/30 shadow-2xl',
-      icon: <AlertCircle className="h-5 w-5 text-rose-500 dark:text-rose-400" />,
+      bg: 'bg-rose-500/10 border-rose-500/20 shadow-2xl',
+      icon: <AlertCircle className="h-5 w-5 text-rose-500" />,
       progress: 'bg-rose-500',
     },
     info: {
-      bg: 'bg-blue-500/10 dark:bg-[#101D30] border-blue-500/20 dark:border-blue-500/30 shadow-2xl',
-      icon: <Info className="h-5 w-5 text-blue-500 dark:text-blue-400" />,
+      bg: 'bg-blue-500/10 border-blue-500/20 shadow-2xl',
+      icon: <Info className="h-5 w-5 text-blue-500" />,
       progress: 'bg-blue-500',
     },
   }[type];
@@ -62,12 +62,12 @@ function ToastItem({ toast, onClose }: ToastItemProps) {
   return (
     <div className={`relative overflow-hidden flex items-start gap-3 p-4 rounded-xl border backdrop-blur-md shadow-lg ${styles.bg}`}>
       <div className="flex-shrink-0 mt-0.5">{styles.icon}</div>
-      <div className="flex-1 text-sm font-medium text-slate-800 dark:text-[#F5F7FA] leading-relaxed pr-6">
+      <div className="flex-1 text-sm font-medium text-slate-800 leading-relaxed pr-6">
         {message}
       </div>
       <button
         onClick={onClose}
-        className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+        className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 transition-colors"
         aria-label="Close notification"
       >
         <X className="h-4 w-4" />

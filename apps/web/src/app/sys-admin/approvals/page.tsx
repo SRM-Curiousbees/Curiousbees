@@ -47,7 +47,7 @@ export default function AdminApprovalsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <ShieldCheck className="w-6 h-6 text-[#0C4DA2]" /> Institutional Supervision Governance
+            <ShieldCheck className="w-6 h-6 text-brand" /> Institutional Supervision Governance
           </h1>
           <p className="text-slate-500 text-sm mt-1">
             CuriousBees decentralized academic model & oversight
@@ -55,7 +55,7 @@ export default function AdminApprovalsPage() {
         </div>
         <button
           onClick={fetchStats}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:border-blue-300 hover:text-blue-600 transition-all cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2 bg-surface border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:border-blue-300 hover:text-blue-600 transition-all cursor-pointer"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
         </button>
@@ -64,7 +64,7 @@ export default function AdminApprovalsPage() {
       {/* Model Governance Architecture Banner */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 space-y-4">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#0C4DA2] text-white flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-xl bg-brand text-white flex items-center justify-center shrink-0">
             <Building2 className="w-5 h-5" />
           </div>
           <div>
@@ -76,8 +76,8 @@ export default function AdminApprovalsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2">
-          <div className="bg-white p-4 rounded-xl border border-blue-200/60 shadow-xs space-y-2">
-            <div className="flex items-center gap-2 text-[#0C4DA2] font-bold text-xs uppercase tracking-wider">
+          <div className="bg-surface p-4 rounded-xl border border-blue-200/60 shadow-xs space-y-2">
+            <div className="flex items-center gap-2 text-brand font-medium text-xs capitalize">
               <UserCheck className="w-4 h-4" />
               <span>Research Supervisors</span>
             </div>
@@ -86,8 +86,8 @@ export default function AdminApprovalsPage() {
             </p>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-blue-200/60 shadow-xs space-y-2">
-            <div className="flex items-center gap-2 text-indigo-700 font-bold text-xs uppercase tracking-wider">
+          <div className="bg-surface p-4 rounded-xl border border-blue-200/60 shadow-xs space-y-2">
+            <div className="flex items-center gap-2 text-indigo-700 font-medium text-xs capitalize">
               <BookOpen className="w-4 h-4" />
               <span>Research Scholars</span>
             </div>
@@ -96,8 +96,8 @@ export default function AdminApprovalsPage() {
             </p>
           </div>
 
-          <div className="bg-white p-4 rounded-xl border border-blue-200/60 shadow-xs space-y-2">
-            <div className="flex items-center gap-2 text-slate-700 font-bold text-xs uppercase tracking-wider">
+          <div className="bg-surface p-4 rounded-xl border border-blue-200/60 shadow-xs space-y-2">
+            <div className="flex items-center gap-2 text-slate-700 font-medium text-xs capitalize">
               <ShieldCheck className="w-4 h-4" />
               <span>Institute Admin</span>
             </div>
@@ -112,14 +112,14 @@ export default function AdminApprovalsPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Link 
           href="/sys-admin/users" 
-          className="bg-white border border-slate-200 hover:border-blue-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex items-center justify-between group cursor-pointer"
+          className="bg-surface border border-slate-200 hover:border-blue-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex items-center justify-between group cursor-pointer"
         >
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0C4DA2] flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-blue-50 text-brand flex items-center justify-center">
               <Users className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#0C4DA2] transition-colors">
+              <h3 className="text-sm font-bold text-slate-900 group-hover:text-brand transition-colors">
                 User & Role Management
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -127,19 +127,19 @@ export default function AdminApprovalsPage() {
               </p>
             </div>
           </div>
-          <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#0C4DA2]" />
+          <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-brand" />
         </Link>
 
         <Link 
           href="/sys-admin/audit" 
-          className="bg-white border border-slate-200 hover:border-blue-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex items-center justify-between group cursor-pointer"
+          className="bg-surface border border-slate-200 hover:border-blue-300 rounded-2xl p-5 shadow-xs hover:shadow-md transition-all flex items-center justify-between group cursor-pointer"
         >
           <div className="flex items-center gap-3.5">
             <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center">
               <FileCheck2 className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-slate-900 group-hover:text-[#0C4DA2] transition-colors">
+              <h3 className="text-sm font-bold text-slate-900 group-hover:text-brand transition-colors">
                 System Audit Logs
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -147,12 +147,12 @@ export default function AdminApprovalsPage() {
               </p>
             </div>
           </div>
-          <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-[#0C4DA2]" />
+          <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-brand" />
         </Link>
       </div>
 
       {/* Governance Confirmation Card */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 flex items-center gap-4">
+      <div className="bg-surface border border-slate-200 rounded-2xl p-6 flex items-center gap-4">
         <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
           <CheckCircle2 className="w-5 h-5" />
         </div>

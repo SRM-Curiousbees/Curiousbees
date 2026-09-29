@@ -1,118 +1,192 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import {
+  S3Client,
+  S3ClientConfig,
+  PutObjectCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { randomUUID } from 'crypto';
 
-const ALLOWED_MIME_TYPES = new Set([
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-powerpoint',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'application/zip',
-  'application/x-zip-compressed',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'text/plain',
-  'text/csv',
-]);
+/** Allowed upload types, mapped to the file extensions accepted for each. */
+export const ALLOWED_UPLOAD_TYPES: Record<string, string[]> = {
+  'application/pdf': ['pdf'],
+  'application/msword': ['doc'],
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['docx'],
+  'application/vnd.ms-powerpoint': ['ppt'],
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['pptx'],
+  'application/vnd.ms-excel': ['xls'],
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['xlsx'],
+  'application/zip': ['zip'],
+  'application/x-zip-compressed': ['zip'],
+  'image/jpeg': ['jpg', 'jpeg'],
+  'image/png': ['png'],
+  'image/webp': ['webp'],
+  'text/plain': ['txt'],
+  'text/csv': ['csv'],
+};
 
-const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB
 
+const UPLOAD_URL_TTL_SECONDS = 300;
+const DOWNLOAD_URL_TTL_SECONDS = 300;
+
+// Keys are always built server-side from ids we control; anything else is rejected.
+const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+const SAFE_KEY = /^[A-Za-z0-9/_.-]{1,512}$/;
+
+export interface PresignedUpload {
+  uploadUrl: string;
+  storageKey: string;
+  expiresIn: number;
+  /** Headers the browser must send unchanged with the PUT (they are signed). */
+  requiredHeaders: Record<string, string>;
+}
+
+/**
+ * Private-bucket object storage. The browser uploads and downloads directly
+ * against S3 with short-lived presigned URLs; this service never proxies file
+ * bytes. It knows nothing about who may access what — callers (e.g.
+ * WorkspacesService) must authorize against the owning database record first.
+ *
+ * Credentials come from the default AWS provider chain: the ECS task role in
+ * production, the developer's AWS profile locally. No static keys.
+ */
 @Injectable()
 export class FilesService {
   private readonly logger = new Logger(FilesService.name);
   private readonly s3Client: S3Client;
   private readonly bucketName: string;
-  private readonly region: string;
 
   constructor() {
-    this.region = process.env.AWS_REGION || 'ap-south-1';
-    this.bucketName = process.env.AWS_S3_BUCKET || 'curiousbees-research-files';
+    this.bucketName = process.env.AWS_S3_BUCKET || '';
 
-    const clientConfig: any = {
-      region: this.region,
-    };
-
-    // If explicit static credentials are provided in env, use them;
-    // otherwise SDK automatically leverages IAM instance profile / ECS task role
-    if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
-      clientConfig.credentials = {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      };
+    const config: S3ClientConfig = { region: process.env.AWS_REGION || 'ap-south-1' };
+    // Local testing against an S3-compatible server (e.g. MinIO). Never used in production.
+    if (process.env.NODE_ENV !== 'production' && process.env.AWS_S3_ENDPOINT) {
+      config.endpoint = process.env.AWS_S3_ENDPOINT;
+      config.forcePathStyle = true;
     }
-
-    this.s3Client = new S3Client(clientConfig);
+    this.s3Client = new S3Client(config);
   }
 
-  async getPresignedUploadUrl(
-    userId: string,
-    filename: string,
-    contentType: string,
-    sizeBytes: number,
-    prefix: string = 'research-documents',
-  ) {
-    if (!filename || !contentType) {
-      throw new BadRequestException('Filename and contentType are required.');
-    }
-
-    if (!ALLOWED_MIME_TYPES.has(contentType.toLowerCase())) {
+  /** Validates type, extension and size, and returns a filename safe for object keys. */
+  validateUpload(filename: string, contentType: string, sizeBytes: number): string {
+    const type = (contentType || '').toLowerCase().trim();
+    const allowedExtensions = ALLOWED_UPLOAD_TYPES[type];
+    if (!allowedExtensions) {
       throw new BadRequestException(
-        `File type ${contentType} is not permitted. Allowed: PDF, Word, PowerPoint, Excel, ZIP, Images, Text.`
+        `File type ${contentType} is not permitted. Allowed: PDF, Word, PowerPoint, Excel, ZIP, JPEG/PNG/WebP images, text and CSV.`,
       );
     }
 
-    if (sizeBytes && sizeBytes > MAX_FILE_SIZE_BYTES) {
-      throw new BadRequestException(
-        `File size exceeds maximum permitted limit of ${MAX_FILE_SIZE_BYTES / (1024 * 1024)} MB.`
-      );
+    const baseName = (filename || '').split(/[\\/]/).pop() || '';
+    const extension = baseName.includes('.') ? baseName.split('.').pop()!.toLowerCase() : '';
+    if (!allowedExtensions.includes(extension)) {
+      throw new BadRequestException(`File extension ".${extension}" does not match content type ${type}.`);
     }
 
-    // Sanitize filename to prevent directory traversal or unsafe S3 characters
-    const sanitizedFilename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const objectKey = `${prefix}/${userId}/${Date.now()}-${sanitizedFilename}`;
+    if (!Number.isInteger(sizeBytes) || sizeBytes <= 0) {
+      throw new BadRequestException('sizeBytes must be a positive integer.');
+    }
+    if (sizeBytes > MAX_UPLOAD_BYTES) {
+      throw new BadRequestException(`File size exceeds the maximum of ${MAX_UPLOAD_BYTES / (1024 * 1024)} MB.`);
+    }
 
+    const safeName = baseName
+      .normalize('NFKD')
+      .replace(/[^A-Za-z0-9._-]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^[._]+/, '')
+      .slice(-120);
+    return safeName || `file.${extension}`;
+  }
+
+  /** Builds `<scope>/<scopeId>/<userId>/<uuid>/<name>`, so keys can't collide or be chosen by clients. */
+  buildObjectKey(scope: 'workspaces', scopeId: string, userId: string, safeName: string): string {
+    if (!SAFE_ID.test(scopeId) || !SAFE_ID.test(userId)) {
+      throw new BadRequestException('Invalid identifier for object key.');
+    }
+    return `${scope}/${scopeId}/${userId}/${randomUUID()}/${safeName}`;
+  }
+
+  isWellFormedKey(key: string): boolean {
+    return SAFE_KEY.test(key) && !key.split('/').some((part) => part === '' || part === '.' || part === '..');
+  }
+
+  async createPresignedUpload(storageKey: string, contentType: string, sizeBytes: number): Promise<PresignedUpload> {
+    this.assertConfigured();
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
-      Key: objectKey,
+      Key: storageKey,
       ContentType: contentType,
-      ServerSideEncryption: 'AES256',
-      Metadata: {
-        'uploaded-by': userId,
-        'original-filename': encodeURIComponent(filename),
-      },
+      // Signed: S3 rejects the PUT unless the body is exactly this many bytes.
+      ContentLength: sizeBytes,
     });
-
-    const expiresInSeconds = 900; // 15 minutes
     const uploadUrl = await getSignedUrl(this.s3Client, command, {
-      expiresIn: expiresInSeconds,
+      expiresIn: UPLOAD_URL_TTL_SECONDS,
+      signableHeaders: new Set(['content-type', 'content-length']),
     });
-
-    const fileUrl = `https://${this.bucketName}.s3.${this.region}.amazonaws.com/${objectKey}`;
-
     return {
       uploadUrl,
-      objectKey,
-      fileUrl,
-      bucket: this.bucketName,
-      region: this.region,
-      expiresIn: expiresInSeconds,
+      storageKey,
+      expiresIn: UPLOAD_URL_TTL_SECONDS,
+      requiredHeaders: { 'Content-Type': contentType },
     };
   }
 
-  async getPresignedDownloadUrl(objectKey: string): Promise<string> {
-    if (!objectKey) {
-      throw new BadRequestException('Object key is required.');
+  /** Confirms an uploaded object exists and re-checks its real size and type. Deletes it if invalid. */
+  async verifyUploadedObject(storageKey: string): Promise<{ size: number; contentType: string }> {
+    this.assertConfigured();
+    let head;
+    try {
+      head = await this.s3Client.send(new HeadObjectCommand({ Bucket: this.bucketName, Key: storageKey }));
+    } catch (e: any) {
+      if (e?.$metadata?.httpStatusCode === 404 || e?.name === 'NotFound') {
+        throw new BadRequestException('Uploaded file was not found in storage. Please upload it again.');
+      }
+      throw e;
     }
 
+    const size = Number(head.ContentLength || 0);
+    const contentType = (head.ContentType || '').toLowerCase();
+    if (size <= 0 || size > MAX_UPLOAD_BYTES || !ALLOWED_UPLOAD_TYPES[contentType]) {
+      await this.deleteObject(storageKey);
+      throw new BadRequestException('Uploaded file failed validation and was removed.');
+    }
+    return { size, contentType };
+  }
+
+  async createPresignedDownload(storageKey: string, downloadName: string): Promise<{ downloadUrl: string; expiresIn: number }> {
+    this.assertConfigured();
+    const asciiName = downloadName.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_');
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
-      Key: objectKey,
+      Key: storageKey,
+      ResponseContentDisposition: `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`,
     });
+    const downloadUrl = await getSignedUrl(this.s3Client, command, { expiresIn: DOWNLOAD_URL_TTL_SECONDS });
+    return { downloadUrl, expiresIn: DOWNLOAD_URL_TTL_SECONDS };
+  }
 
-    return getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+  async deleteObject(storageKey: string): Promise<void> {
+    try {
+      await this.s3Client.send(new DeleteObjectCommand({ Bucket: this.bucketName, Key: storageKey }));
+    } catch (e: any) {
+      this.logger.error(`Failed to delete object ${storageKey}: ${e.message}`);
+    }
+  }
+
+  private assertConfigured() {
+    if (!this.bucketName) {
+      throw new ServiceUnavailableException('File storage is not configured.');
+    }
   }
 }

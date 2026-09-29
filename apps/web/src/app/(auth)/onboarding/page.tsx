@@ -386,7 +386,7 @@ export default function OnboardingPage() {
 
   const researchAreaSelectionBlock = (
     <div className="space-y-3 text-left">
-      <label className="block text-[11px] font-extrabold text-blue-950/70 uppercase tracking-wider">
+      <label className="block text-xs font-medium text-blue-950/70 capitalize">
         Research Area / Domain (Select Multiple)
       </label>
       <div className="relative group">
@@ -398,18 +398,18 @@ export default function OnboardingPage() {
           placeholder="Search research areas..."
           value={domainSearch}
           onChange={(e) => setDomainSearch(e.target.value)}
-          className="w-full cb-input py-2.5 pl-10 pr-4 text-xs border border-blue-200/60 rounded-xl focus:ring-4 focus:ring-yellow-400/20 focus:border-yellow-400/50 bg-white/50 font-semibold text-blue-950 transition-all placeholder:text-blue-300 hover:border-blue-300"
+          className="w-full cb-input py-2.5 pl-10 pr-4 text-xs border border-blue-200/60 rounded-xl focus:ring-4 focus:ring-yellow-400/20 focus:border-yellow-400/50 bg-surface/50 font-semibold text-blue-950 transition-all placeholder:text-blue-300 hover:border-blue-300"
         />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[200px] overflow-y-auto p-2.5 border border-blue-100 rounded-xl bg-blue-50/30 shadow-inner custom-scrollbar">
         {filteredDomains.length > 0 ? (
           filteredDomains.map(domain => (
-            <label key={domain} className="flex items-start gap-2.5 cursor-pointer p-2 hover:bg-white rounded-lg transition-all duration-200 hover:shadow-sm text-xs font-bold text-blue-900/80 hover:text-blue-950 group">
+            <label key={domain} className="flex items-start gap-2.5 cursor-pointer p-2 hover:bg-surface rounded-lg transition-all duration-200 hover:shadow-sm text-xs font-bold text-blue-900/80 hover:text-blue-950 group">
               <input 
                 type="checkbox" 
                 checked={selectedDomains.includes(domain)} 
                 onChange={() => toggleDomain(domain)}
-                className="mt-0.5 w-3.5 h-3.5 rounded-sm border-blue-300 text-blue-600 focus:ring-yellow-400/40 focus:ring-offset-0 bg-white transition-all cursor-pointer"
+                className="mt-0.5 w-3.5 h-3.5 rounded-sm border-blue-300 text-blue-600 focus:ring-yellow-400/40 focus:ring-offset-0 bg-surface transition-all cursor-pointer"
               />
               <span className="leading-tight pt-[1px]">{domain}</span>
             </label>
@@ -424,7 +424,7 @@ export default function OnboardingPage() {
   );
 
   return (
-    <div className="bg-gradient-to-br from-blue-950 via-blue-900 to-slate-900 min-h-screen flex items-start justify-center p-6 pt-12 pb-12 relative overflow-y-auto font-sans w-full">
+    <div className="theme-static bg-gradient-to-br from-blue-950 via-blue-900 to-slate-900 min-h-screen flex items-start justify-center p-6 pt-12 pb-12 relative overflow-y-auto font-sans w-full">
       {/* Decorative background grid pattern */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
@@ -444,15 +444,15 @@ export default function OnboardingPage() {
 
       {/* Centered Glass Container Card */}
       <main className="w-full max-w-lg relative z-10">
-        <div className="bg-white/95 backdrop-blur-2xl border border-white/20 rounded-2xl p-8 shadow-[0_0_80px_rgba(250,204,21,0.15)] flex flex-col items-center text-center space-y-5">
+        <div className="bg-surface/95 backdrop-blur-2xl border border-white/20 rounded-2xl p-8 shadow-sm flex flex-col items-center text-center space-y-5">
           
           {/* Logo container box */}
-          <div className="w-14 h-14 rounded-2xl overflow-hidden border border-blue-100 shadow-md bg-white flex items-center justify-center">
+          <div className="w-14 h-14 rounded-2xl overflow-hidden border border-blue-100 shadow-md bg-surface flex items-center justify-center">
             <Logo showText={false} size={38} />
           </div>
 
           <div className="space-y-2">
-            <h1 className="font-display font-extrabold text-2xl text-blue-950 tracking-tight leading-tight">
+            <h1 className="font-display font-semibold text-2xl text-blue-950 tracking-tight leading-tight">
               {role === 'SUPERVISOR' && currentUser?.name ? (
                 `Welcome, ${/^(Dr\.|Prof\.|Mr\.|Mrs\.|Ms\.)/i.test(currentUser.name.trim()) ? currentUser.name.trim() : `Dr. ${currentUser.name.trim()}`}`
               ) : (
@@ -474,14 +474,14 @@ export default function OnboardingPage() {
               className="flex items-center gap-2 group cursor-pointer"
             >
               <span className={cn(
-                "w-7 h-7 rounded-full flex items-center justify-center text-xs font-extrabold transition-all duration-300",
-                currentStep === 1 ? "bg-yellow-400 text-blue-950 shadow-md scale-105" : "bg-blue-600 text-white"
+                "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300",
+                currentStep === 1 ? "theme-static bg-yellow-400 text-blue-950 shadow-md scale-105" : "bg-brand text-white"
               )}>
                 {selectedDomains.length > 0 && currentStep === 2 ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : "1"}
               </span>
               <span className={cn(
                 "text-xs font-bold transition-colors",
-                currentStep === 1 ? "text-blue-950 font-extrabold" : "text-blue-900/60 group-hover:text-blue-950"
+                currentStep === 1 ? "text-blue-950 font-semibold" : "text-blue-900/60 group-hover:text-blue-950"
               )}>
                 Research Areas
               </span>
@@ -501,14 +501,14 @@ export default function OnboardingPage() {
               className="flex items-center gap-2 group disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
             >
               <span className={cn(
-                "w-7 h-7 rounded-full flex items-center justify-center text-xs font-extrabold transition-all duration-300",
-                currentStep === 2 ? "bg-yellow-400 text-blue-950 shadow-md scale-105" : "bg-blue-100 text-blue-900/40"
+                "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300",
+                currentStep === 2 ? "theme-static bg-yellow-400 text-blue-950 shadow-md scale-105" : "bg-blue-100 text-blue-900/40"
               )}>
                 2
               </span>
               <span className={cn(
                 "text-xs font-bold transition-colors",
-                currentStep === 2 ? "text-blue-950 font-extrabold" : "text-blue-900/60 group-hover:text-blue-950"
+                currentStep === 2 ? "text-blue-950 font-semibold" : "text-blue-900/60 group-hover:text-blue-950"
               )}>
                 Profile & Faculty
               </span>
@@ -519,11 +519,11 @@ export default function OnboardingPage() {
           {currentStep === 1 ? (
             <div className="w-full space-y-6">
               <div className="space-y-1.5 text-center">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-400/15 border border-yellow-400/30 text-yellow-600 text-[10px] font-extrabold uppercase tracking-widest mb-1">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-yellow-400/15 border border-yellow-400/30 text-yellow-600 text-xs font-medium capitalize mb-1">
                   <Sparkles className="w-3 h-3 text-yellow-500" />
                   <span>Step 1 of 2</span>
                 </div>
-                <h2 className="font-display font-extrabold text-xl text-blue-950 tracking-tight">
+                <h2 className="font-display font-semibold text-xl text-blue-950 tracking-tight">
                   Select Your Research Domains
                 </h2>
                 <p className="text-xs text-blue-900/60 font-semibold max-w-sm mx-auto">
@@ -534,12 +534,12 @@ export default function OnboardingPage() {
               {/* Search & Selection Controls */}
               <div className="space-y-3 text-left">
                 <div className="flex items-center justify-between">
-                  <label className="text-[11px] font-extrabold text-blue-950/70 uppercase tracking-wider">
+                  <label className="text-xs font-medium text-blue-950/70 capitalize">
                     Available Domains ({RESEARCH_DOMAINS.length})
                   </label>
                   <span className={cn(
-                    "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-sm transition-all",
-                    selectedDomains.length > 0 ? "bg-blue-600 text-white" : "bg-blue-100 text-blue-400"
+                    "text-2xs font-semibold px-2.5 py-0.5 rounded-full shadow-sm transition-all",
+                    selectedDomains.length > 0 ? "bg-brand text-white" : "bg-blue-100 text-blue-400"
                   )}>
                     {selectedDomains.length} Selected
                   </span>
@@ -554,7 +554,7 @@ export default function OnboardingPage() {
                     placeholder="Search 75+ research areas..."
                     value={domainSearch}
                     onChange={(e) => setDomainSearch(e.target.value)}
-                    className="w-full cb-input py-2.5 pl-10 pr-10 text-xs border border-blue-200/60 rounded-xl focus:ring-4 focus:ring-yellow-400/20 focus:border-yellow-400/50 bg-white/60 font-semibold text-blue-950 transition-all placeholder:text-blue-300 hover:border-blue-300"
+                    className="w-full cb-input py-2.5 pl-10 pr-10 text-xs border border-blue-200/60 rounded-xl focus:ring-4 focus:ring-yellow-400/20 focus:border-yellow-400/50 bg-surface/60 font-semibold text-blue-950 transition-all placeholder:text-blue-300 hover:border-blue-300"
                   />
                   {domainSearch && (
                     <button
@@ -571,27 +571,27 @@ export default function OnboardingPage() {
                 <div className="flex items-center gap-2 p-2 rounded-xl border transition-all h-10" style={{ minHeight: '40px' }}>
                   {selectedDomains.length > 0 ? (
                     <>
-                      <span className="text-[10px] font-extrabold text-blue-950/70 shrink-0">
+                      <span className="text-2xs font-semibold text-blue-950/70 shrink-0">
                         {selectedDomains.length} picked:
                       </span>
                       <div className="flex gap-1 flex-1 overflow-hidden">
                         {selectedDomains.slice(0, 3).map(d => (
-                          <span key={d} className="text-[9px] bg-blue-600 text-white font-bold px-1.5 py-0.5 rounded truncate max-w-[120px]">{d}</span>
+                          <span key={d} className="text-2xs bg-brand text-white font-bold px-1.5 py-0.5 rounded truncate max-w-[120px]">{d}</span>
                         ))}
                         {selectedDomains.length > 3 && (
-                          <span className="text-[9px] bg-blue-200 text-blue-950 font-bold px-1.5 py-0.5 rounded shrink-0">+{selectedDomains.length - 3}</span>
+                          <span className="text-2xs bg-blue-200 text-blue-950 font-bold px-1.5 py-0.5 rounded shrink-0">+{selectedDomains.length - 3}</span>
                         )}
                       </div>
                       <button
                         type="button"
                         onClick={() => setSelectedDomains([])}
-                        className="text-[9px] font-bold text-blue-500 hover:text-red-500 transition-colors cursor-pointer shrink-0"
+                        className="text-2xs font-bold text-blue-500 hover:text-red-500 transition-colors cursor-pointer shrink-0"
                       >
                         Clear
                       </button>
                     </>
                   ) : (
-                    <span className="text-[10px] font-semibold text-blue-300 mx-auto">Select domains from the list below</span>
+                    <span className="text-2xs font-semibold text-blue-300 mx-auto">Select domains from the list below</span>
                   )}
                 </div>
 
@@ -615,13 +615,13 @@ export default function OnboardingPage() {
                           className={cn(
                             "flex items-center gap-2 cursor-pointer px-2.5 py-2 rounded-lg transition-colors text-xs font-bold border select-none w-full text-left outline-none focus:ring-2 focus:ring-yellow-400/50",
                             isSelected
-                              ? "bg-blue-600 text-white border-blue-500 shadow-sm"
-                              : "bg-white/80 hover:bg-white text-blue-900/80 hover:text-blue-950 border-transparent hover:border-blue-200"
+                              ? "bg-brand text-white border-blue-500 shadow-sm"
+                              : "bg-surface/80 hover:bg-surface text-blue-900/80 hover:text-blue-950 border-transparent hover:border-blue-200"
                           )}
                         >
                           <div className={cn(
                             "w-3.5 h-3.5 rounded flex items-center justify-center border transition-colors shrink-0",
-                            isSelected ? "bg-yellow-400 border-yellow-400 text-blue-950" : "border-blue-300 bg-white"
+                            isSelected ? "theme-static bg-yellow-400 border-yellow-400 text-blue-950" : "border-blue-300 bg-surface"
                           )}>
                             {isSelected && <Check className="w-2.5 h-2.5 stroke-[3]" />}
                           </div>
@@ -641,7 +641,7 @@ export default function OnboardingPage() {
                 type="button"
                 disabled={selectedDomains.length === 0}
                 onClick={() => setCurrentStep(2)}
-                className="w-full py-3.5 flex items-center justify-center bg-yellow-400 hover:bg-yellow-500 text-blue-950 font-extrabold text-[13px] uppercase tracking-wide rounded-xl transition-all duration-300 disabled:opacity-40 disabled:hover:bg-yellow-400 cursor-pointer shadow-[0_4px_14px_0_rgba(250,204,21,0.39)] hover:shadow-[0_6px_20px_rgba(250,204,21,0.23)] hover:-translate-y-0.5 active:scale-[0.98]"
+                className="theme-static w-full py-3.5 flex items-center justify-center bg-yellow-400 hover:bg-yellow-500 text-blue-950 font-semibold text-sm uppercase tracking-wide rounded-xl transition-all duration-300 disabled:opacity-40 disabled:hover:bg-yellow-400 cursor-pointer shadow-xl hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98]"
               >
                 <span>Continue to Profile Setup</span>
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -654,17 +654,17 @@ export default function OnboardingPage() {
               {/* Selected Domains Summary Card with Edit Button */}
               <div className="p-3.5 bg-blue-50/70 border border-blue-100 rounded-xl flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-950/60 block mb-1">
+                  <span className="text-xs font-medium capitalize text-blue-950/60 block mb-1">
                     Selected Research Domains ({selectedDomains.length})
                   </span>
                   <div className="flex flex-wrap gap-1 max-h-12 overflow-hidden text-ellipsis">
                     {selectedDomains.slice(0, 3).map((d) => (
-                      <span key={d} className="text-[10px] bg-blue-600 text-white font-bold px-2 py-0.5 rounded">
+                      <span key={d} className="text-2xs bg-brand text-white font-bold px-2 py-0.5 rounded">
                         {d}
                       </span>
                     ))}
                     {selectedDomains.length > 3 && (
-                      <span className="text-[10px] bg-blue-200 text-blue-950 font-bold px-1.5 py-0.5 rounded">
+                      <span className="text-2xs bg-blue-200 text-blue-950 font-bold px-1.5 py-0.5 rounded">
                         +{selectedDomains.length - 3} more
                       </span>
                     )}
@@ -673,7 +673,7 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={() => setCurrentStep(1)}
-                  className="px-3 py-1.5 text-xs font-extrabold text-blue-700 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all shrink-0 cursor-pointer shadow-sm"
+                  className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-surface border border-blue-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all shrink-0 cursor-pointer shadow-sm"
                 >
                   Edit
                 </button>
@@ -687,18 +687,18 @@ export default function OnboardingPage() {
                   {role === 'SUPERVISOR' && (currentUser?.faculty || currentUser?.department) ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50/50 border border-blue-100 rounded-xl">
                       <div className="text-left">
-                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-400 block mb-1">Faculty</span>
-                        <span className="text-xs font-extrabold text-blue-950">{currentUser.faculty || 'School of Computing'}</span>
+                        <span className="text-xs font-medium capitalize text-blue-400 block mb-1">Faculty</span>
+                        <span className="text-xs font-semibold text-blue-950">{currentUser.faculty || 'School of Computing'}</span>
                       </div>
                       <div className="text-left">
-                        <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-400 block mb-1">Department</span>
-                        <span className="text-xs font-extrabold text-blue-950">{currentUser.department || 'Computer Applications'}</span>
+                        <span className="text-xs font-medium capitalize text-blue-400 block mb-1">Department</span>
+                        <span className="text-xs font-semibold text-blue-950">{currentUser.department || 'Computer Applications'}</span>
                       </div>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-1.5 text-left">
-                        <label className="block text-[11px] font-extrabold text-blue-950/70 uppercase tracking-wider" htmlFor="faculty-select">
+                        <label className="block text-xs font-medium text-blue-950/70 capitalize" htmlFor="faculty-select">
                           Faculty
                         </label>
                         <div className="relative group">
@@ -706,7 +706,7 @@ export default function OnboardingPage() {
                             id="faculty-select"
                             value={selectedFacultyId}
                             onChange={(e) => setSelectedFacultyId(e.target.value)}
-                            className="w-full cb-input py-2.5 pl-4 pr-10 text-xs border border-blue-200/60 rounded-xl bg-white/50 font-bold text-blue-950 focus:ring-4 focus:ring-yellow-400/20 focus:border-yellow-400/50 appearance-none transition-all hover:border-blue-300"
+                            className="w-full cb-input py-2.5 pl-4 pr-10 text-xs border border-blue-200/60 rounded-xl bg-surface/50 font-bold text-blue-950 focus:ring-4 focus:ring-yellow-400/20 focus:border-yellow-400/50 appearance-none transition-all hover:border-blue-300"
                           >
                             <option value="">Select Faculty...</option>
                             {faculties.map((f) => (
@@ -726,7 +726,7 @@ export default function OnboardingPage() {
                       </div>
 
                       <div className="space-y-1.5 text-left">
-                        <label className="block text-[11px] font-extrabold text-blue-950/70 uppercase tracking-wider" htmlFor="department-select">
+                        <label className="block text-xs font-medium text-blue-950/70 capitalize" htmlFor="department-select">
                           Department
                         </label>
                         <div className="relative group">
@@ -735,7 +735,7 @@ export default function OnboardingPage() {
                             value={selectedDepartmentId}
                             onChange={(e) => setSelectedDepartmentId(e.target.value)}
                             disabled={!selectedFacultyId}
-                            className="w-full cb-input py-2.5 pl-4 pr-10 text-xs border border-blue-200/60 rounded-xl bg-white/50 font-bold text-blue-950 focus:ring-4 focus:ring-yellow-400/20 focus:border-yellow-400/50 appearance-none disabled:bg-slate-50/50 disabled:text-slate-400 disabled:border-slate-200 transition-all hover:border-blue-300"
+                            className="w-full cb-input py-2.5 pl-4 pr-10 text-xs border border-blue-200/60 rounded-xl bg-surface/50 font-bold text-blue-950 focus:ring-4 focus:ring-yellow-400/20 focus:border-yellow-400/50 appearance-none disabled:bg-slate-50/50 disabled:text-slate-400 disabled:border-slate-200 transition-all hover:border-blue-300"
                           >
                             <option value="">Select Department...</option>
                             {departments.map((d) => (
@@ -760,7 +760,7 @@ export default function OnboardingPage() {
                   {role === 'SCHOLAR' && (
                     <div className="space-y-4 pt-2">
                       <div className="space-y-2 text-left">
-                        <label className="block text-[11px] font-extrabold text-blue-950/70 uppercase tracking-wider">
+                        <label className="block text-xs font-medium text-blue-950/70 capitalize">
                           Select Research Supervisor
                         </label>
                         {(!selectedFacultyId || !selectedDepartmentId) ? (
@@ -769,7 +769,7 @@ export default function OnboardingPage() {
                             <p className="text-xs text-blue-900/60 font-bold max-w-xs">Select your Faculty and Department above to view available supervisors.</p>
                           </div>
                         ) : (
-                          <div className="border border-blue-100 rounded-xl max-h-[160px] overflow-y-auto bg-white/50 p-1.5 shadow-inner custom-scrollbar space-y-1">
+                          <div className="border border-blue-100 rounded-xl max-h-[160px] overflow-y-auto bg-surface/50 p-1.5 shadow-inner custom-scrollbar space-y-1">
                             {loadingSupervisors ? (
                               <div className="p-6 text-center text-xs text-blue-900/60 font-bold flex flex-col items-center gap-2">
                                 <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
@@ -787,17 +787,17 @@ export default function OnboardingPage() {
                                       atCapacity 
                                         ? "opacity-50 cursor-not-allowed bg-slate-50 text-slate-400 border border-transparent"
                                         : selectedSupervisorId === sup.id 
-                                          ? 'bg-blue-600 text-white shadow-md transform scale-[1.01] border border-blue-500' 
-                                          : 'hover:bg-white text-blue-950 cursor-pointer border border-transparent hover:border-blue-100 hover:shadow-sm'
+                                          ? 'bg-brand text-white shadow-md transform scale-[1.01] border border-blue-500' 
+                                          : 'hover:bg-surface text-blue-950 cursor-pointer border border-transparent hover:border-blue-100 hover:shadow-sm'
                                     )}
                                   >
                                     <div className="min-w-0">
-                                      <h4 className="font-extrabold flex items-center gap-2">
+                                      <h4 className="font-semibold flex items-center gap-2">
                                         <span>{sup.name}</span>
                                         <span className={cn(
-                                          "text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider border",
+                                          "text-xs px-2 py-0.5 rounded-full capitalize border",
                                           selectedSupervisorId === sup.id 
-                                            ? "bg-blue-500/50 text-white border-blue-400/30"
+                                            ? "bg-brand/50 text-white border-blue-400/30"
                                             : atCapacity 
                                               ? "bg-red-50 text-red-600 border-red-200" 
                                               : "bg-blue-50 text-blue-600 border-blue-200"
@@ -806,7 +806,7 @@ export default function OnboardingPage() {
                                         </span>
                                       </h4>
                                       <span className={cn(
-                                        "text-[10px] font-bold block mt-1.5",
+                                        "text-2xs font-bold block mt-1.5",
                                         selectedSupervisorId === sup.id ? 'text-blue-100' : 'text-blue-900/50'
                                       )}>
                                         Capacity: {sup.currentScholars} / {sup.maxScholars} scholars mapped
@@ -817,7 +817,7 @@ export default function OnboardingPage() {
                                         <UserCheck className="w-5 h-5 text-yellow-400 ml-2" />
                                       )}
                                       {atCapacity && (
-                                        <span className="text-[9px] bg-red-100 text-red-700 font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-full border border-red-200">
+                                        <span className="text-xs bg-red-100 text-red-700 font-medium capitalize px-2.5 py-1 rounded-full border border-red-200">
                                           Full Capacity
                                         </span>
                                       )}
@@ -850,7 +850,7 @@ export default function OnboardingPage() {
                 <button
                   type="button"
                   onClick={() => setCurrentStep(1)}
-                  className="py-3.5 px-4 bg-white hover:bg-blue-50 border border-blue-200 text-blue-950 font-extrabold text-xs rounded-xl transition-all shadow-sm cursor-pointer"
+                  className="py-3.5 px-4 bg-surface hover:bg-blue-50 border border-blue-200 text-blue-950 font-semibold text-xs rounded-xl transition-all shadow-sm cursor-pointer"
                 >
                   ← Back
                 </button>
@@ -861,7 +861,7 @@ export default function OnboardingPage() {
                     (role === 'SUPERVISOR' && selectedDomains.length === 0) ||
                     (role === 'SCHOLAR' && (!selectedFacultyId || !selectedDepartmentId || selectedDomains.length === 0))
                   }
-                  className="flex-1 py-3.5 flex items-center justify-center bg-yellow-400 hover:bg-yellow-500 text-blue-950 font-extrabold text-[13px] uppercase tracking-wide rounded-xl transition-all duration-300 disabled:opacity-40 disabled:hover:bg-yellow-400 cursor-pointer shadow-[0_4px_14px_0_rgba(250,204,21,0.39)] hover:shadow-[0_6px_20px_rgba(250,204,21,0.23)] hover:-translate-y-0.5 active:scale-[0.98]"
+                  className="theme-static flex-1 py-3.5 flex items-center justify-center bg-yellow-400 hover:bg-yellow-500 text-blue-950 font-semibold text-sm uppercase tracking-wide rounded-xl transition-all duration-300 disabled:opacity-40 disabled:hover:bg-yellow-400 cursor-pointer shadow-xl hover:shadow-xl hover:-translate-y-0.5 active:scale-[0.98]"
                 >
                   {isSubmitting ? (
                     <>
@@ -879,7 +879,7 @@ export default function OnboardingPage() {
           {/* Intranet notice */}
           <div className="pt-6 border-t border-blue-100/50 flex items-center justify-center gap-2 text-blue-900/30 select-none">
             <Shield className="w-4 h-4 shrink-0" />
-            <p className="text-[10px] font-extrabold uppercase tracking-widest">
+            <p className="text-xs font-medium capitalize">
               SRMIST Institutional Security Standard
             </p>
           </div>

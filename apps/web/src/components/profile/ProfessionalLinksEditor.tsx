@@ -74,13 +74,13 @@ export function ProfessionalLinksEditor({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl border border-[#E4E9F2] shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+      <div className="bg-surface rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
           <div className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-[#0C4DA2]" />
-            <h3 className="text-base font-extrabold text-[#17233D]">Edit Professional & Research Links</h3>
+            <Globe className="w-5 h-5 text-brand" />
+            <h3 className="text-base font-semibold text-slate-900">Edit Professional & Research Links</h3>
           </div>
           <button
             onClick={onClose}
@@ -100,7 +100,7 @@ export function ProfessionalLinksEditor({
 
           {/* Form to add a new link */}
           <form onSubmit={handleAdd} className="space-y-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <h4 className="text-xs font-extrabold uppercase tracking-wider text-[#0C4DA2]">Add / Update External Link</h4>
+            <h4 className="text-xs font-medium capitalize text-brand">Add / Update External Link</h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -108,7 +108,7 @@ export function ProfessionalLinksEditor({
                 <select
                   value={platform}
                   onChange={(e) => setPlatform(e.target.value)}
-                  className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
+                  className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
                 >
                   {PLATFORM_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -125,7 +125,7 @@ export function ProfessionalLinksEditor({
                   placeholder="e.g. ORCID Profile"
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
-                  className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
+                  className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
                 />
               </div>
             </div>
@@ -138,14 +138,14 @@ export function ProfessionalLinksEditor({
                 placeholder="https://orcid.org/0000-0002-1825-0097"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]"
+                className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
               />
             </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full py-2.5 bg-[#0C4DA2] hover:bg-[#042654] text-white font-extrabold text-xs rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+              className="w-full py-2.5 bg-brand hover:bg-brand-strong text-white font-semibold text-xs rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
@@ -163,7 +163,7 @@ export function ProfessionalLinksEditor({
 
           {/* Configured Links List */}
           <div className="space-y-3">
-            <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Configured Links ({links.length})</h4>
+            <h4 className="text-xs font-medium capitalize text-slate-500">Configured Links ({links.length})</h4>
 
             {links.length === 0 ? (
               <p className="text-xs font-medium text-slate-400 italic">No external links saved yet.</p>
@@ -172,10 +172,10 @@ export function ProfessionalLinksEditor({
                 {links.map((link) => (
                   <div
                     key={link.id}
-                    className="p-3 rounded-xl border border-slate-200 bg-white flex items-center justify-between gap-3 shadow-2xs"
+                    className="p-3 rounded-xl border border-slate-200 bg-surface flex items-center justify-between gap-3 shadow-2xs"
                   >
                     <div className="min-w-0">
-                      <span className="text-xs font-extrabold text-[#0C4DA2] block">{link.platform}</span>
+                      <span className="text-xs font-semibold text-brand block">{link.platform}</span>
                       <a
                         href={link.url}
                         target="_blank"
@@ -204,7 +204,7 @@ export function ProfessionalLinksEditor({
         <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end">
           <button
             onClick={onClose}
-            className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-extrabold rounded-xl transition-colors cursor-pointer"
+            className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
           >
             Done
           </button>

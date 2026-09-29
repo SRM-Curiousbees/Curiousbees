@@ -13,6 +13,19 @@ export async function getSupabaseToken(): Promise<string | null> {
     if (error || !session) {
       return null;
     }
+
+    // Proactively refresh if the access token has expired or is expiring in the next 30s
+    if (session.expires_at && session.expires_at * 1000 <= Date.now() + 30000) {
+      console.info('[APIClient] Supabase access token expired or expiring soon. Refreshing session...');
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !refreshData.session) {
+        console.warn('[APIClient] Session refresh failed, clearing stale session:', refreshError?.message);
+        await supabase.auth.signOut().catch(() => {});
+        return null;
+      }
+      return refreshData.session.access_token;
+    }
+
     return session.access_token;
   } catch (err) {
     console.warn('[APIClient] Failed to retrieve session from Supabase:', err);

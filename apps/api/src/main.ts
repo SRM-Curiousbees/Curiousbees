@@ -2,40 +2,25 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import * as fs from 'fs';
 
-// Resolve the root .env file dynamically and absolutely
+// Local development reads the monorepo root .env. Production containers get
+// their configuration only from the task definition (env + SSM secrets).
 const envCandidates = [
   path.resolve(__dirname, '../../.env'),
   path.resolve(__dirname, '../../../.env'),
   path.resolve(__dirname, '../../../../.env'),
   path.join(process.cwd(), '.env'),
 ];
-const envPath = envCandidates.find((candidate) => fs.existsSync(candidate));
+const envPath = process.env.NODE_ENV === 'production'
+  ? undefined
+  : envCandidates.find((candidate) => fs.existsSync(candidate));
 if (envPath) {
   dotenv.config({ path: envPath });
   console.log(`[CuriousBees] Loaded root environment from ${envPath}`);
-} else {
-  dotenv.config();
-  console.warn('[CuriousBees] No root .env file found.');
-}
-
-// Startup Validation Layer - Non-fatal warnings to avoid boot crashes on Railway
-const requiredEnvVars = ['DATABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
-const missingEnvVars = requiredEnvVars.filter((v) => !process.env[v]);
-if (missingEnvVars.length > 0) {
-  console.warn('\n================================================================');
-  console.warn('⚠️  WARNING: Missing Required Environment Variables');
-  console.warn('================================================================');
-  missingEnvVars.forEach((v) => {
-    console.warn(`  - ${v} is not set in the environment.`);
-  });
-  console.warn('\nPlease configure these variables in your environment or .env file.');
-  console.warn('The application will attempt to run, but some services may fail.');
-  console.warn('================================================================\n');
 }
 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { RequestMethod, ValidationPipe, Logger } from '@nestjs/common';
+import { RequestMethod, ValidationPipe, Logger, INestApplication } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import * as express from 'express';
 import { IncomingMessage, ServerResponse } from 'http';
@@ -46,9 +31,34 @@ import * as compression from 'compression';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
+const isProduction = () => process.env.NODE_ENV === 'production';
+
+const parseCommaSeparated = (val?: string): string[] =>
+  (val || '').split(',').map((o) => o.trim().replace(/\/+$/, '')).filter(Boolean);
+
+const LOCAL_DEV_ORIGINS = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3001',
+];
+
+/**
+ * Browser origins allowed to call the API with credentials. Production uses
+ * only explicitly configured origins (FRONTEND_URL + ALLOWED_ORIGINS); the
+ * localhost origins exist for local development only.
+ */
+export function getAllowedOrigins(): string[] {
+  return Array.from(new Set([
+    ...parseCommaSeparated(process.env.FRONTEND_URL),
+    ...parseCommaSeparated(process.env.ALLOWED_ORIGINS),
+    ...(isProduction() ? [] : LOCAL_DEV_ORIGINS),
+  ]));
+}
+
 // ─── Shared app bootstrap ────────────────────────────────────────────────────
 
-async function createApp(expressInstance?: express.Express) {
+export async function createApp(expressInstance?: express.Express) {
   const app = expressInstance
     ? await NestFactory.create(AppModule, new ExpressAdapter(expressInstance), {
         logger: WinstonModule.createLogger(winstonOptions),
@@ -56,6 +66,22 @@ async function createApp(expressInstance?: express.Express) {
     : await NestFactory.create(AppModule, {
         logger: WinstonModule.createLogger(winstonOptions),
       });
+  configureApp(app);
+  return app;
+}
+
+/**
+ * Applies the HTTP pipeline (proxy trust, security headers, prefix, validation,
+ * error filter, CORS). Shared by the server bootstrap and integration tests so
+ * tests exercise exactly the production configuration.
+ */
+export function configureApp(app: INestApplication) {
+  // Behind CloudFront -> ALB, the socket peer is the ALB and X-Forwarded-For is
+  // "<client>, <cloudfront edge>". Trust exactly that many proxy hops so req.ip
+  // (used by rate limiting and logs) is the real client, while any
+  // X-Forwarded-For values injected by the client itself are ignored.
+  const trustProxyHops = Number(process.env.TRUST_PROXY_HOPS || 0);
+  app.getHttpAdapter().getInstance().set('trust proxy', trustProxyHops > 0 ? trustProxyHops : false);
 
   // Security headers
   app.use(
@@ -84,15 +110,17 @@ async function createApp(expressInstance?: express.Express) {
     ],
   });
 
-  // Swagger Documentation Setup
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('CuriousBees API')
-    .setDescription('The CuriousBees Academic Collaboration Platform API')
-    .setVersion('1.0.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+  // Swagger: always available locally; in production only when explicitly enabled.
+  if (!isProduction() || process.env.ENABLE_SWAGGER === 'true') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('CuriousBees API')
+      .setDescription('The CuriousBees Academic Collaboration Platform API')
+      .setVersion('1.0.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document);
+  }
 
   // Validation
   app.useGlobalPipes(
@@ -109,45 +137,20 @@ async function createApp(expressInstance?: express.Express) {
   // Graceful Shutdown Hooks
   app.enableShutdownHooks();
 
-  // CORS — supports local dev + all Vercel preview/production deployments
-  const parseCommaSeparated = (val?: string): string[] => {
-    if (!val) return [];
-    return val.split(',').map((o) => o.trim()).filter(Boolean);
-  };
-
-  const configuredOrigins = [
-    ...parseCommaSeparated(process.env.FRONTEND_URL),
-    ...parseCommaSeparated(process.env.WEB_URL),
-    ...parseCommaSeparated(process.env.ALLOWED_ORIGINS),
-  ];
-
-  const allowedOrigins = Array.from(new Set([
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://localhost:3001',
-    'http://127.0.0.1:3001',
-    'http://localhost:3002',
-    'http://127.0.0.1:3002',
-    'http://localhost:3003',
-    'http://127.0.0.1:3003',
-    'https://curiousbees.vercel.app',
-    ...configuredOrigins,
-  ]));
-
+  // CORS — explicit allow-list only (no wildcards, no preview-domain patterns).
+  const allowedOrigins = getAllowedOrigins();
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Same-origin and non-browser requests carry no Origin header.
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-        return callback(null, true);
-      }
-      return callback(new Error(`CORS blocked for origin: ${origin}`), false);
+      return callback(null, allowedOrigins.includes(origin));
     },
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Authorization, Content-Type, Accept',
+    allowedHeaders: 'Authorization, Content-Type, Accept, X-Request-Id',
+    exposedHeaders: 'X-Request-Id',
+    maxAge: 600,
   });
-
-  return app;
 }
 
 // ─── Local dev: start HTTP server ────────────────────────────────────────────
@@ -159,13 +162,14 @@ async function bootstrap() {
   logger.log(`NODE_ENV=${process.env.NODE_ENV}`);
   logger.log(`PORT=${process.env.PORT}`);
   logger.log(`Frontend URL=${process.env.FRONTEND_URL}`);
+  logger.log(`Trusted proxy hops=${process.env.TRUST_PROXY_HOPS || 0}`);
   logger.log('================================================================');
 
   const app = await createApp();
   const port = Number(process.env.PORT) || 4000;
 
   logger.log(`Attempting to listen on port ${port}...`);
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   logger.log(`🚀 NestJS Application successfully started. Listening on: http://0.0.0.0:${port}`);
 }
 
@@ -190,7 +194,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 // In Vercel, the file is imported and `handler` is used.
 // In local dev / production node process, bootstrap() is called directly.
 
-if (process.env.VERCEL !== '1') {
-  bootstrap();
+if (require.main === module && process.env.VERCEL !== '1') {
+  bootstrap().catch((err) => {
+    // Fail fast (e.g. invalid production configuration) so ECS replaces the task.
+    console.error('[CuriousBees] Fatal bootstrap error:', err?.message || err);
+    process.exit(1);
+  });
 }
 

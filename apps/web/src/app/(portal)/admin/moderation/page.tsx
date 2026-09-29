@@ -95,22 +95,22 @@ export default function ModerationPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto py-2 select-none">
       {/* Header */}
-      <div className="border-b border-slate-200/80 dark:border-white/[0.08] pb-4">
+      <div className="border-b border-slate-200/80 pb-4">
         <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-200">
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-rose-50 text-rose-700 border border-rose-200">
             Content Governance
           </span>
         </div>
-        <h1 className="text-2xl font-black text-slate-900 dark:text-[#F5F7FA] tracking-tight mt-1">
+        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
           Reports & Moderation Center
         </h1>
-        <p className="text-xs text-slate-500 dark:text-[#A7B3C5] font-semibold mt-0.5">
+        <p className="text-xs text-slate-500 font-semibold mt-0.5">
           Triage and resolve community violation reports with immutable administrative audit logging.
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 border-b border-slate-200/80 dark:border-white/[0.08] pb-1 overflow-x-auto">
+      <div className="flex items-center gap-1 border-b border-slate-200/80 pb-1 overflow-x-auto">
         {[
           { id: 'OPEN', label: 'Open Queue' },
           { id: 'UNDER_REVIEW', label: 'Under Review' },
@@ -125,10 +125,10 @@ export default function ModerationPage() {
               setPage(1);
             }}
             className={cn(
-              'px-3.5 py-2 rounded-xl text-xs font-black transition-all cursor-pointer whitespace-nowrap',
+              'px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap',
               activeTab === tab.id
-                ? 'bg-[#0C4DA2] text-white dark:bg-[#2563EB] shadow-2xs'
-                : 'text-slate-600 dark:text-[#A7B3C5] hover:bg-slate-100 dark:hover:bg-[#132238]'
+                ? 'bg-brand text-white shadow-2xs'
+                : 'text-slate-600 hover:bg-slate-100'
             )}
           >
             {tab.label}
@@ -137,25 +137,25 @@ export default function ModerationPage() {
       </div>
 
       {/* Reports Table */}
-      <div className="bg-white dark:bg-[#07111F] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl overflow-hidden shadow-2xs">
+      <div className="bg-surface border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs">
         {loading ? (
           <div className="py-20 flex flex-col items-center justify-center space-y-2 text-slate-400">
-            <Loader2 className="w-6 h-6 animate-spin text-[#0C4DA2]" />
+            <Loader2 className="w-6 h-6 animate-spin text-brand" />
             <p className="text-xs font-bold">Querying moderation queue...</p>
           </div>
         ) : reports.length === 0 ? (
           <div className="py-20 flex flex-col items-center justify-center text-center space-y-2">
-            <ShieldAlert className="w-10 h-10 text-slate-300 dark:text-slate-600" />
-            <h3 className="text-sm font-bold text-slate-800 dark:text-[#F5F7FA]">No reports in this queue</h3>
-            <p className="text-xs text-slate-400 dark:text-[#718096]">
+            <ShieldAlert className="w-10 h-10 text-slate-300" />
+            <h3 className="text-sm font-bold text-slate-800">No reports in this queue</h3>
+            <p className="text-xs text-slate-400">
               All policy reports for this status filter have been reviewed and addressed.
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-slate-200/80 dark:border-white/[0.08] bg-slate-50/70 dark:bg-[#0B1728] text-[11px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <tr className="border-b border-slate-200/80 bg-slate-50/70 text-xs font-medium capitalize text-slate-500">
                   <th className="py-3.5 px-4">Target Type</th>
                   <th className="py-3.5 px-4">Reason / Violation</th>
                   <th className="py-3.5 px-4">Reporter</th>
@@ -165,9 +165,9 @@ export default function ModerationPage() {
                   <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-white/[0.06] text-xs font-medium">
+              <tbody className="divide-y divide-slate-100 text-xs font-medium">
                 {reports.map((rep) => (
-                  <tr key={rep.id} className="hover:bg-slate-50/60 dark:hover:bg-[#0B1728] transition-colors">
+                  <tr key={rep.id} className="hover:bg-slate-50/60 transition-colors">
                     {/* Target Type */}
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
@@ -178,12 +178,12 @@ export default function ModerationPage() {
                         ) : (
                           <User className="w-4 h-4 text-purple-500" />
                         )}
-                        <span className="font-bold text-slate-900 dark:text-[#F5F7FA]">
+                        <span className="font-bold text-slate-900">
                           {rep.targetType}
                         </span>
                       </div>
                       {rep.targetPreview && (
-                        <p className="text-[11px] text-slate-500 truncate max-w-[200px] mt-0.5">
+                        <p className="text-2xs text-slate-500 truncate max-w-[200px] mt-0.5">
                           {rep.targetPreview.title || rep.targetPreview.name || rep.targetId}
                         </p>
                       )}
@@ -191,25 +191,25 @@ export default function ModerationPage() {
 
                     {/* Reason */}
                     <td className="py-3.5 px-4">
-                      <p className="font-bold text-slate-900 dark:text-[#F5F7FA]">{rep.reason}</p>
+                      <p className="font-bold text-slate-900">{rep.reason}</p>
                       {rep.description && (
-                        <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{rep.description}</p>
+                        <p className="text-2xs text-slate-500 line-clamp-1 mt-0.5">{rep.description}</p>
                       )}
                     </td>
 
                     {/* Reporter */}
                     <td className="py-3.5 px-4">
-                      <p className="font-bold text-slate-800 dark:text-[#F5F7FA]">
+                      <p className="font-bold text-slate-800">
                         {rep.reporter?.name || 'Anonymous'}
                       </p>
-                      <p className="text-[10px] text-slate-400">{rep.reporter?.email || '—'}</p>
+                      <p className="text-2xs text-slate-400">{rep.reporter?.email || '—'}</p>
                     </td>
 
                     {/* Severity */}
                     <td className="py-3.5 px-4">
                       <span
                         className={cn(
-                          'px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border',
+                          'px-2 py-0.5 rounded text-xs font-medium capitalize border',
                           rep.severity === 'CRITICAL'
                             ? 'bg-rose-50 text-rose-700 border-rose-200'
                             : rep.severity === 'HIGH'
@@ -225,7 +225,7 @@ export default function ModerationPage() {
                     <td className="py-3.5 px-4">
                       <span
                         className={cn(
-                          'px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border',
+                          'px-2 py-0.5 rounded-full text-xs font-medium capitalize border',
                           rep.status === 'OPEN'
                             ? 'bg-amber-50 text-amber-700 border-amber-200'
                             : rep.status === 'RESOLVED'
@@ -238,7 +238,7 @@ export default function ModerationPage() {
                     </td>
 
                     {/* Timestamp */}
-                    <td className="py-3.5 px-4 text-slate-400 text-[11px]">
+                    <td className="py-3.5 px-4 text-slate-400 text-2xs">
                       {new Date(rep.createdAt).toLocaleDateString()}
                     </td>
 
@@ -252,7 +252,7 @@ export default function ModerationPage() {
                               setModalAction('RESOLVE');
                               setActionNote('');
                             }}
-                            className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg text-2xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
                           >
                             Resolve
                           </button>
@@ -262,13 +262,13 @@ export default function ModerationPage() {
                               setModalAction('DISMISS');
                               setActionNote('');
                             }}
-                            className="px-2.5 py-1 rounded-lg text-[10px] font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg text-2xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
                           >
                             Dismiss
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[11px] text-slate-400 font-semibold italic">
+                        <span className="text-2xs text-slate-400 font-semibold italic">
                           {rep.resolutionNote ? `Note: ${rep.resolutionNote}` : 'Archived'}
                         </span>
                       )}
@@ -283,24 +283,24 @@ export default function ModerationPage() {
 
       {/* Resolution Modal */}
       {selectedReport && modalAction && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white dark:bg-[#07111F] border border-slate-200/80 dark:border-white/[0.08] rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
-            <div className="flex items-center gap-2.5 text-slate-900 dark:text-[#F5F7FA]">
-              <AlertTriangle className="w-5 h-5 text-[#0C4DA2] shrink-0" />
-              <h3 className="text-base font-black">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-surface border border-slate-200/80 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center gap-2.5 text-slate-900">
+              <AlertTriangle className="w-5 h-5 text-brand shrink-0" />
+              <h3 className="text-base font-semibold">
                 {modalAction === 'RESOLVE' ? 'Resolve Moderation Report' : 'Dismiss Moderation Report'}
               </h3>
             </div>
 
             <p className="text-xs text-slate-500 leading-relaxed">
-              Target: <strong className="text-slate-900 dark:text-[#F5F7FA]">{selectedReport.targetType} ({selectedReport.targetId})</strong>
+              Target: <strong className="text-slate-900">{selectedReport.targetType} ({selectedReport.targetId})</strong>
               <br />
               Reason: <em>"{selectedReport.reason}"</em>
             </p>
 
             <form onSubmit={handleActionSubmit} className="space-y-3">
               <div>
-                <label className="text-[11px] font-bold text-slate-600 dark:text-slate-300 block mb-1">
+                <label className="text-2xs font-bold text-slate-600 block mb-1">
                   {modalAction === 'RESOLVE' ? 'Resolution Note & Action Taken' : 'Dismissal Justification'}{' '}
                   <span className="text-rose-500">*</span>
                 </label>
@@ -310,7 +310,7 @@ export default function ModerationPage() {
                   placeholder="Record your administrative resolution note..."
                   value={actionNote}
                   onChange={(e) => setActionNote(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-[#0B1728] border border-slate-200 dark:border-white/[0.08] rounded-xl p-2.5 text-xs font-medium text-slate-800 dark:text-[#F5F7FA] focus:outline-none focus:ring-2 focus:ring-[#0C4DA2]/20"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand/20"
                 />
               </div>
 
@@ -321,14 +321,14 @@ export default function ModerationPage() {
                     setSelectedReport(null);
                     setModalAction(null);
                   }}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 transition-colors cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting || !actionNote.trim()}
-                  className="px-4 py-2 rounded-xl text-xs font-extrabold bg-[#0C4DA2] hover:bg-[#042654] text-white transition-all disabled:opacity-50 cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-brand hover:bg-brand-strong text-white transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {submitting ? 'Saving...' : 'Confirm Resolution'}
                 </button>

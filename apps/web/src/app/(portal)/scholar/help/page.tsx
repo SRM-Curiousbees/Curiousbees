@@ -39,16 +39,16 @@ export default function ScholarHelpPage() {
   return (
     <DashboardShell>
       {/* 🚀 Notion-style Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#001E4C] via-[#002868] to-[#004495] cb-honeycomb-dark border border-[#004495]/15 p-6 md:p-8 shadow-xl text-left">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-[#FEC727]/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute left-12 bottom-0 w-72 h-72 bg-[#004495]/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="theme-static relative overflow-hidden rounded-2xl bg-gradient-to-br from-brand-900 via-brand-900 to-brand-800 cb-honeycomb-dark border border-brand-800/15 p-6 md:p-8 shadow-xl text-left">
+        <div className="absolute right-0 top-0 w-96 h-96 bg-gold/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute left-12 bottom-0 w-72 h-72 bg-brand-800/20 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-3 flex-1 min-w-0">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FEC727]/25 text-[#FEC727] border border-[#FEC727]/30 text-[10px] font-bold uppercase tracking-wider">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-gold/25 text-gold border border-gold/30 text-xs font-medium capitalize">
               Help Center
             </span>
-            <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-white tracking-tight leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-display font-semibold text-white tracking-tight leading-tight">
               CuriousBees Support & Knowledge Base
             </h1>
             <p className="text-xs sm:text-sm text-white/80 font-medium max-w-xl leading-relaxed">
@@ -63,7 +63,7 @@ export default function ScholarHelpPage() {
         
         {/* Left Column: FAQ Accordion (Span 2) */}
         <div className="lg:col-span-2 space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2.5 mb-2">
+          <h3 className="text-xs font-medium capitalize text-slate-400 border-b border-slate-100 pb-2.5 mb-2">
             Frequently Asked Questions
           </h3>
 
@@ -73,7 +73,7 @@ export default function ScholarHelpPage() {
               return (
                 <div 
                   key={index}
-                  className="cb-card overflow-hidden bg-white hover:border-slate-350 transition-colors"
+                  className="cb-card overflow-hidden bg-surface hover:border-slate-350 transition-colors"
                 >
                   <button
                     onClick={() => setOpenIndex(isOpen ? null : index)}
@@ -106,21 +106,21 @@ export default function ScholarHelpPage() {
 
         {/* Right Column: Support Channels (Span 1) */}
         <div className="space-y-6">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 pb-2.5 mb-2">
+          <h3 className="text-xs font-medium capitalize text-slate-400 border-b border-slate-100 pb-2.5 mb-2">
             Direct Support Channels
           </h3>
 
-          <div className="cb-card p-5 bg-white space-y-4">
+          <div className="cb-card p-5 bg-surface space-y-4">
             <div className="flex gap-3 items-start">
               <div className="w-8 h-8 rounded-lg bg-primary/5 border border-primary/10 flex items-center justify-center text-primary shrink-0 mt-0.5">
                 <BookOpen className="w-4.5 h-4.5" />
               </div>
               <div className="space-y-1">
                 <h4 className="text-xs font-bold text-slate-900">Academic Guidelines & Forms</h4>
-                <p className="text-[11px] text-slate-500 font-medium leading-normal">
+                <p className="text-2xs text-slate-500 font-medium leading-normal">
                   Read official university research regulations, funding structures, and doctoral guidelines.
                 </p>
-                <a href="https://www.srmist.edu.in" target="_blank" rel="noreferrer" className="text-[10px] text-primary font-bold hover:underline block pt-1">
+                <a href="https://www.srmist.edu.in" target="_blank" rel="noreferrer" className="text-2xs text-primary font-bold hover:underline block pt-1">
                   View PDF Guidelines →
                 </a>
               </div>
@@ -129,17 +129,17 @@ export default function ScholarHelpPage() {
             <div className="w-full h-[1px] bg-slate-100" />
 
             <div className="flex gap-3 items-start">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/5 border border-amber-500/10 flex items-center justify-center text-[#775a00] shrink-0 mt-0.5">
-                <Shield className="w-4.5 h-4.5 text-[#775a00]" />
+              <div className="w-8 h-8 rounded-lg bg-amber-500/5 border border-amber-500/10 flex items-center justify-center text-amber-700 shrink-0 mt-0.5">
+                <Shield className="w-4.5 h-4.5 text-amber-700" />
               </div>
               <div className="space-y-1">
                 <h4 className="text-xs font-bold text-slate-900">Institutional Tech Support</h4>
-                <p className="text-[11px] text-slate-500 font-medium leading-normal">
+                <p className="text-2xs text-slate-500 font-medium leading-normal">
                   Experiencing system login errors, Google authentication timeouts, or API route issues? Contact IT administrator.
                 </p>
                 <button 
                   onClick={() => alert('Support ticket logged. Institutional IT will respond via email.')}
-                  className="text-[10px] text-primary font-bold hover:underline block pt-1 cursor-pointer"
+                  className="text-2xs text-primary font-bold hover:underline block pt-1 cursor-pointer"
                 >
                   Create Support Ticket →
                 </button>

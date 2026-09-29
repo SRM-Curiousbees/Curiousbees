@@ -1,7 +1,9 @@
 import { Controller, Get, Post, Put, Body, UseGuards, Req, Param, BadRequestException } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
 import { ApprovedGuard } from '../auth/approved.guard';
 import { WorkspacesService } from './workspaces.service';
+import { AddWorkspaceFileDto, RequestFileUploadDto } from './dto/workspace-file.dto';
 
 @Controller('workspaces')
 @UseGuards(SupabaseAuthGuard, ApprovedGuard)
@@ -43,18 +45,36 @@ export class WorkspacesController {
     return this.workspacesService.getWorkspace(req.user.id, workspaceId);
   }
 
+  /** Step 1 of an upload: a short-lived presigned PUT URL for a workspace member. */
+  @Post(':id/files/upload-url')
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  async requestFileUpload(
+    @Req() req: any,
+    @Param('id') workspaceId: string,
+    @Body() body: RequestFileUploadDto,
+  ) {
+    return this.workspacesService.createFileUpload(req.user.id, workspaceId, body);
+  }
+
+  /** Step 2: register the uploaded object (or an external link) on the workspace. */
   @Post(':id/files')
   async addFile(
     @Req() req: any,
     @Param('id') workspaceId: string,
-    @Body('name') name: string,
-    @Body('url') url: string,
-    @Body('size') size: number
+    @Body() body: AddWorkspaceFileDto,
   ) {
-    if (!name || !url) {
-      throw new BadRequestException('File name and URL are required.');
-    }
-    return this.workspacesService.addFile(req.user.id, workspaceId, name, url, size || 0);
+    return this.workspacesService.addFile(req.user.id, workspaceId, body);
+  }
+
+  /** Short-lived download URL, issued only to members of the owning workspace. */
+  @Get(':id/files/:fileId/download')
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
+  async downloadFile(
+    @Req() req: any,
+    @Param('id') workspaceId: string,
+    @Param('fileId') fileId: string,
+  ) {
+    return this.workspacesService.getFileDownload(req.user.id, workspaceId, fileId);
   }
 
   @Post(':id/milestones')

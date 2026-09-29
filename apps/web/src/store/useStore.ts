@@ -193,7 +193,8 @@ interface AppState {
   }) => Promise<Workspace>;
   fetchWorkspaceDetails: (workspaceId: string) => Promise<Workspace>;
   addWorkspaceFile: (workspaceId: string, name: string, url: string, size: number) => Promise<WorkspaceFile>;
-  uploadResearchFileToS3: (file: File, prefix?: string) => Promise<{ fileUrl: string; objectKey: string; name: string; size: number }>;
+  uploadWorkspaceFile: (workspaceId: string, file: File, displayName?: string) => Promise<WorkspaceFile>;
+  getWorkspaceFileDownloadUrl: (workspaceId: string, fileId: string) => Promise<string>;
   addWorkspaceMilestone: (workspaceId: string, title: string, description?: string, dueDate?: string) => Promise<WorkspaceMilestone>;
   toggleWorkspaceMilestone: (workspaceId: string, milestoneId: string, completed: boolean) => Promise<WorkspaceMilestone>;
   addWorkspaceAnnouncement: (workspaceId: string, title: string, content: string) => Promise<WorkspaceAnnouncement>;
@@ -530,14 +531,14 @@ export const useStore = create<AppState>((set, get) => ({
   setTheme: (theme) => {
     if (typeof window !== 'undefined') {
       const root = window.document.documentElement;
-      if (theme === 'dark') {
-        root.classList.add('dark');
-        root.classList.remove('light');
-      } else {
-        root.classList.add('light');
-        root.classList.remove('dark');
+      root.classList.toggle('dark', theme === 'dark');
+      root.classList.toggle('light', theme !== 'dark');
+      root.style.colorScheme = theme;
+      try {
+        localStorage.setItem('curiousbees-theme', theme);
+      } catch {
+        // Storage can be unavailable (private mode); the theme still applies for this visit.
       }
-      localStorage.setItem('curiousbees-theme', theme);
     }
     set({ theme });
   },
@@ -593,7 +594,13 @@ export const useStore = create<AppState>((set, get) => ({
               set({ currentUser: null, notProvisioned: true });
               return null;
             }
-            if (data.reason === 'USER_SUSPENDED') {
+            if (data.reason === 'EMAIL_DOMAIN_NOT_ALLOWED' || data.reason === 'EMAIL_NOT_VERIFIED') {
+              console.warn(`[AuthStore] Access denied: ${data.reason}.`);
+              deleteCookie(ROLE_COOKIE_NAME);
+              set({ currentUser: null, notProvisioned: true });
+              return null;
+            }
+            if (data.reason === 'USER_SUSPENDED' || data.reason === 'USER_DEACTIVATED') {
               console.warn('[AuthStore] User suspended, setting isSuspended flag.');
               deleteCookie(ROLE_COOKIE_NAME);
               set({ currentUser: null, isSuspended: true });
@@ -637,6 +644,17 @@ export const useStore = create<AppState>((set, get) => ({
         }
         deleteCookie(ROLE_COOKIE_NAME);
         set({ currentUser: null });
+
+        // If backend rejected session with 401 (invalid/expired), clear Supabase client state
+        // to prevent repetitive failing sync attempts with dead tokens.
+        if (res.status === 401) {
+          try {
+            await supabase.auth.signOut();
+          } catch (signOutErr) {
+            console.warn('[AuthStore] Supabase signOut after 401 error:', signOutErr);
+          }
+        }
+
         if (options?.throwOnError) {
           throw new Error(errorMessage);
         }
@@ -1666,50 +1684,66 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  uploadResearchFileToS3: async (file: File, prefix: string = 'research-documents') => {
+  uploadWorkspaceFile: async (workspaceId: string, file: File, displayName?: string) => {
     set({ isLoading: true });
     try {
-      // 1. Request presigned upload URL from NestJS API
-      const presignedRes = await apiFetch('/api/files/presigned-upload', {
+      const contentType = file.type || 'application/octet-stream';
+
+      // 1. Ask the API for a presigned PUT URL (it checks workspace membership, type and size).
+      const presignedRes = await apiFetch(`/api/workspaces/${workspaceId}/files/upload-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: file.name,
-          contentType: file.type || 'application/octet-stream',
-          sizeBytes: file.size,
-          prefix,
-        }),
+        body: JSON.stringify({ filename: file.name, contentType, sizeBytes: file.size }),
       });
-
       if (!presignedRes.ok) {
-        const err = await presignedRes.json().catch(() => ({}));
-        throw new Error(err.message || 'Failed to initialize secure AWS S3 upload.');
+        throw new Error((await readApiError(presignedRes)) || 'Could not start the upload.');
       }
+      const { uploadUrl, storageKey, requiredHeaders } = await presignedRes.json();
 
-      const { uploadUrl, objectKey, fileUrl } = await presignedRes.json();
-
-      // 2. Direct browser-to-S3 PUT upload (bypassing backend server to preserve ALB/NestJS capacity)
+      // 2. Upload the bytes straight to the private S3 bucket (never through the API).
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
-        headers: {
-          'Content-Type': file.type || 'application/octet-stream',
-        },
+        headers: requiredHeaders || { 'Content-Type': contentType },
         body: file,
       });
-
       if (!uploadRes.ok) {
-        throw new Error(`S3 direct upload failed with status: ${uploadRes.status}`);
+        throw new Error(`Upload to storage failed (HTTP ${uploadRes.status}).`);
       }
 
-      return {
-        fileUrl,
-        objectKey,
-        name: file.name,
-        size: file.size,
-      };
+      // 3. Register the uploaded object on the workspace; the API verifies it in S3.
+      const registerRes = await apiFetch(`/api/workspaces/${workspaceId}/files`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: displayName || file.name, storageKey }),
+      });
+      if (!registerRes.ok) {
+        throw new Error((await readApiError(registerRes)) || 'Could not save the uploaded file.');
+      }
+      const fileData: WorkspaceFile = await registerRes.json();
+      set(state => {
+        if (state.activeWorkspace && state.activeWorkspace.id === workspaceId) {
+          return {
+            activeWorkspace: {
+              ...state.activeWorkspace,
+              files: [fileData, ...(state.activeWorkspace.files || [])]
+            }
+          };
+        }
+        return {};
+      });
+      return fileData;
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  getWorkspaceFileDownloadUrl: async (workspaceId: string, fileId: string) => {
+    const res = await apiFetch(`/api/workspaces/${workspaceId}/files/${fileId}/download`);
+    if (!res.ok) {
+      throw new Error((await readApiError(res)) || 'You do not have access to this file.');
+    }
+    const { downloadUrl } = await res.json();
+    return downloadUrl as string;
   },
 
   addWorkspaceMilestone: async (workspaceId: string, title: string, description?: string, dueDate?: string) => {

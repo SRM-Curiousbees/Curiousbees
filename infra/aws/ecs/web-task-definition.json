@@ -1,0 +1,40 @@
+{
+  "family": "curiousbees-web",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": { "cpuArchitecture": "ARM64", "operatingSystemFamily": "LINUX" },
+  "executionRoleArn": "arn:aws:iam::${AWS_ACCOUNT_ID}:role/curiousbees-ecs-execution",
+  "containerDefinitions": [
+    {
+      "name": "web",
+      "image": "${WEB_IMAGE}",
+      "essential": true,
+      "portMappings": [{ "containerPort": 3000, "protocol": "tcp", "name": "web" }],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT", "value": "3000" },
+        { "name": "HOSTNAME", "value": "0.0.0.0" },
+        { "name": "APP_URL", "value": "${APP_URL}" },
+        { "name": "ALLOWED_EMAIL_DOMAINS", "value": "${ALLOWED_EMAIL_DOMAINS}" }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/healthz >/dev/null || exit 1"],
+        "interval": 30,
+        "timeout": 5,
+        "retries": 3,
+        "startPeriod": 30
+      },
+      "stopTimeout": 30,
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/curiousbees-web",
+          "awslogs-region": "${AWS_REGION}",
+          "awslogs-stream-prefix": "web"
+        }
+      }
+    }
+  ]
+}

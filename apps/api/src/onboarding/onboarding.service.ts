@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserStatus, RequestStatus, Role } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -58,8 +58,9 @@ export class OnboardingService {
     if (!user) {
       throw new BadRequestException('User not found.');
     }
-    if (user.role && user.role !== Role.RESEARCH_SUPERVISOR && user.role !== Role.INSTITUTE_ADMIN) {
-      throw new BadRequestException('User already has a different role assigned.');
+    // Roles are assigned by administrators; onboarding only completes the profile for that role.
+    if (user.role !== Role.RESEARCH_SUPERVISOR) {
+      throw new ForbiddenException('Supervisor onboarding is only available to accounts an administrator created as Research Supervisor.');
     }
     if (user.onboardingCompleted && user.departmentId) {
       throw new BadRequestException('User has already completed onboarding.');
@@ -149,10 +150,10 @@ export class OnboardingService {
       return tx.user.update({
         where: { id: userId },
         data: {
-          role: Role.RESEARCH_SUPERVISOR,
           onboardingCompleted: true,
-          status: UserStatus.ACTIVE,
-          approved: true,
+          // Approval/status remain administrator decisions.
+          status: user.status,
+          approved: user.approved,
           employeeId: effectiveEmployeeId,
           departmentId: effectiveDepartmentId,
           department: dept.name,
@@ -184,8 +185,8 @@ export class OnboardingService {
     if (!user) {
       throw new BadRequestException('User not found.');
     }
-    if (user.role && user.role !== Role.RESEARCH_SCHOLAR && user.role !== Role.INSTITUTE_ADMIN) {
-      throw new BadRequestException('User already has a different role assigned.');
+    if (user.role !== Role.RESEARCH_SCHOLAR) {
+      throw new ForbiddenException('Scholar onboarding is only available to accounts an administrator created as Research Scholar.');
     }
     if (user.onboardingCompleted && user.supervisorId) {
       throw new BadRequestException('User has already completed onboarding and has a supervisor assigned.');
@@ -326,6 +327,14 @@ export class OnboardingService {
   }
 
   async resetOnboarding(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new BadRequestException('User not found.');
+    }
+    // Restricted accounts and admins are managed by administrators, not self-service resets.
+    if (user.status === UserStatus.RESTRICTED || user.role === Role.INSTITUTE_ADMIN) {
+      throw new BadRequestException('Onboarding cannot be reset for this account. Contact an administrator.');
+    }
     return this.prisma.user.update({
       where: { id: userId },
       data: {

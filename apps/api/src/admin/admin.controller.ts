@@ -10,6 +10,7 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
 import { RolesGuard } from '../auth/roles/roles.guard';
@@ -17,6 +18,7 @@ import { Roles } from '../auth/roles/roles.decorator';
 import { Role } from '../auth/roles/role.enum';
 import { AdminService } from './admin.service';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { IMPORT_MAX_BYTES } from './admin-safety';
 import { Role as PrismaRole, UserStatus } from '@prisma/client';
 
 @Controller('admin/users')
@@ -52,6 +54,7 @@ export class AdminController {
 
   @Put(':id')
   async updateUser(
+    @Req() req: any,
     @Param('id') id: string,
     @Body('name') name?: string,
     @Body('email') email?: string,
@@ -67,16 +70,16 @@ export class AdminController {
       status,
       departmentId,
       supervisorId,
-    });
+    }, req.user.id);
   }
 
   @Delete(':id')
-  async deleteUser(@Param('id') id: string) {
-    return this.adminService.deleteUser(id);
+  async deleteUser(@Req() req: any, @Param('id') id: string) {
+    return this.adminService.deleteUser(id, req.user.id);
   }
 
   @Post('import')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: IMPORT_MAX_BYTES, files: 1 } }))
   async importUsers(@UploadedFile() file: any) {
     if (!file) {
       throw new BadRequestException('Spreadsheet file is required for bulk import.');

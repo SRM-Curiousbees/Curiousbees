@@ -303,10 +303,10 @@ function UnifiedSettingsContent() {
     <div className="max-w-6xl mx-auto space-y-6 pb-24 text-left select-none font-sans">
       
       {/* ─── PAGE HEADER & USER HERO PILL ─── */}
-      <div className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-surface border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#0C4DA2] to-blue-500 p-0.5 shadow-md shrink-0 flex items-center justify-center">
-            <div className="w-full h-full rounded-[14px] bg-white overflow-hidden flex items-center justify-center">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand to-blue-500 p-0.5 shadow-md shrink-0 flex items-center justify-center">
+            <div className="w-full h-full rounded-2xl bg-surface overflow-hidden flex items-center justify-center">
               <img
                 src={getProfileImageUrl(currentUser)}
                 alt={currentUser?.name || 'User'}
@@ -316,12 +316,12 @@ function UnifiedSettingsContent() {
           </div>
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-xl font-black text-slate-900 font-display tracking-tight">
+              <h1 className="text-xl font-semibold text-slate-900 font-display tracking-tight">
                 {currentUser?.name || 'Researcher Settings'}
               </h1>
               {currentUser?.role && <RoleBadge role={currentUser.role} size="sm" />}
-              <span className="inline-flex items-center gap-1 text-[11px] font-extrabold text-[#0C4DA2] bg-blue-50/80 border border-blue-200/60 px-2 py-0.5 rounded-full">
-                <ShieldCheck className="w-3 h-3 text-[#0C4DA2]" />
+              <span className="inline-flex items-center gap-1 text-2xs font-semibold text-brand bg-blue-50/80 border border-blue-200/60 px-2 py-0.5 rounded-full">
+                <ShieldCheck className="w-3 h-3 text-brand" />
                 <span>SRMIST Verified</span>
               </span>
             </div>
@@ -342,7 +342,7 @@ function UnifiedSettingsContent() {
           {isAdmin && (
             <Link
               href="/admin/settings"
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-[#0C4DA2] hover:bg-[#083570] rounded-xl transition-all shadow-sm cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-brand hover:bg-brand-strong rounded-xl transition-all shadow-sm cursor-pointer"
             >
               <Globe className="w-3.5 h-3.5" />
               <span>Institute Global Settings</span>
@@ -355,8 +355,8 @@ function UnifiedSettingsContent() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         {/* LEFT TAB MENU (3 COLS) */}
-        <div className="lg:col-span-4 flex flex-col gap-1.5 bg-white border border-slate-200/90 p-2.5 rounded-2xl shadow-xs">
-          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-3 py-1.5">
+        <div className="lg:col-span-4 flex flex-col gap-1.5 bg-surface border border-slate-200/90 p-2.5 rounded-2xl shadow-xs">
+          <p className="text-xs font-medium capitalize text-slate-400 px-3 py-1.5">
             Settings Navigation
           </p>
 
@@ -370,7 +370,7 @@ function UnifiedSettingsContent() {
                 onClick={() => setActiveTab(tab.id as SettingsTab)}
                 className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-150 cursor-pointer group relative ${
                   isActive
-                    ? 'bg-[#0C4DA2] text-white shadow-sm shadow-[#0C4DA2]/20 font-black'
+                    ? 'bg-brand text-white shadow-sm  font-semibold'
                     : 'text-slate-700 hover:bg-slate-100/90 hover:text-slate-900 font-bold'
                 }`}
               >
@@ -378,7 +378,7 @@ function UnifiedSettingsContent() {
                   className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                     isActive
                       ? 'bg-white/20 text-white'
-                      : 'bg-slate-100 text-slate-500 group-hover:text-[#0C4DA2] group-hover:bg-blue-50'
+                      : 'bg-slate-100 text-slate-500 group-hover:text-brand group-hover:bg-blue-50'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -390,7 +390,7 @@ function UnifiedSettingsContent() {
                       <ChevronRight className="w-3.5 h-3.5 text-white/80" />
                     )}
                   </div>
-                  <p className={`text-[10px] truncate mt-1 ${isActive ? 'text-blue-100 font-normal' : 'text-slate-400 font-medium'}`}>
+                  <p className={`text-2xs truncate mt-1 ${isActive ? 'text-blue-100 font-normal' : 'text-slate-400 font-medium'}`}>
                     {tab.desc}
                   </p>
                 </div>
@@ -412,7 +412,7 @@ function UnifiedSettingsContent() {
         </div>
 
         {/* RIGHT CONTENT PANE (8 COLS) */}
-        <div className="lg:col-span-8 bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs min-h-[520px] flex flex-col justify-between">
+        <div className="lg:col-span-8 bg-surface border border-slate-200/90 rounded-2xl p-6 shadow-xs min-h-[520px] flex flex-col justify-between">
           <AnimatePresence mode="wait">
             
             {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -431,22 +431,22 @@ function UnifiedSettingsContent() {
                   <div className="space-y-5">
                     <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                       <div>
-                        <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
-                          <User className="w-4 h-4 text-[#0C4DA2]" />
+                        <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
+                          <User className="w-4 h-4 text-brand" />
                           <span>Academic Identity & Credentials</span>
                         </h2>
-                        <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                        <p className="text-2xs text-slate-500 font-medium mt-0.5">
                           Personalize your public researcher bio and institutional department affiliation.
                         </p>
                       </div>
-                      <span className="text-[10px] font-mono font-bold uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+                      <span className="text-2xs font-mono font-bold uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
                         Live Sync
                       </span>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                        <label className="block text-xs font-medium text-slate-700 capitalize">
                           Full Academic Name
                         </label>
                         <input
@@ -456,14 +456,14 @@ function UnifiedSettingsContent() {
                           placeholder="E.g. Dr. Ramesh Kumar"
                         />
                         {errors.name && (
-                          <p className="text-[10px] text-rose-500 font-bold mt-1">
+                          <p className="text-2xs text-rose-500 font-bold mt-1">
                             {errors.name.message as string}
                           </p>
                         )}
                       </div>
 
                       <div className="space-y-1">
-                        <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                        <label className="block text-xs font-medium text-slate-700 capitalize">
                           Institutional Primary Email
                         </label>
                         <input
@@ -472,13 +472,13 @@ function UnifiedSettingsContent() {
                           value={currentUser?.email || ''}
                           className="cb-input bg-slate-50/80 text-slate-500 border-slate-200 cursor-not-allowed font-mono text-xs"
                         />
-                        <p className="text-[9px] text-slate-400 font-semibold">Managed via SRMIST institutional identity system</p>
+                        <p className="text-2xs text-slate-400 font-semibold">Managed via SRMIST institutional identity system</p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                        <label className="block text-xs font-medium text-slate-700 capitalize">
                           Academic Department
                         </label>
                         <select
@@ -491,16 +491,16 @@ function UnifiedSettingsContent() {
                             <option key={dept.id} value={dept.name}>{dept.name}</option>
                           ))}
                         </select>
-                        <p className="text-[9px] text-slate-400 font-semibold">Managed via SRMIST institutional identity system</p>
+                        <p className="text-2xs text-slate-400 font-semibold">Managed via SRMIST institutional identity system</p>
                         {errors.department && (
-                          <p className="text-[10px] text-rose-500 font-bold mt-1">
+                          <p className="text-2xs text-rose-500 font-bold mt-1">
                             {errors.department.message as string}
                           </p>
                         )}
                       </div>
 
                       <div className="space-y-1">
-                        <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                        <label className="block text-xs font-medium text-slate-700 capitalize">
                           Institutional Role
                         </label>
                         <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
@@ -513,17 +513,17 @@ function UnifiedSettingsContent() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                      <label className="block text-xs font-medium text-slate-700 capitalize">
                         Research Biography & Objective
                       </label>
                       <textarea
                         rows={4}
                         {...register('bio')}
-                        className="w-full bg-white border border-slate-200 rounded-xl p-3 font-sans text-xs leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-[#0C4DA2] focus:ring-2 focus:ring-[#0C4DA2]/10 outline-none transition-all"
+                        className="w-full bg-surface border border-slate-200 rounded-xl p-3 font-sans text-xs leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-brand focus:ring-2 focus:ring-brand/10 outline-none transition-all"
                         placeholder="Detail your scientific focus, active lab specifications, computational tools, and primary academic goals..."
                       />
                       {errors.bio && (
-                        <p className="text-[10px] text-rose-500 font-bold mt-1">
+                        <p className="text-2xs text-rose-500 font-bold mt-1">
                           {errors.bio.message as string}
                         </p>
                       )}
@@ -534,7 +534,7 @@ function UnifiedSettingsContent() {
                     <button
                       type="submit"
                       disabled={isSubmitting}
-                      className="px-5 py-2.5 bg-[#0C4DA2] text-white hover:bg-[#083570] rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+                      className="px-5 py-2.5 bg-brand text-white hover:bg-brand-strong rounded-xl text-xs font-medium capitalize shadow-sm transition-all flex items-center gap-2 cursor-pointer"
                     >
                       {isSubmitting ? (
                         <>
@@ -567,21 +567,21 @@ function UnifiedSettingsContent() {
               >
                 <div className="space-y-5">
                   <div className="border-b border-slate-100 pb-3">
-                    <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-[#0C4DA2]" />
+                    <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
+                      <Tag className="w-4 h-4 text-brand" />
                       <span>Research Focus Areas & Matchmaking Tags</span>
                     </h2>
-                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    <p className="text-2xs text-slate-500 font-medium mt-0.5">
                       Specify scientific domains that index your node in co-author matchmaking directories and Curious Nexus workspaces.
                     </p>
                   </div>
 
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                      <label className="text-xs font-medium text-slate-700 capitalize">
                         Active Pinned Domains ({selectedInterests.length}/8)
                       </label>
-                      <span className="text-[10px] text-slate-400 font-bold">Max 8 Tags</span>
+                      <span className="text-2xs text-slate-400 font-bold">Max 8 Tags</span>
                     </div>
 
                     <div className="flex flex-wrap gap-2 p-3.5 bg-slate-50/80 border border-slate-200/80 rounded-2xl min-h-[58px] items-center">
@@ -593,13 +593,13 @@ function UnifiedSettingsContent() {
                         selectedInterests.map((interest) => (
                           <span
                             key={interest}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-[#0C4DA2]/10 border border-[#0C4DA2]/25 text-[#0C4DA2]"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand/10 border border-brand/25 text-brand"
                           >
                             <span>{interest}</span>
                             <button
                               type="button"
                               onClick={() => handleRemoveInterest(interest)}
-                              className="text-[#0C4DA2]/60 hover:text-rose-600 p-0.5 rounded-full hover:bg-rose-50 transition-colors cursor-pointer"
+                              className="text-brand/60 hover:text-rose-600 p-0.5 rounded-full hover:bg-rose-50 transition-colors cursor-pointer"
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -626,7 +626,7 @@ function UnifiedSettingsContent() {
                       <button
                         type="button"
                         onClick={() => handleAddInterest(newInterestInput)}
-                        className="absolute right-2 top-2 p-1.5 rounded-lg bg-[#0C4DA2] text-white hover:bg-[#083570] transition-colors cursor-pointer"
+                        className="absolute right-2 top-2 p-1.5 rounded-lg bg-brand text-white hover:bg-brand-strong transition-colors cursor-pointer"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -634,7 +634,7 @@ function UnifiedSettingsContent() {
                   </div>
 
                   <div className="space-y-2.5 pt-3 border-t border-slate-100">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                    <p className="text-xs font-medium text-slate-400 capitalize flex items-center gap-1.5">
                       <Sparkles className="w-3 h-3 text-amber-500" />
                       <span>Suggested University Research Clusters</span>
                     </p>
@@ -646,7 +646,7 @@ function UnifiedSettingsContent() {
                             key={tag}
                             type="button"
                             onClick={() => handleAddInterest(tag)}
-                            className="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-white hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-[#0C4DA2] hover:border-[#0C4DA2]/30 transition-all cursor-pointer shadow-xs flex items-center gap-1"
+                            className="px-3 py-1.5 rounded-xl text-2xs font-bold bg-surface hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-brand hover:border-brand/30 transition-all cursor-pointer shadow-xs flex items-center gap-1"
                           >
                             <Plus className="w-3 h-3 text-slate-400" />
                             <span>{tag}</span>
@@ -660,7 +660,7 @@ function UnifiedSettingsContent() {
                   <button
                     type="button"
                     onClick={() => handleProfileSubmit({ name: currentUser?.name, bio: currentUser?.bio, department: currentUser?.department })}
-                    className="px-5 py-2.5 bg-[#0C4DA2] text-white hover:bg-[#083570] rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+                    className="px-5 py-2.5 bg-brand text-white hover:bg-brand-strong rounded-xl text-xs font-medium capitalize shadow-sm transition-all flex items-center gap-2 cursor-pointer"
                   >
                     <Check className="w-3.5 h-3.5" />
                     <span>Save Focus Domains</span>
@@ -684,11 +684,11 @@ function UnifiedSettingsContent() {
                 <div className="space-y-5">
                   <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                     <div>
-                      <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
-                        <Layers className="w-4 h-4 text-[#0C4DA2]" />
+                      <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
+                        <Layers className="w-4 h-4 text-brand" />
                         <span>Connected Collaboration Tools</span>
                       </h2>
-                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      <p className="text-2xs text-slate-500 font-medium mt-0.5">
                         Link external conferencing & chat tools to power Curious Nexus workspaces automatically.
                       </p>
                     </div>
@@ -698,21 +698,21 @@ function UnifiedSettingsContent() {
                         setLoadingIntegrations(true);
                         fetchIntegrationStatus().finally(() => setLoadingIntegrations(false));
                       }}
-                      className="p-2 text-slate-500 hover:text-[#0C4DA2] rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                      className="p-2 text-slate-500 hover:text-brand rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                       title="Refresh connection statuses"
                     >
-                      <RefreshCw className={`w-4 h-4 ${loadingIntegrations ? 'animate-spin text-[#0C4DA2]' : ''}`} />
+                      <RefreshCw className={`w-4 h-4 ${loadingIntegrations ? 'animate-spin text-brand' : ''}`} />
                     </button>
                   </div>
 
                   {/* 🛡️ PRIVACY BOX */}
-                  <div className="p-4 bg-gradient-to-r from-blue-50/70 to-indigo-50/40 border border-[#0C4DA2]/20 rounded-2xl flex items-start gap-3">
-                    <ShieldCheck className="w-5 h-5 text-[#0C4DA2] shrink-0 mt-0.5" />
+                  <div className="p-4 bg-gradient-to-r from-blue-50/70 to-indigo-50/40 border border-brand/20 rounded-2xl flex items-start gap-3">
+                    <ShieldCheck className="w-5 h-5 text-brand shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wide font-mono">
+                      <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide font-mono">
                         Zero-Retention Architecture
                       </h4>
-                      <p className="text-[11px] text-slate-600 leading-relaxed mt-0.5 font-medium">
+                      <p className="text-2xs text-slate-600 leading-relaxed mt-0.5 font-medium">
                         CuriousBees orchestrates meeting metadata & memberships. No conversation transcripts, audio streams, or meeting recordings are ever stored on CuriousBees servers.
                       </p>
                     </div>
@@ -721,7 +721,7 @@ function UnifiedSettingsContent() {
                   {/* INTEGRATIONS CARDS */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Google Workspace */}
-                    <div className="p-5 border border-slate-200/90 rounded-2xl bg-white shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition-all">
+                    <div className="p-5 border border-slate-200/90 rounded-2xl bg-surface shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition-all">
                       <div>
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2.5">
@@ -734,24 +734,24 @@ function UnifiedSettingsContent() {
                               </svg>
                             </div>
                             <div>
-                              <h3 className="text-xs font-black text-slate-900">Google Workspace</h3>
-                              <p className="text-[10px] text-slate-500 font-medium">Chat Spaces · Meet</p>
+                              <h3 className="text-xs font-semibold text-slate-900">Google Workspace</h3>
+                              <p className="text-2xs text-slate-500 font-medium">Chat Spaces · Meet</p>
                             </div>
                           </div>
 
                           {googleConn?.status === 'CONNECTED' ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <CheckCircle2 className="w-3 h-3" />
                               <span>Connected</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold bg-slate-100 text-slate-600">
                               <span>Unlinked</span>
                             </span>
                           )}
                         </div>
 
-                        <p className="text-[11px] text-slate-600 leading-relaxed font-normal">
+                        <p className="text-2xs text-slate-600 leading-relaxed font-normal">
                           Automated creation of dedicated Google Chat research spaces & Google Meet calls in workspaces.
                         </p>
                       </div>
@@ -759,14 +759,14 @@ function UnifiedSettingsContent() {
                       <div>
                         {googleConn?.status === 'CONNECTED' ? (
                           <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                            <span className="text-[10px] text-slate-400 font-mono truncate max-w-[140px]">
+                            <span className="text-2xs text-slate-400 font-mono truncate max-w-[140px]">
                               {googleConn.externalAccountEmail}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleDisconnect('GOOGLE_WORKSPACE')}
                               disabled={disconnectingProvider === 'GOOGLE_WORKSPACE'}
-                              className="text-[10px] font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded transition-colors cursor-pointer"
+                              className="text-2xs font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded transition-colors cursor-pointer"
                             >
                               Disconnect
                             </button>
@@ -776,7 +776,7 @@ function UnifiedSettingsContent() {
                             type="button"
                             onClick={handleConnectGoogle}
                             disabled={connectingProvider === 'GOOGLE'}
-                            className="w-full py-2 bg-[#0C4DA2] hover:bg-[#083570] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                            className="w-full py-2 bg-brand hover:bg-brand-strong text-white rounded-xl text-xs font-medium capitalize transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                           >
                             {connectingProvider === 'GOOGLE' ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -792,32 +792,32 @@ function UnifiedSettingsContent() {
                     </div>
 
                     {/* Zoom Workplace */}
-                    <div className="p-5 border border-slate-200/90 rounded-2xl bg-white shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition-all">
+                    <div className="p-5 border border-slate-200/90 rounded-2xl bg-surface shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition-all">
                       <div>
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-2.5">
-                            <div className="w-10 h-10 rounded-xl bg-[#2D8CFF]/10 border border-[#2D8CFF]/20 flex items-center justify-center p-2 text-[#2D8CFF] shadow-xs">
+                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center p-2 text-blue-500 shadow-xs">
                               <Video className="w-5 h-5" />
                             </div>
                             <div>
-                              <h3 className="text-xs font-black text-slate-900">Zoom Workplace</h3>
-                              <p className="text-[10px] text-slate-500 font-medium">Video Conferencing</p>
+                              <h3 className="text-xs font-semibold text-slate-900">Zoom Workplace</h3>
+                              <p className="text-2xs text-slate-500 font-medium">Video Conferencing</p>
                             </div>
                           </div>
 
                           {zoomConn?.status === 'CONNECTED' ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <CheckCircle2 className="w-3 h-3" />
                               <span>Connected</span>
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold bg-slate-100 text-slate-600">
                               <span>Unlinked</span>
                             </span>
                           )}
                         </div>
 
-                        <p className="text-[11px] text-slate-600 leading-relaxed font-normal">
+                        <p className="text-2xs text-slate-600 leading-relaxed font-normal">
                           Instant participant joining and recurring video syncs inside research collaboration rooms.
                         </p>
                       </div>
@@ -825,14 +825,14 @@ function UnifiedSettingsContent() {
                       <div>
                         {zoomConn?.status === 'CONNECTED' ? (
                           <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                            <span className="text-[10px] text-slate-400 font-mono truncate max-w-[140px]">
+                            <span className="text-2xs text-slate-400 font-mono truncate max-w-[140px]">
                               {zoomConn.externalAccountEmail}
                             </span>
                             <button
                               type="button"
                               onClick={() => handleDisconnect('ZOOM_WORKPLACE')}
                               disabled={disconnectingProvider === 'ZOOM_WORKPLACE'}
-                              className="text-[10px] font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded transition-colors cursor-pointer"
+                              className="text-2xs font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded transition-colors cursor-pointer"
                             >
                               Disconnect
                             </button>
@@ -842,7 +842,7 @@ function UnifiedSettingsContent() {
                             type="button"
                             onClick={handleConnectZoom}
                             disabled={connectingProvider === 'ZOOM'}
-                            className="w-full py-2 bg-[#2D8CFF] hover:bg-[#1a75e0] text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                            className="w-full py-2 bg-brand hover:bg-brand-strong text-white rounded-xl text-xs font-medium capitalize transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                           >
                             {connectingProvider === 'ZOOM' ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -862,7 +862,7 @@ function UnifiedSettingsContent() {
                 <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
                   <Link
                     href="/settings/integrations"
-                    className="text-xs font-bold text-[#0C4DA2] hover:underline flex items-center gap-1"
+                    className="text-xs font-bold text-brand hover:underline flex items-center gap-1"
                   >
                     <span>Open Full Integrations Management Hub</span>
                     <ChevronRight className="w-3.5 h-3.5" />
@@ -885,18 +885,18 @@ function UnifiedSettingsContent() {
               >
                 <div className="space-y-5">
                   <div className="border-b border-slate-100 pb-3">
-                    <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
-                      <Palette className="w-4 h-4 text-[#0C4DA2]" />
+                    <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
+                      <Palette className="w-4 h-4 text-brand" />
                       <span>Interface & Theme Preferences</span>
                     </h2>
-                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    <p className="text-2xs text-slate-500 font-medium mt-0.5">
                       Tailor the visual aesthetics, density, and research feed presentation for your workflow.
                     </p>
                   </div>
 
                   {/* Theme Mode Selector */}
                   <div className="space-y-3">
-                    <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block">
+                    <label className="text-xs font-medium text-slate-700 capitalize block">
                       Color Palette & Theme Mode
                     </label>
 
@@ -909,17 +909,17 @@ function UnifiedSettingsContent() {
                         }}
                         className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-3 select-none ${
                           theme === 'light'
-                            ? 'border-[#0C4DA2] bg-blue-50/50 text-[#0C4DA2] shadow-xs'
-                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 hover:bg-slate-50/50'
+                            ? 'border-brand bg-blue-50/50 text-brand shadow-xs'
+                            : 'border-slate-200 bg-surface hover:border-slate-300 text-slate-700 hover:bg-slate-50/50'
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <Sun className="w-5 h-5 text-amber-500" />
-                          {theme === 'light' && <Check className="w-4 h-4 text-[#0C4DA2] stroke-[2.5]" />}
+                          {theme === 'light' && <Check className="w-4 h-4 text-brand stroke-[2.5]" />}
                         </div>
                         <div>
-                          <p className="text-xs font-black">Light Mode</p>
-                          <p className="text-[10px] text-slate-400 font-medium">Standard Academic Clean</p>
+                          <p className="text-xs font-semibold">Light Mode</p>
+                          <p className="text-2xs text-slate-400 font-medium">Standard Academic Clean</p>
                         </div>
                       </button>
 
@@ -931,17 +931,17 @@ function UnifiedSettingsContent() {
                         }}
                         className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-3 select-none ${
                           theme === 'dark'
-                            ? 'border-[#0C4DA2] bg-blue-50/50 text-[#0C4DA2] shadow-xs'
-                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 hover:bg-slate-50/50'
+                            ? 'border-brand bg-blue-50/50 text-brand shadow-xs'
+                            : 'border-slate-200 bg-surface hover:border-slate-300 text-slate-700 hover:bg-slate-50/50'
                         }`}
                       >
                         <div className="flex items-center justify-between">
                           <Moon className="w-5 h-5 text-indigo-500" />
-                          {theme === 'dark' && <Check className="w-4 h-4 text-[#0C4DA2] stroke-[2.5]" />}
+                          {theme === 'dark' && <Check className="w-4 h-4 text-brand stroke-[2.5]" />}
                         </div>
                         <div>
-                          <p className="text-xs font-black">Dark Mode</p>
-                          <p className="text-[10px] text-slate-400 font-medium">Low Light Studio</p>
+                          <p className="text-xs font-semibold">Dark Mode</p>
+                          <p className="text-2xs text-slate-400 font-medium">Low Light Studio</p>
                         </div>
                       </button>
                     </div>
@@ -949,7 +949,7 @@ function UnifiedSettingsContent() {
 
                   {/* Research Feed Sorting Preference */}
                   <div className="space-y-3 pt-4 border-t border-slate-100">
-                    <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block">
+                    <label className="text-xs font-medium text-slate-700 capitalize block">
                       Default Research Feed Ordering
                     </label>
 
@@ -959,18 +959,18 @@ function UnifiedSettingsContent() {
                         onClick={() => saveFeedSort('latest')}
                         className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-center justify-between select-none ${
                           feedSortPreference === 'latest'
-                            ? 'border-[#0C4DA2] bg-blue-50/50 text-[#0C4DA2] font-black shadow-xs'
-                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 font-bold hover:bg-slate-50/50'
+                            ? 'border-brand bg-blue-50/50 text-brand font-semibold shadow-xs'
+                            : 'border-slate-200 bg-surface hover:border-slate-300 text-slate-700 font-bold hover:bg-slate-50/50'
                         }`}
                       >
                         <div className="flex items-center gap-3">
-                          <Clock className="w-4 h-4 text-[#0C4DA2]" />
+                          <Clock className="w-4 h-4 text-brand" />
                           <div>
                             <p className="text-xs">Latest Submissions</p>
-                            <p className="text-[10px] text-slate-400 font-normal">Strict chronological order</p>
+                            <p className="text-2xs text-slate-400 font-normal">Strict chronological order</p>
                           </div>
                         </div>
-                        {feedSortPreference === 'latest' && <Check className="w-4 h-4 text-[#0C4DA2] stroke-[2.5]" />}
+                        {feedSortPreference === 'latest' && <Check className="w-4 h-4 text-brand stroke-[2.5]" />}
                       </button>
 
                       <button
@@ -978,25 +978,25 @@ function UnifiedSettingsContent() {
                         onClick={() => saveFeedSort('top')}
                         className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-center justify-between select-none ${
                           feedSortPreference === 'top'
-                            ? 'border-[#0C4DA2] bg-blue-50/50 text-[#0C4DA2] font-black shadow-xs'
-                            : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 font-bold hover:bg-slate-50/50'
+                            ? 'border-brand bg-blue-50/50 text-brand font-semibold shadow-xs'
+                            : 'border-slate-200 bg-surface hover:border-slate-300 text-slate-700 font-bold hover:bg-slate-50/50'
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           <Sparkles className="w-4 h-4 text-amber-500" />
                           <div>
                             <p className="text-xs">Top Discussions</p>
-                            <p className="text-[10px] text-slate-400 font-normal">Ranked by citation & engagement</p>
+                            <p className="text-2xs text-slate-400 font-normal">Ranked by citation & engagement</p>
                           </div>
                         </div>
-                        {feedSortPreference === 'top' && <Check className="w-4 h-4 text-[#0C4DA2] stroke-[2.5]" />}
+                        {feedSortPreference === 'top' && <Check className="w-4 h-4 text-brand stroke-[2.5]" />}
                       </button>
                     </div>
                   </div>
 
                   {/* UI Density & Toggle Settings */}
                   <div className="space-y-3 pt-4 border-t border-slate-100">
-                    <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block">
+                    <label className="text-xs font-medium text-slate-700 capitalize block">
                       Reading Comfort
                     </label>
 
@@ -1007,13 +1007,13 @@ function UnifiedSettingsContent() {
                       >
                         <div className="pr-4">
                           <p className="text-xs font-bold text-slate-800">Compact Layout Mode</p>
-                          <p className="text-[10px] text-slate-500 font-medium">Reduce padding on publication list and feed items for high-density monitors</p>
+                          <p className="text-2xs text-slate-500 font-medium">Reduce padding on publication list and feed items for high-density monitors</p>
                         </div>
                         <button
                           type="button"
                           aria-label="Toggle compact layout mode"
                           className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
-                            compactCards ? 'bg-[#0C4DA2]' : 'bg-slate-300'
+                            compactCards ? 'bg-brand' : 'bg-slate-300'
                           }`}
                         >
                           <div
@@ -1030,13 +1030,13 @@ function UnifiedSettingsContent() {
                       >
                         <div className="pr-4">
                           <p className="text-xs font-bold text-slate-800">Auto-expand Paper Abstracts</p>
-                          <p className="text-[10px] text-slate-500 font-medium">Automatically reveal full abstract text on research feed items</p>
+                          <p className="text-2xs text-slate-500 font-medium">Automatically reveal full abstract text on research feed items</p>
                         </div>
                         <button
                           type="button"
                           aria-label="Toggle auto-expand abstracts"
                           className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
-                            autoExpandAbstracts ? 'bg-[#0C4DA2]' : 'bg-slate-300'
+                            autoExpandAbstracts ? 'bg-brand' : 'bg-slate-300'
                           }`}
                         >
                           <div
@@ -1066,18 +1066,18 @@ function UnifiedSettingsContent() {
               >
                 <div className="space-y-5">
                   <div className="border-b border-slate-100 pb-3">
-                    <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
-                      <Bell className="w-4 h-4 text-[#0C4DA2]" />
+                    <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
+                      <Bell className="w-4 h-4 text-brand" />
                       <span>Notification Rules & Email Digest</span>
                     </h2>
-                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                    <p className="text-2xs text-slate-500 font-medium mt-0.5">
                       Configure instant alerts, supervisor advisory milestones, and periodic email updates.
                     </p>
                   </div>
 
                   {/* Channel Notification Toggles */}
                   <div className="space-y-2.5">
-                    <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block">
+                    <label className="text-xs font-medium text-slate-700 capitalize block">
                       In-App & Push Notification Channels
                     </label>
 
@@ -1095,13 +1095,13 @@ function UnifiedSettingsContent() {
                       >
                         <div className="pr-4">
                           <p className="text-xs font-bold text-slate-800">{item.label}</p>
-                          <p className="text-[10px] text-slate-500 font-medium">{item.desc}</p>
+                          <p className="text-2xs text-slate-500 font-medium">{item.desc}</p>
                         </div>
                         <button
                           type="button"
                           aria-label={`Toggle ${item.label}`}
                           className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
-                            (notifPreferences as any)[item.key] ? 'bg-[#0C4DA2]' : 'bg-slate-300'
+                            (notifPreferences as any)[item.key] ? 'bg-brand' : 'bg-slate-300'
                           }`}
                         >
                           <div
@@ -1116,7 +1116,7 @@ function UnifiedSettingsContent() {
 
                   {/* Email Digest Frequency */}
                   <div className="space-y-3 pt-4 border-t border-slate-100">
-                    <label className="text-[11px] font-black text-slate-700 uppercase tracking-wider block">
+                    <label className="text-xs font-medium text-slate-700 capitalize block">
                       Institutional Email Digest Frequency
                     </label>
 
@@ -1133,12 +1133,12 @@ function UnifiedSettingsContent() {
                           onClick={() => handleDigestChange(freq.id)}
                           className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                             notifPreferences.emailDigest === freq.id
-                              ? 'border-[#0C4DA2] bg-blue-50/40 text-[#0C4DA2] font-black'
-                              : 'border-slate-200 bg-white hover:border-slate-300 text-slate-700 font-bold'
+                              ? 'border-brand bg-blue-50/40 text-brand font-semibold'
+                              : 'border-slate-200 bg-surface hover:border-slate-300 text-slate-700 font-bold'
                           }`}
                         >
                           <p className="text-xs">{freq.label}</p>
-                          <p className="text-[10px] text-slate-400 font-normal mt-0.5">{freq.desc}</p>
+                          <p className="text-2xs text-slate-400 font-normal mt-0.5">{freq.desc}</p>
                         </button>
                       ))}
                     </div>
@@ -1162,17 +1162,17 @@ function UnifiedSettingsContent() {
                 <div className="space-y-5">
                   <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
                     <div>
-                      <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
-                        <GraduationCap className="w-4 h-4 text-[#0C4DA2]" />
+                      <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
+                        <GraduationCap className="w-4 h-4 text-brand" />
                         <span>Faculty Supervision & Lab Preferences</span>
                       </h2>
-                      <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                      <p className="text-2xs text-slate-500 font-medium mt-0.5">
                         Manage research scholar intake capacity, lab affiliation, and prospective scholar notifications.
                       </p>
                     </div>
                     <Link
                       href="/my-scholars"
-                      className="text-xs font-bold text-[#0C4DA2] hover:underline flex items-center gap-1"
+                      className="text-xs font-bold text-brand hover:underline flex items-center gap-1"
                     >
                       <span>Open Supervision Panel</span>
                       <ChevronRight className="w-3.5 h-3.5" />
@@ -1181,7 +1181,7 @@ function UnifiedSettingsContent() {
 
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                      <label className="block text-xs font-medium text-slate-700 capitalize">
                         Primary Research Laboratory / Research Center
                       </label>
                       <input
@@ -1196,7 +1196,7 @@ function UnifiedSettingsContent() {
                     <div className="p-3.5 bg-slate-50/80 border border-slate-200/80 rounded-2xl flex items-center justify-between">
                       <div>
                         <p className="text-xs font-bold text-slate-800">Accepting New PhD Scholars</p>
-                        <p className="text-[10px] text-slate-500 font-medium">Allow unassigned research scholars in your department to submit supervision requests</p>
+                        <p className="text-2xs text-slate-500 font-medium">Allow unassigned research scholars in your department to submit supervision requests</p>
                       </div>
                       <button
                         type="button"
@@ -1205,7 +1205,7 @@ function UnifiedSettingsContent() {
                           addToast(`Scholar supervision requests ${!acceptingScholars ? 'enabled' : 'paused'}`, 'info');
                         }}
                         className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
-                          acceptingScholars ? 'bg-[#0C4DA2]' : 'bg-slate-300'
+                          acceptingScholars ? 'bg-brand' : 'bg-slate-300'
                         }`}
                       >
                         <div
@@ -1217,7 +1217,7 @@ function UnifiedSettingsContent() {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block text-[11px] font-black text-slate-700 uppercase tracking-wider">
+                      <label className="block text-xs font-medium text-slate-700 capitalize">
                         Maximum PhD Scholar Capacity
                       </label>
                       <div className="flex items-center gap-3">
@@ -1239,7 +1239,7 @@ function UnifiedSettingsContent() {
                   <button
                     type="button"
                     onClick={() => addToast('Supervisor advisory settings saved.', 'success')}
-                    className="px-5 py-2.5 bg-[#0C4DA2] text-white hover:bg-[#083570] rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+                    className="px-5 py-2.5 bg-brand text-white hover:bg-brand-strong rounded-xl text-xs font-medium capitalize shadow-sm transition-all flex items-center gap-2 cursor-pointer"
                   >
                     <Check className="w-3.5 h-3.5" />
                     <span>Save Supervision Settings</span>

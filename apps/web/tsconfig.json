@@ -42,11 +42,13 @@
     }
   },
   "include": [
-    "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
+    ".next/dev/types/**/*.ts",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    "next-env.d.ts",
+    "node_modules/.cache/next-uiharness/types/**/*.ts",
+    "node_modules/.cache/next-darkbuild/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

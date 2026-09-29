@@ -9,17 +9,17 @@ import { Search, FlaskConical, Network, BookOpen, Fingerprint } from 'lucide-rea
 
 export default function ResearchPage() {
   return (
-    <div className="bg-white text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-primary/20">
+    <div className="bg-surface text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-primary/20">
       <MarketingNavbar />
       
       <main className="flex-grow w-full pt-32 pb-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center max-w-3xl mx-auto mb-20">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold uppercase tracking-widest mb-4">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-medium capitalize mb-4">
               <FlaskConical className="w-4 h-4" />
               For Research Scholars
             </span>
-            <h1 className="font-display text-4xl md:text-6xl font-extrabold tracking-tight mb-6 text-slate-900">
+            <h1 className="font-display text-4xl md:text-6xl font-semibold tracking-tight mb-6 text-slate-900">
               Accelerate your academic journey.
             </h1>
             <p className="text-lg text-slate-500 leading-relaxed">
@@ -29,7 +29,7 @@ export default function ResearchPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center mb-32">
             <div className="order-2 md:order-1 space-y-6">
-              <div className="w-12 h-12 rounded-2xl bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-md">
+              <div className="w-12 h-12 rounded-2xl bg-brand text-white flex items-center justify-center shrink-0 shadow-md">
                 <Search className="w-6 h-6" />
               </div>
               <h2 className="text-3xl font-bold text-slate-900">Semantic Literature & Peer Discovery</h2>
@@ -43,7 +43,7 @@ export default function ResearchPage() {
                  initial={{ opacity: 0, scale: 0.9 }}
                  whileInView={{ opacity: 1, scale: 1 }}
                  viewport={{ once: true }}
-                 className="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm border border-slate-200 z-10"
+                 className="bg-surface p-6 rounded-xl shadow-xl w-full max-w-sm border border-slate-200 z-10"
                >
                  <div className="h-4 w-32 bg-slate-200 rounded mb-4" />
                  <div className="h-10 w-full bg-slate-100 rounded-lg border border-slate-200 flex items-center px-3 mb-4">
@@ -65,7 +65,7 @@ export default function ResearchPage() {
                  initial={{ opacity: 0, scale: 0.9 }}
                  whileInView={{ opacity: 1, scale: 1 }}
                  viewport={{ once: true }}
-                 className="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm border border-slate-200 z-10 flex flex-col gap-4"
+                 className="bg-surface p-6 rounded-xl shadow-xl w-full max-w-sm border border-slate-200 z-10 flex flex-col gap-4"
                >
                   <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                     <div className="w-10 h-10 rounded-full bg-indigo-100" />
@@ -84,7 +84,7 @@ export default function ResearchPage() {
                </motion.div>
             </div>
             <div className="space-y-6">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shrink-0 shadow-md">
+              <div className="w-12 h-12 rounded-2xl bg-brand text-white flex items-center justify-center shrink-0 shadow-md">
                 <Network className="w-6 h-6" />
               </div>
               <h2 className="text-3xl font-bold text-slate-900">Break Departmental Silos</h2>

@@ -40,14 +40,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen bg-[#f8f9fb] flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f4f6fa] flex">
+    <div className="min-h-screen bg-slate-50 flex">
       {/* Mobile overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -63,17 +63,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 h-full w-64 bg-[#0d1b2e] z-40 flex flex-col transition-transform duration-300
+        className={`theme-static fixed top-0 left-0 h-full w-64 bg-slate-900 z-40 flex flex-col transition-transform duration-300
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:relative md:flex`}
       >
         {/* Logo */}
         <div className="flex items-center gap-3 px-5 py-5 border-b border-white/[0.06]">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-500/25 shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg  shrink-0">
             <ShieldCheck className="w-4 h-4 text-white" />
           </div>
           <div>
             <p className="text-white font-bold text-sm tracking-tight leading-none">CuriousBees</p>
-            <p className="text-white/40 text-[10px] font-medium tracking-wider uppercase mt-0.5">Admin Panel</p>
+            <p className="text-white/40 text-xs font-medium capitalize mt-0.5">Admin Panel</p>
           </div>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -88,13 +88,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <Building2 className="w-4 h-4 text-blue-400 shrink-0" />
           <div>
             <p className="text-white text-xs font-semibold leading-none">SRMIST</p>
-            <p className="text-white/40 text-[10px] mt-0.5">Institute Administrator</p>
+            <p className="text-white/40 text-2xs mt-0.5">Institute Administrator</p>
           </div>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-          <p className="text-white/25 text-[9px] font-bold uppercase tracking-widest px-3 mb-2">Navigation</p>
+          <p className="text-white/25 text-xs font-medium capitalize px-3 mb-2">Navigation</p>
           {NAV_ITEMS.map(item => {
             const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             return (
@@ -104,7 +104,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group
                   ${active
-                    ? 'bg-blue-600/20 text-blue-300 border border-blue-500/20'
+                    ? 'bg-brand/20 text-blue-300 border border-blue-500/20'
                     : 'text-white/50 hover:text-white/80 hover:bg-white/[0.05]'
                   }`}
               >
@@ -121,7 +121,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <button
             id="admin-logout-btn"
             onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200 w-full cursor-pointer"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/40 hover:text-red-400 hover:bg-danger-strong/10 transition-all duration-200 w-full cursor-pointer"
           >
             <LogOut className="w-4 h-4 shrink-0" />
             Sign out
@@ -132,7 +132,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
         {/* Top bar */}
-        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200/60 px-6 py-3.5 flex items-center gap-4">
+        <header className="sticky top-0 z-20 bg-surface/80 backdrop-blur-md border-b border-slate-200/60 px-6 py-3.5 flex items-center gap-4">
           <button
             onClick={() => setSidebarOpen(true)}
             className="md:hidden p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"

@@ -10,10 +10,12 @@ export type EmailDeliveryResult = {
 export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
   private readonly brevoApiKey = process.env.BREVO_API_KEY;
-  private readonly senderEmail = process.env.MAIL_FROM_EMAIL || 'notifications@curiousbees.srmist.edu.in';
+  // Required in production (env.validation.ts). Must be a Brevo-verified sender on a domain with SPF/DKIM.
+  private readonly senderEmail = process.env.MAIL_FROM_EMAIL || '';
   private readonly senderName = process.env.MAIL_FROM_NAME || 'CuriousBees';
   private readonly frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-  private readonly mainAdminEmail = process.env.MAIN_ADMIN_EMAIL || 'r.matheshwaran.io@gmail.com';
+  // Optional operational inbox for supervisor-registration alerts. Not used for authorization.
+  private readonly mainAdminEmail = process.env.MAIN_ADMIN_EMAIL || '';
 
   onModuleInit() {
     if (!this.brevoApiKey) {
@@ -453,6 +455,10 @@ export class MailService implements OnModuleInit {
 </body>
 </html>`;
 
+    if (!this.mainAdminEmail) {
+      this.logger.warn('MAIN_ADMIN_EMAIL is not configured; skipping supervisor registration alert email.');
+      return { status: 'NOT_CONFIGURED', error: 'MAIN_ADMIN_EMAIL is not configured.' };
+    }
     return this.sendBrevoEmail({
       to: [{ email: this.mainAdminEmail, name: 'CuriousBees Admin' }],
       subject: `New Supervisor Registration: ${supervisor.name} — CuriousBees`,

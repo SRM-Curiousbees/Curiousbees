@@ -15,7 +15,7 @@ export default function AccountRejectedPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b14] flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="theme-static min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background gradients */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/4 left-1/3 w-80 h-80 bg-red-600/8 rounded-full blur-[120px]" />
@@ -36,7 +36,7 @@ export default function AccountRejectedPage() {
         {/* Brand */}
         <motion.div initial={{ opacity: 0, y: -16 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
           <div className="inline-flex items-center gap-2.5 mb-2">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg shadow-blue-500/25">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg ">
               <ShieldCheck className="w-5 h-5 text-white" />
             </div>
             <span className="text-white font-bold text-lg tracking-tight">CuriousBees</span>
@@ -66,7 +66,7 @@ export default function AccountRejectedPage() {
           {/* Status badge */}
           <div className="inline-flex items-center gap-1.5 bg-red-500/10 border border-red-400/20 px-3 py-1 rounded-full mb-4">
             <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
-            <span className="text-[10px] font-bold text-red-300 uppercase tracking-wider">Registration Declined</span>
+            <span className="text-xs font-medium text-red-300 capitalize">Registration Declined</span>
           </div>
 
           <h1 className="text-xl font-bold text-white tracking-tight mb-3">Your Account Was Not Approved</h1>
@@ -87,7 +87,7 @@ export default function AccountRejectedPage() {
                 <Mail className="w-4 h-4 text-red-400" />
               </div>
               <div className="min-w-0">
-                <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider">Registered email</p>
+                <p className="text-xs text-white/30 font-medium capitalize">Registered email</p>
                 <p className="text-sm font-semibold text-white/80 truncate">{currentUser.email}</p>
               </div>
             </motion.div>
@@ -100,7 +100,7 @@ export default function AccountRejectedPage() {
             transition={{ delay: 0.45 }}
             className="mt-5 p-4 rounded-xl bg-white/[0.03] border border-white/[0.06] text-left space-y-2.5"
           >
-            <p className="text-[10px] font-bold text-white/30 uppercase tracking-wider">What can you do?</p>
+            <p className="text-xs font-medium text-white/30 capitalize">What can you do?</p>
             {[
               'Contact the Institutional Administrator for clarification',
               'Ensure you are using your official SRMIST email address',
@@ -139,7 +139,7 @@ export default function AccountRejectedPage() {
           </div>
         </motion.div>
 
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center mt-5 text-[10px] text-white/15 font-medium tracking-wider uppercase">
+        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="text-center mt-5 text-xs text-white/15 font-medium capitalize">
           SRMIST • Institutional Research Portal
         </motion.p>
       </div>

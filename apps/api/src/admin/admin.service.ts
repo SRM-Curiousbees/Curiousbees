@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, ConflictException, ForbiddenException,
 import { PrismaService } from '../prisma/prisma.service';
 import { Role, UserStatus } from '@prisma/client';
 import * as xlsx from 'xlsx';
+import { assertKeepsAnActiveAdmin, assertNotSelf, assertProvisionableEmail, isEmailAllowedForImport, parseRole, parseUserStatus } from './admin-safety';
 
 @Injectable()
 export class AdminService {
@@ -10,7 +11,6 @@ export class AdminService {
   constructor(private prisma: PrismaService) {}
 
   /** Superadmin is permanently protected — no role change, suspension, or deletion */
-  private readonly SUPERADMIN_EMAIL = 'r.matheshwaran.io@gmail.com';
 
   async getUsers() {
     return this.prisma.user.findMany({
@@ -29,8 +29,10 @@ export class AdminService {
     departmentId?: string;
     supervisorId?: string;
   }) {
-    const email = data.email.toLowerCase();
-    
+    const email = data.email.trim().toLowerCase();
+    assertProvisionableEmail(email);
+    data.role = parseRole(data.role);
+
     // Check if user already exists
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -42,19 +44,26 @@ export class AdminService {
     const approved = true;
 
     let departmentName: string | null = null;
+    let facultyName: string | null = null;
     if (data.departmentId) {
-      const dept = await this.prisma.department.findUnique({ where: { id: data.departmentId } });
-      if (dept) {
-        departmentName = dept.name;
+      const dept = await this.prisma.department.findUnique({
+        where: { id: data.departmentId },
+        include: { faculty: true },
+      });
+      if (!dept) {
+        throw new BadRequestException('Selected department does not exist.');
       }
+      departmentName = dept.name;
+      facultyName = dept.faculty.name;
     }
 
     let supervisorEmail: string | null = null;
     if (data.supervisorId) {
       const sup = await this.prisma.user.findUnique({ where: { id: data.supervisorId } });
-      if (sup) {
-        supervisorEmail = sup.email;
+      if (!sup || sup.role !== Role.RESEARCH_SUPERVISOR) {
+        throw new BadRequestException('Selected supervisor is not a Research Supervisor.');
       }
+      supervisorEmail = sup.email;
     }
 
     return this.prisma.user.create({
@@ -64,6 +73,7 @@ export class AdminService {
         role: data.role,
         department: departmentName,
         departmentId: data.departmentId || null,
+        faculty: facultyName,
         supervisorId: data.supervisorId || null,
         supervisorEmail,
         status,
@@ -87,14 +97,19 @@ export class AdminService {
       departmentId?: string;
       supervisorId?: string;
       onboardingCompleted?: boolean;
-    }
+    },
+    actorId?: string,
   ) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new BadRequestException('User not found.');
     }
-    if (user.email.toLowerCase() === this.SUPERADMIN_EMAIL) {
-      throw new ForbiddenException('The superadmin account cannot be modified.');
+    if (data.email) assertProvisionableEmail(data.email);
+    if (data.role) data.role = parseRole(data.role);
+    if (data.status) data.status = parseUserStatus(data.status);
+    if ((data.role && data.role !== user.role) || (data.status && data.status !== user.status)) {
+      assertNotSelf(actorId, id, 'change the role or status of');
+      await assertKeepsAnActiveAdmin(this.prisma, user, { role: data.role, status: data.status });
     }
 
     const updateData: any = {};
@@ -142,14 +157,13 @@ export class AdminService {
     });
   }
 
-  async deleteUser(id: string) {
+  async deleteUser(id: string, actorId?: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) {
       throw new BadRequestException('User not found.');
     }
-    if (user.email.toLowerCase() === this.SUPERADMIN_EMAIL) {
-      throw new ForbiddenException('The superadmin account cannot be deleted.');
-    }
+    assertNotSelf(actorId, id, 'delete');
+    await assertKeepsAnActiveAdmin(this.prisma, user, { deleted: true });
     return this.prisma.user.delete({ where: { id } });
   }
 
@@ -203,6 +217,12 @@ export class AdminService {
       if (!email) {
         report.failedCount++;
         report.errors.push({ row: rowNum, message: 'Email is missing.' });
+        continue;
+      }
+
+      if (!isEmailAllowedForImport(email)) {
+        report.failedCount++;
+        report.errors.push({ row: rowNum, email, message: 'Email domain is not in ALLOWED_EMAIL_DOMAINS.' });
         continue;
       }
 

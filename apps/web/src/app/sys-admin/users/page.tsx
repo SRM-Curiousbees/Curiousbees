@@ -22,7 +22,7 @@ interface User {
 }
 
 const ROLE_BADGE: Record<string, { label: string; class: string; icon: any }> = {
-  SCHOLAR:        { label: 'Scholar',        class: 'bg-blue-50 text-[#0C4DA2] border-blue-100', icon: GraduationCap },
+  SCHOLAR:        { label: 'Scholar',        class: 'bg-blue-50 text-brand border-blue-100', icon: GraduationCap },
   SUPERVISOR:     { label: 'Supervisor',     class: 'bg-blue-50 text-blue-700 border-blue-100',       icon: BookOpen },
   INSTITUTE_ADMIN:{ label: 'Admin',          class: 'bg-amber-50 text-amber-700 border-amber-100',    icon: Crown },
   ADMIN:          { label: 'Admin',          class: 'bg-amber-50 text-amber-700 border-amber-100',    icon: Crown },
@@ -96,7 +96,7 @@ export default function AdminUsersPage() {
         </div>
         <button
           onClick={fetchUsers}
-          className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:border-blue-300 hover:text-blue-600 transition-all"
+          className="flex items-center gap-2 px-4 py-2 bg-surface border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:border-blue-300 hover:text-blue-600 transition-all"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> Refresh
         </button>
@@ -111,7 +111,7 @@ export default function AdminUsersPage() {
             placeholder="Search by name or email..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-surface border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all"
           />
         </div>
         <div className="relative">
@@ -119,7 +119,7 @@ export default function AdminUsersPage() {
           <select
             value={roleFilter}
             onChange={e => setRoleFilter(e.target.value)}
-            className="pl-10 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:border-blue-400 appearance-none cursor-pointer"
+            className="pl-10 pr-8 py-2.5 bg-surface border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:border-blue-400 appearance-none cursor-pointer"
           >
             <option value="ALL">All Roles</option>
             <option value="SCHOLAR">Scholars</option>
@@ -131,7 +131,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-slate-200/70 rounded-2xl overflow-hidden shadow-sm">
+      <div className="bg-surface border border-slate-200/70 rounded-2xl overflow-hidden shadow-sm">
         {loading ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-6 h-6 text-blue-500 animate-spin" />
@@ -142,15 +142,15 @@ export default function AdminUsersPage() {
             <p className="text-sm">No users found</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50">
-                  <th className="text-left px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-slate-500">User</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-slate-500">Role</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-slate-500">Status</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-slate-500">Department</th>
-                  <th className="text-left px-5 py-3.5 text-xs font-bold uppercase tracking-widest text-slate-500">Joined</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-medium capitalize text-slate-500">User</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-medium capitalize text-slate-500">Role</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-medium capitalize text-slate-500">Status</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-medium capitalize text-slate-500">Department</th>
+                  <th className="text-left px-5 py-3.5 text-xs font-medium capitalize text-slate-500">Joined</th>
                   <th className="px-5 py-3.5"></th>
                 </tr>
               </thead>
@@ -168,7 +168,7 @@ export default function AdminUsersPage() {
                     >
                       <td className="px-5 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold shrink-0 theme-static">
                             {user.name?.[0]?.toUpperCase() || '?'}
                           </div>
                           <div>
@@ -209,7 +209,7 @@ export default function AdminUsersPage() {
                                     initial={{ opacity: 0, scale: 0.95, y: -4 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95, y: -4 }}
-                                    className="absolute right-0 top-8 w-44 bg-white border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden"
+                                    className="absolute right-0 top-8 w-44 bg-surface border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden"
                                   >
                                     {user.status === 'PENDING_ADMIN_APPROVAL' && (
                                       <button

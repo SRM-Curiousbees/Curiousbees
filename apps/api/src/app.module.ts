@@ -38,6 +38,7 @@ import { FilesModule } from './files/files.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      ignoreEnvFile: process.env.NODE_ENV === 'production',
       envFilePath: [
         path.resolve(process.cwd(), '.env'),
         path.resolve(__dirname, '../../.env'),

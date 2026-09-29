@@ -101,7 +101,7 @@ export default function IntegrationsSettingsPage() {
           </button>
           <h1 className="text-2xl font-bold font-display text-slate-900 tracking-tight flex items-center gap-3">
             <span>Research Collaboration Integrations</span>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase bg-primary/10 text-primary border border-primary/20">
+            <span className="px-2.5 py-0.5 rounded-full text-2xs font-mono font-bold uppercase bg-primary/10 text-primary border border-primary/20">
               Enterprise Hub
             </span>
           </h1>
@@ -112,7 +112,7 @@ export default function IntegrationsSettingsPage() {
         
         <button
           onClick={() => { setLoading(true); fetchIntegrationStatus().finally(() => setLoading(false)); }}
-          className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 transition-all shadow-xs cursor-pointer self-start sm:self-auto"
+          className="flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 bg-surface hover:bg-slate-50 transition-all shadow-xs cursor-pointer self-start sm:self-auto"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-primary' : 'text-slate-500'}`} />
           <span>Sync Status</span>
@@ -125,9 +125,9 @@ export default function IntegrationsSettingsPage() {
           <ShieldCheck className="w-5 h-5" />
         </div>
         <div className="space-y-1">
-          <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider font-mono flex items-center gap-2">
+          <h4 className="text-xs font-medium text-slate-900 capitalize font-mono flex items-center gap-2">
             <span>Zero-Retention Architecture</span>
-            <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.2 rounded font-sans font-semibold">Privacy First</span>
+            <span className="text-2xs bg-emerald-100 text-emerald-800 px-2 py-0.2 rounded font-sans font-semibold">Privacy First</span>
           </h4>
           <p className="text-xs text-slate-600 leading-relaxed font-normal">
             CuriousBees manages your research milestones, projects, files, and memberships. No chat messages, audio streams, or meeting recordings are ever copied into or stored in CuriousBees databases.
@@ -139,13 +139,13 @@ export default function IntegrationsSettingsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* ─── GOOGLE WORKSPACE CARD ─── */}
-        <div className="cb-card p-6 bg-white border border-slate-200/80 rounded-2xl shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-6 relative overflow-hidden">
+        <div className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl pointer-events-none" />
           
           <div className="space-y-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-xs p-2.5">
+                <div className="w-12 h-12 rounded-xl bg-surface border border-slate-200 flex items-center justify-center shadow-xs p-2.5">
                   <svg className="w-full h-full" viewBox="0 0 24 24">
                     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
@@ -156,7 +156,7 @@ export default function IntegrationsSettingsPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-display font-bold text-base text-slate-900">Google Workspace</h3>
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-primary/10 text-primary px-2 py-0.5 rounded">Primary</span>
+                    <span className="text-xs font-medium capitalize bg-primary/10 text-primary px-2 py-0.5 rounded">Primary</span>
                   </div>
                   <p className="text-xs text-slate-500 font-medium mt-0.5">Chat Spaces · Meet · Calendar</p>
                 </div>
@@ -187,15 +187,15 @@ export default function IntegrationsSettingsPage() {
 
             {/* Feature Pills */}
             <div className="flex flex-wrap gap-2 pt-1">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
+              <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
                 <MessageSquare className="w-3 h-3 text-blue-600" />
                 <span>Google Chat Spaces</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
+              <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
                 <Video className="w-3 h-3 text-emerald-600" />
                 <span>Google Meet</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
+              <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
                 <Calendar className="w-3 h-3 text-amber-600" />
                 <span>Google Calendar</span>
               </span>
@@ -232,7 +232,7 @@ export default function IntegrationsSettingsPage() {
               <button
                 onClick={handleConnectGoogle}
                 disabled={connectingProvider === 'GOOGLE'}
-                className="w-full py-2.5 bg-primary hover:bg-primary/95 text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 bg-primary hover:bg-primary/95 text-white rounded-lg text-xs font-medium capitalize shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {connectingProvider === 'GOOGLE' ? (
                   <>
@@ -251,19 +251,19 @@ export default function IntegrationsSettingsPage() {
         </div>
 
         {/* ─── ZOOM WORKPLACE CARD ─── */}
-        <div className="cb-card p-6 bg-white border border-slate-200/80 rounded-2xl shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-6 relative overflow-hidden">
+        <div className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/5 rounded-full blur-2xl pointer-events-none" />
           
           <div className="space-y-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-[#2D8CFF]/10 border border-[#2D8CFF]/20 flex items-center justify-center shadow-xs p-2.5 text-[#2D8CFF]">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shadow-xs p-2.5 text-blue-500">
                   <Video className="w-6 h-6" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-display font-bold text-base text-slate-900">Zoom Workplace</h3>
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-[#2D8CFF]/10 text-[#2D8CFF] px-2 py-0.5 rounded">Secondary</span>
+                    <span className="text-xs font-medium capitalize bg-blue-500/10 text-blue-500 px-2 py-0.5 rounded">Secondary</span>
                   </div>
                   <p className="text-xs text-slate-500 font-medium mt-0.5">Zoom Meetings Video Conferencing</p>
                 </div>
@@ -294,11 +294,11 @@ export default function IntegrationsSettingsPage() {
 
             {/* Feature Pills */}
             <div className="flex flex-wrap gap-2 pt-1">
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
-                <Video className="w-3 h-3 text-[#2D8CFF]" />
+              <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
+                <Video className="w-3 h-3 text-blue-500" />
                 <span>Zoom Meetings</span>
               </span>
-              <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
+              <span className="inline-flex items-center gap-1.5 text-2xs font-medium text-slate-600 bg-slate-50 border border-slate-200/80 px-2.5 py-1 rounded-lg">
                 <ShieldCheck className="w-3 h-3 text-emerald-600" />
                 <span>Passcode & Host Control</span>
               </span>
@@ -335,7 +335,7 @@ export default function IntegrationsSettingsPage() {
               <button
                 onClick={handleConnectZoom}
                 disabled={connectingProvider === 'ZOOM'}
-                className="w-full py-2.5 bg-[#2D8CFF] hover:bg-[#2378DE] text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-2.5 bg-brand hover:bg-brand-strong text-white rounded-lg text-xs font-medium capitalize shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {connectingProvider === 'ZOOM' ? (
                   <>
@@ -356,7 +356,7 @@ export default function IntegrationsSettingsPage() {
       </div>
 
       {/* 🌐 EXTERNAL MEETING FALLBACK NOTE */}
-      <div className="cb-card p-5 bg-white border border-slate-200/80 rounded-xl flex items-center justify-between gap-4">
+      <div className="cb-card p-5 bg-surface border border-slate-200/80 rounded-xl flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center border border-purple-100">
             <Layers className="w-4 h-4" />
@@ -368,7 +368,7 @@ export default function IntegrationsSettingsPage() {
             </p>
           </div>
         </div>
-        <span className="text-[11px] font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-md shrink-0">
+        <span className="text-2xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-md shrink-0">
           Always Available
         </span>
       </div>

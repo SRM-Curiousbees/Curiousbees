@@ -70,7 +70,7 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
     return (
       <DashboardShell>
         <div className="flex items-center justify-center min-h-[50vh]">
-          <Loader2 className="w-8 h-8 animate-spin text-[#0C4DA2]" />
+          <Loader2 className="w-8 h-8 animate-spin text-brand" />
         </div>
       </DashboardShell>
     );
@@ -78,7 +78,7 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
 
   if (!thread) {
     return (
-      <div className="cb-card p-12 text-center bg-white/90 backdrop-blur-md max-w-xl mx-auto my-12 text-left">
+      <div className="cb-card p-12 text-center bg-surface/90 backdrop-blur-md max-w-xl mx-auto my-12 text-left">
         <h4 className="text-slate-900 font-bold text-sm text-center">Proposal Not Found</h4>
         <p className="text-slate-500 text-xs max-w-sm mx-auto mt-2 text-center">
           This thread identifier does not match any portal discussion nodes.
@@ -86,7 +86,7 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
         <div className="text-center mt-5">
           <Link 
             href="/feed"
-            className="inline-block text-[10px] font-bold uppercase tracking-wider text-primary border border-primary/20 hover:border-primary/40 bg-primary/5 px-4 py-2 rounded-lg transition-all cursor-pointer active:scale-95"
+            className="inline-block text-xs font-medium capitalize text-primary border border-primary/20 hover:border-primary/40 bg-primary/5 px-4 py-2 rounded-lg transition-all cursor-pointer active:scale-95"
           >
             Return to Feed
           </Link>
@@ -117,8 +117,8 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
 
   const getRoleBadge = (role: string) => {
     return role === 'RESEARCH_SUPERVISOR' 
-      ? 'bg-[#ba1a1a]/5 text-[#ba1a1a] border-[#ba1a1a]/15'
-      : 'bg-[#004495]/5 text-[#004495] border-[#004495]/15';
+      ? 'bg-red-700/5 text-red-700 border-red-700/15'
+      : 'bg-brand-800/5 text-brand-800 border-brand-800/15';
   };
 
   return (
@@ -127,13 +127,13 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
       <div className="flex justify-between items-center text-left">
         <Link 
           href="/feed" 
-          className="inline-flex items-center space-x-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-slate-700 transition-colors"
+          className="inline-flex items-center space-x-1.5 text-xs font-medium capitalize text-slate-400 hover:text-slate-700 transition-colors"
         >
           <ArrowLeft className="w-4 h-4 shrink-0" />
           <span>Back to Feed</span>
         </Link>
 
-        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
+        <span className="text-xs text-slate-400 font-medium capitalize bg-slate-50 border border-slate-200 px-3 py-1 rounded-full">
           NODE ID: {thread.id.substring(0, 8)}
         </span>
       </div>
@@ -142,7 +142,7 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
       <motion.article 
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="cb-card p-6 sm:p-8 space-y-6 bg-white/90 backdrop-blur-md text-left"
+        className="cb-card p-6 sm:p-8 space-y-6 bg-surface/90 backdrop-blur-md text-left"
       >
         {/* Author Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5 gap-4">
@@ -155,7 +155,7 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
                 <h3 className="text-xs font-bold text-slate-900 leading-none">
                   {thread.author?.name}
                 </h3>
-                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border leading-none ${getRoleBadge(thread.author?.role || '')}`}>
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-2xs font-bold uppercase border leading-none ${getRoleBadge(thread.author?.role || '')}`}>
                   {thread.author?.role === 'RESEARCH_SUPERVISOR' ? (
                     <>
                       <GraduationCap className="w-2.5 h-2.5 mr-0.5" />
@@ -169,14 +169,14 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
                   )}
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1.5 leading-none">
+              <p className="text-xs text-slate-400 font-medium capitalize mt-1.5 leading-none">
                 {thread.author?.department || 'SRM Institute'}
               </p>
             </div>
           </div>
 
           <div className="shrink-0">
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+            <p className="text-xs text-slate-400 font-medium capitalize flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-slate-400" />
               <span>Published {formatDate(thread.createdAt)}</span>
             </p>
@@ -195,22 +195,22 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
 
         {/* Dynamic File Attachment Mock */}
         <div className="space-y-2">
-          <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">📎 References & Citations ({thread.tags.length > 2 ? 2 : 1})</span>
+          <span className="text-xs font-medium text-slate-400 capitalize block">📎 References & Citations ({thread.tags.length > 2 ? 2 : 1})</span>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="p-3 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between">
               <div className="flex items-center space-x-2 truncate">
                 <FileText className="w-4 h-4 text-primary shrink-0" />
-                <span className="text-[10px] font-bold text-slate-700 truncate">dst-serb-proposal-draft.pdf</span>
+                <span className="text-2xs font-bold text-slate-700 truncate">dst-serb-proposal-draft.pdf</span>
               </div>
-              <span className="text-[9px] font-bold uppercase text-slate-400 shrink-0">3.4 MB</span>
+              <span className="text-2xs font-bold uppercase text-slate-400 shrink-0">3.4 MB</span>
             </div>
             {thread.tags.length > 2 && (
               <div className="p-3 bg-slate-50 border border-slate-200/60 rounded-xl flex items-center justify-between">
                 <div className="flex items-center space-x-2 truncate">
-                  <Paperclip className="w-4 h-4 text-[#775a00] shrink-0" />
-                  <span className="text-[10px] font-bold text-slate-700 truncate">gpgpu-docker-cluster-ssh.sh</span>
+                  <Paperclip className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span className="text-2xs font-bold text-slate-700 truncate">gpgpu-docker-cluster-ssh.sh</span>
                 </div>
-                <span className="text-[9px] font-bold uppercase text-slate-400 shrink-0">12 KB</span>
+                <span className="text-2xs font-bold uppercase text-slate-400 shrink-0">12 KB</span>
               </div>
             )}
           </div>
@@ -221,7 +221,7 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
           {thread.tags.map((tag: string) => (
             <span 
               key={tag}
-              className="bg-[#004495]/5 border border-[#004495]/10 text-primary text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded"
+              className="bg-brand-800/5 border border-brand-800/10 text-primary text-xs font-medium capitalize px-2.5 py-0.5 rounded"
             >
               #{tag}
             </span>
@@ -231,7 +231,7 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
 
       {/* 3. Comments conversation tree Section */}
       <section className="space-y-4 text-left">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-[#004495] flex items-center space-x-2 border-b border-slate-100 pb-2 font-display">
+        <h3 className="text-xs font-medium capitalize text-brand-800 flex items-center space-x-2 border-b border-slate-100 pb-2 font-display">
           <MessageSquare className="w-4 h-4 text-primary" />
           <span>Discussion Thread ({thread.comments?.length || 0})</span>
         </h3>
@@ -248,7 +248,7 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 key={comment.id}
-                className="p-4 bg-white/90 backdrop-blur-md border border-slate-200/60 rounded-2xl flex items-start space-x-3.5 shadow-sm text-left"
+                className="p-4 bg-surface/90 backdrop-blur-md border border-slate-200/60 rounded-2xl flex items-start space-x-3.5 shadow-sm text-left"
               >
                 <div className="w-[34px] h-[34px] rounded-full bg-primary/5 border border-primary/10 flex items-center justify-center font-display font-bold text-primary text-xs shrink-0">
                   {comment.author?.name ? comment.author.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'RC'}
@@ -258,11 +258,11 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
                   <div className="flex items-center justify-between border-b border-slate-100 pb-1">
                     <div className="flex items-center space-x-2">
                       <span className="text-xs font-bold text-slate-800">{comment.author?.name}</span>
-                      <span className={`inline-flex px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase border leading-none ${getRoleBadge(comment.author?.role || '')}`}>
+                      <span className={`inline-flex px-1.5 py-0.5 rounded-full text-2xs font-bold uppercase border leading-none ${getRoleBadge(comment.author?.role || '')}`}>
                         {comment.author?.role === 'RESEARCH_SUPERVISOR' || comment.author?.role === 'SUPERVISOR' ? 'Research Supervisor' : 'Research Scholar'}
                       </span>
                     </div>
-                    <span className="text-[9px] text-slate-400 font-bold uppercase">
+                    <span className="text-2xs text-slate-400 font-bold uppercase">
                       {formatDate(comment.createdAt)}
                     </span>
                   </div>
@@ -277,10 +277,10 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
         </div>
 
         {/* 4. Add Comment Form card */}
-        <div className="cb-card p-5 bg-white/90 backdrop-blur-md text-left">
+        <div className="cb-card p-5 bg-surface/90 backdrop-blur-md text-left">
           <form onSubmit={handleSubmit(handleCommentSubmit)} className="space-y-4">
             <div className="flex items-center space-x-2.5">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Adding response as <span className="text-primary">{currentUser?.name}</span></span>
+              <span className="text-xs font-medium text-slate-400 capitalize">Adding response as <span className="text-primary">{currentUser?.name}</span></span>
             </div>
 
             <div className="relative">
@@ -297,13 +297,13 @@ export default function ScholarThreadDetailPage({ params }: ThreadDetailPageProp
                 className="absolute right-3 bottom-3.5 p-2 rounded-lg bg-primary hover:bg-primary/95 text-white active:scale-95 transition-all shadow-sm cursor-pointer"
               >
                 {isSubmitting ? (
-                  <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent animate-spin rounded-full block" />
+                  <span className="w-3.5 h-3.5 border-2 border-surface border-t-transparent animate-spin rounded-full block" />
                 ) : (
                   <Send className="w-3.5 h-3.5" />
                 )}
               </button>
             </div>
-            {errors.content && <p className="text-[10px] text-red-555 font-semibold">{errors.content.message as string}</p>}
+            {errors.content && <p className="text-2xs text-red-555 font-semibold">{errors.content.message as string}</p>}
           </form>
         </div>
 

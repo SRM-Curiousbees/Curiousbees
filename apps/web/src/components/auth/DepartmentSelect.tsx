@@ -66,7 +66,7 @@ export default function DepartmentSelect({
             error && "border-error focus:border-error"
           )}
         >
-          <option value="" disabled className="bg-white text-outline">
+          <option value="" disabled className="bg-surface text-outline">
             {loading 
               ? 'Loading Departments...' 
               : !facultyValue 
@@ -76,7 +76,7 @@ export default function DepartmentSelect({
                   : 'Select Department'}
           </option>
           {departments.map((dept) => (
-            <option key={dept.id} value={dept.id} className="bg-white text-on-surface">
+            <option key={dept.id} value={dept.id} className="bg-surface text-on-surface">
               {dept.name}
             </option>
           ))}
@@ -90,7 +90,7 @@ export default function DepartmentSelect({
         </div>
       </div>
       {error && (
-        <p className="text-[11px] text-error font-semibold mt-1">{error}</p>
+        <p className="text-2xs text-error font-semibold mt-1">{error}</p>
       )}
     </div>
   );

@@ -10,6 +10,8 @@ import { PushNotificationPrompt } from '@/components/shared/PushNotificationProm
 import { AlertTriangle } from 'lucide-react';
 import { isRouteAllowedForRole } from '@/lib/auth/permissions';
 import PortalLoading from './loading';
+import Logo from '@/components/Logo';
+import { Button } from '@/components/ui/button';
 
 export default function PortalLayout({
   children,
@@ -135,54 +137,57 @@ export default function PortalLayout({
 
   if (isAuthVerifying || !currentUser) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-[#07111F] flex items-center justify-center text-slate-500 dark:text-slate-400 font-sans">
-        <div className="flex flex-col items-center space-y-4 p-6 text-center max-w-sm">
-          {authTimedOut ? (
-            <div className="space-y-4 animate-fade-in">
-              <div className="flex justify-center">
-                <AlertTriangle className="w-10 h-10 text-amber-500 animate-pulse" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-bold text-slate-800 dark:text-[#F5F7FA]">Connection Delay Detected</p>
-                <p className="text-xs text-slate-500 dark:text-[#A7B3C5] leading-relaxed">
-                  We are having trouble verifying your credentials. 
-                  Please check your network connection and try again.
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setAuthTimedOut(false);
-                  syncUserSession({ force: true });
-                }}
-                className="w-full mt-2 py-2 px-4 bg-[#0c4da2] dark:bg-[#2563EB] hover:bg-[#0c4da2]/90 dark:hover:bg-blue-600 text-white rounded-xl text-xs font-bold transition-all shadow cursor-pointer border border-[#0c4da2] dark:border-blue-500"
-              >
-                Retry Authentication
-              </button>
+      <div className="flex min-h-dvh items-center justify-center bg-canvas px-6">
+        {authTimedOut ? (
+          <div role="alert" className="w-full max-w-sm text-center">
+            <div className="mx-auto mb-4 flex size-11 items-center justify-center rounded-xl border border-warning-200 bg-warning-50 text-warning-700">
+              <AlertTriangle className="size-5" aria-hidden />
             </div>
-          ) : (
-            <>
-              <div className="w-8 h-8 rounded-full border-3 border-[#0C4DA2] dark:border-[#3B82F6] border-t-transparent animate-spin" />
-              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-[#A7B3C5]">Preparing your research workspace...</p>
-            </>
-          )}
-        </div>
+            <h1 className="text-base font-semibold text-ink">We couldn&apos;t confirm your session</h1>
+            <p className="mt-1 text-sm text-ink-secondary">
+              Signing in is taking longer than usual. Check your connection and try again.
+            </p>
+            <Button
+              className="mt-5 w-full"
+              onClick={() => {
+                setAuthTimedOut(false);
+                syncUserSession({ force: true });
+              }}
+            >
+              Try again
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-4" role="status" aria-live="polite">
+            <Logo size={40} />
+            <div className="h-1 w-40 overflow-hidden rounded-full bg-neutral-200">
+              <div className="cb-skeleton h-full w-full" />
+            </div>
+            <span className="sr-only">Loading your workspace</span>
+          </div>
+        )}
       </div>
     );
   }
-  return (
-    <div className="min-h-screen bg-background text-on-surface flex flex-col md:flex-row transition-colors duration-300 relative">
-      {/* Persistent Navigational Sidebar */}
-      <Sidebar />
 
-      {/* Main content body containing header and main child view */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <Navbar />
-        
-        {/* Scrollable contents zone */}
-        <main className="flex-1 p-margin-mobile md:p-margin-desktop max-w-container-max mx-auto w-full transition-all duration-300">
-          <Suspense fallback={<PortalLoading />}>
-            {children}
-          </Suspense>
+  return (
+    <div className="flex min-h-dvh bg-canvas text-ink">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-3 focus:z-toast focus:rounded-lg focus:bg-surface focus:px-3 focus:py-2 focus:text-sm focus:font-medium focus:shadow-lg"
+      >
+        Skip to content
+      </a>
+      <Suspense fallback={<div className="hidden w-sidebar shrink-0 lg:block" />}>
+        <Sidebar />
+      </Suspense>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Suspense fallback={<div className="h-header border-b border-line bg-surface" />}>
+          <Navbar />
+        </Suspense>
+        <main id="main-content" className="mx-auto w-full max-w-content flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <Suspense fallback={<PortalLoading />}>{children}</Suspense>
         </main>
       </div>
       <PushNotificationPrompt />

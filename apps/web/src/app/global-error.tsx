@@ -1,59 +1,29 @@
 'use client';
 
 import { useEffect } from 'react';
-import { ShieldAlert, RotateCcw } from 'lucide-react';
 
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
+// Rendered when the root layout itself fails, so it cannot rely on the app stylesheet.
+export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => {
-    console.error('Next.js Global Root Layout Error Captured:', error);
+    console.error('Root layout error:', error);
   }, [error]);
 
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6 antialiased">
-        <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-          {/* Subtle background glow */}
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-red-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="flex flex-col items-center text-center">
-            <div className="w-16 h-16 rounded-full bg-red-950/50 border border-red-500/30 flex items-center justify-center text-red-400 mb-6 animate-pulse">
-              <ShieldAlert className="w-8 h-8" />
-            </div>
-
-            <h2 className="text-2xl font-bold tracking-tight text-slate-100 mb-2">
-              Critical App Error
-            </h2>
-            <p className="text-sm text-slate-400 mb-6">
-              A critical layout or bootstrap error caused the application to crash.
-            </p>
-
-            {error.message && (
-              <div className="w-full text-left bg-slate-950 border border-slate-800/80 rounded-lg p-4 mb-6 font-mono text-xs text-red-400/90 overflow-x-auto max-h-40">
-                <span className="font-semibold text-slate-500">Error:</span> {error.message}
-                {error.digest && (
-                  <div className="mt-1">
-                    <span className="font-semibold text-slate-500">Digest:</span> {error.digest}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <button
-              onClick={() => reset()}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-semibold text-sm rounded-xl transition-all duration-200 shadow-lg shadow-amber-500/15"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Reset & Recover Application
-            </button>
-          </div>
-        </div>
+    <html lang="en">
+      <body style={{ margin: 0, minHeight: '100vh', display: 'grid', placeItems: 'center', background: '#F5F6F8', color: '#151A22', fontFamily: 'system-ui, sans-serif', padding: 24 }}>
+        <main style={{ maxWidth: 420, width: '100%', background: '#fff', border: '1px solid #E4E7EC', borderRadius: 12, padding: 32 }}>
+          <h1 style={{ fontSize: 20, margin: 0 }}>CuriousBees couldn&apos;t load</h1>
+          <p style={{ color: '#4D5564', lineHeight: 1.6, fontSize: 15 }}>
+            Something went wrong while starting the app. Please try again. If it keeps happening, let the CuriousBees team know.
+          </p>
+          {error.digest && <p style={{ color: '#6A7383', fontSize: 13 }}>Reference: <code>{error.digest}</code></p>}
+          <button
+            onClick={() => reset()}
+            style={{ marginTop: 8, height: 40, padding: '0 18px', borderRadius: 8, border: 0, background: '#0C4DA2', color: '#fff', fontSize: 14, fontWeight: 500, cursor: 'pointer' }}
+          >
+            Try again
+          </button>
+        </main>
       </body>
     </html>
   );

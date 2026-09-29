@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../auth/supabase.service';
 import { Role, UserStatus } from '@prisma/client';
 import * as xlsx from 'xlsx';
+import { assertKeepsAnActiveAdmin, assertNotSelf, assertProvisionableEmail, isEmailAllowedForImport, parseUserStatus } from './admin-safety';
 
 @Injectable()
 export class AdminSupervisorsService {
@@ -106,7 +107,8 @@ export class AdminSupervisorsService {
   }
 
   async createSupervisor(adminId: string, data: any) {
-    const email = data.email.toLowerCase();
+    const email = String(data.email).trim().toLowerCase();
+    assertProvisionableEmail(email);
     
     const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -171,6 +173,11 @@ export class AdminSupervisorsService {
   async updateSupervisorStatus(adminId: string, id: string, status: UserStatus) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Supervisor not found.');
+    status = parseUserStatus(status);
+    if (status !== user.status) {
+      assertNotSelf(adminId, id, 'change the status of');
+      await assertKeepsAnActiveAdmin(this.prisma, user, { status });
+    }
 
     const updated = await this.prisma.user.update({
       where: { id },
@@ -187,6 +194,7 @@ export class AdminSupervisorsService {
   async updateSupervisor(adminId: string, id: string, data: any) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Supervisor not found.');
+    if (data.email) assertProvisionableEmail(data.email);
 
     let departmentName = user.department;
     let facultyName = user.faculty;
@@ -245,6 +253,7 @@ export class AdminSupervisorsService {
 
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Supervisor not found.');
+    await assertKeepsAnActiveAdmin(this.prisma, user, { deleted: true });
 
     // 1. Unlink any scholars assigned to this supervisor
     await this.prisma.user.updateMany({
@@ -303,6 +312,7 @@ export class AdminSupervisorsService {
       const employeeIdStr = String(row.employeeId || row.EmployeeId || '').trim();
 
       if (!email) { report.failedCount++; report.errors.push({ row: rowNum, message: 'Missing email' }); continue; }
+      if (!isEmailAllowedForImport(email)) { report.failedCount++; report.errors.push({ row: rowNum, email, message: 'Email domain is not in ALLOWED_EMAIL_DOMAINS' }); continue; }
       if (!name) { report.failedCount++; report.errors.push({ row: rowNum, email, message: 'Missing name' }); continue; }
       if (userEmails.has(email)) { report.failedCount++; report.errors.push({ row: rowNum, email, message: 'User already exists' }); continue; }
 

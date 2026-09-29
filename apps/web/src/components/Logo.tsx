@@ -1,54 +1,41 @@
-'use client';
-
 import React from 'react';
-import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 interface LogoProps {
   className?: string;
   size?: number;
   showText?: boolean;
+  /** `light` renders the wordmark for dark backgrounds. */
   variant?: 'light' | 'dark' | 'auto';
 }
 
-export default function Logo({ 
-  className, 
-  size = 36,
-  showText = false,
-  variant = 'auto'
-}: LogoProps) {
+/** CuriousBees mark + wordmark. The mark carries the brand colour; the wordmark stays typographic. */
+export default function Logo({ className, size = 32, showText = false, variant = 'auto' }: LogoProps) {
+  const onDark = variant === 'light';
   return (
-    <div className={cn("inline-flex items-center gap-3 shrink-0 select-none", className)}>
-      <div 
-        className="relative shrink-0 flex items-center justify-center transition-transform hover:scale-105 duration-200"
-        style={{ width: size, height: size }}
-      >
-        <Image 
-          src="/logo_icon.png" 
-          alt="CuriousBees Logo Icon" 
-          width={size * 2} 
-          height={size * 2} 
-          className="w-full h-full object-contain drop-shadow-sm"
+    <span className={cn('inline-flex shrink-0 select-none items-center gap-2.5', className)}>
+      <span className={cn('inline-flex shrink-0', onDark && 'rounded-lg bg-white p-1 shadow-sm')}>
+        <Image
+          src="/logo_icon.png"
+          alt={showText ? '' : 'CuriousBees'}
+          width={size * 2}
+          height={size * 2}
+          style={{ width: onDark ? size - 8 : size, height: onDark ? size - 8 : size }}
+          className="object-contain"
           priority
         />
-      </div>
-      
+      </span>
       {showText && (
-        <div className="flex flex-col leading-none text-left">
-          <span className={cn(
-            "font-display font-black text-lg tracking-tight",
-            variant === 'light' ? "text-white" : variant === 'dark' ? "text-slate-900" : "text-slate-900 dark:text-white"
-          )}>
-            Curious<span className="text-[#FFC828]">Bees</span>
+        <span className="flex flex-col leading-none">
+          <span className={cn('text-[17px] font-semibold tracking-tight', onDark ? 'text-white' : 'text-ink')}>
+            Curious<span className={onDark ? 'text-gold' : 'text-warning-500'}>Bees</span>
           </span>
-          <span className={cn(
-            "text-[9px] font-extrabold tracking-[0.18em] uppercase mt-1",
-            variant === 'light' ? "text-amber-400/90" : "text-slate-400"
-          )}>
-            SRMIST RESEARCH PORTAL
+          <span className={cn('mt-1 text-2xs font-medium', onDark ? 'text-white/60' : 'text-ink-muted')}>
+            SRMIST Research
           </span>
-        </div>
+        </span>
       )}
-    </div>
+    </span>
   );
 }

@@ -8,13 +8,13 @@ import { Target, Lightbulb, Users } from 'lucide-react';
 
 export default function AboutPage() {
   return (
-    <div className="bg-white text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-primary/20">
+    <div className="bg-surface text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-primary/20">
       <MarketingNavbar />
       
       <main className="flex-grow w-full pt-32 pb-16">
         <div className="max-w-4xl mx-auto px-6">
           <div className="text-center mb-20">
-            <h1 className="font-display text-4xl md:text-6xl font-extrabold tracking-tight mb-6 text-slate-900">
+            <h1 className="font-display text-4xl md:text-6xl font-semibold tracking-tight mb-6 text-slate-900">
               About CuriousBees
             </h1>
             <p className="text-xl text-slate-500 leading-relaxed max-w-2xl mx-auto">

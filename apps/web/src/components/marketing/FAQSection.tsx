@@ -1,78 +1,74 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
 
-export default function FAQSection() {
-  const faqs = [
-    {
-      q: "Who can join the CuriousBees platform?",
-      a: "CuriousBees is currently exclusive to SRM Institute of Science and Technology. Active Research Scholars, PhD Candidates, Faculty Supervisors, and Institutional Administrators with a valid university email can access the platform."
-    },
-    {
-      q: "How does the role verification process work?",
-      a: "When you sign in using your university Google account, the system automatically detects your institutional role. Scholars may require a one-time verification step by their assigned Research Supervisor before gaining full access to project workspaces."
-    },
-    {
-      q: "Is my research data secure?",
-      a: "Yes. CuriousBees employs enterprise-grade encryption and strict access controls. Research artifacts and database nodes are protected within the university's secure intranet framework, ensuring academic integrity and data privacy."
-    },
-    {
-      q: "Can I collaborate with researchers from other departments?",
-      a: "Absolutely! Our Semantic Research Discovery engine is built to break down departmental silos. You can find and connect with peers across all faculties based on shared research interests and methodologies."
-    },
-    {
-      q: "How do supervisors track scholar progress?",
-      a: "Supervisors have a dedicated management dashboard that provides real-time visibility into their scholars' milestones, draft submissions, and pending approvals, streamlining the entire mentorship pipeline."
-    }
-  ];
+const FAQS = [
+  {
+    q: 'Who can use CuriousBees?',
+    a: 'Research supervisors, research scholars and institute administrators at SRM Institute of Science and Technology. Accounts are created by the institution; you sign in with the Google account for the email address you were registered with.',
+  },
+  {
+    q: 'How do I get an account?',
+    a: 'Contact your department or the research office. An administrator adds you with your role, faculty and department, and you can sign in straight away.',
+  },
+  {
+    q: 'Who can see my research files?',
+    a: 'Files you upload to a workspace are stored privately and encrypted. They are only shared through short-lived links with members of that workspace.',
+  },
+  {
+    q: 'Can I work with researchers in other departments?',
+    a: 'Yes. You can find researchers across faculties by research area, follow their work and send collaboration requests.',
+  },
+  {
+    q: 'How do supervisors follow scholar progress?',
+    a: 'Each supervision relationship has a workspace with milestones, progress reports, files and meeting notes, so both sides see the same record.',
+  },
+];
 
+export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section className="py-20 md:py-32 bg-white relative">
-      <div className="max-w-3xl mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="font-display text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">
-            Frequently Asked Questions
-          </h2>
-          <p className="text-slate-500 text-lg">
-            Everything you need to know about the CuriousBees platform.
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          {faqs.map((faq, idx) => (
-            <div 
-              key={idx} 
-              className={`border rounded-2xl overflow-hidden transition-colors ${openIndex === idx ? 'border-primary/30 bg-primary/5' : 'border-slate-200 bg-white hover:border-slate-300'}`}
-            >
-              <button
-                onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
-                className="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none"
+    <section aria-labelledby="faq-title" className="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 md:grid-cols-[1fr_1.6fr] md:py-24">
+      <div>
+        <h2 id="faq-title" className="font-serif text-3xl font-semibold tracking-tight text-ink md:text-4xl">Questions</h2>
+        <p className="mt-3 text-[15px] text-ink-secondary">
+          Can&apos;t find what you need?{' '}
+          <Link href="/contact" className="font-medium text-brand hover:underline">Contact the CuriousBees team</Link>.
+        </p>
+      </div>
+      <div className="divide-y divide-line border-y border-line">
+        {FAQS.map((faq, idx) => {
+          const open = openIndex === idx;
+          return (
+            <div key={faq.q}>
+              <h3>
+                <button
+                  type="button"
+                  onClick={() => setOpenIndex(open ? null : idx)}
+                  aria-expanded={open}
+                  aria-controls={`faq-panel-${idx}`}
+                  id={`faq-trigger-${idx}`}
+                  className="flex w-full items-center justify-between gap-4 py-5 text-left text-base font-semibold text-ink"
+                >
+                  {faq.q}
+                  <ChevronDown className={`size-5 shrink-0 text-ink-muted transition-transform duration-base ${open ? 'rotate-180' : ''}`} aria-hidden />
+                </button>
+              </h3>
+              <div
+                id={`faq-panel-${idx}`}
+                role="region"
+                aria-labelledby={`faq-trigger-${idx}`}
+                hidden={!open}
+                className="pb-5 text-[15px] leading-relaxed text-ink-secondary"
               >
-                <span className="font-bold text-slate-900 pr-4">{faq.q}</span>
-                <ChevronDown className={`w-5 h-5 text-slate-400 shrink-0 transition-transform duration-300 ${openIndex === idx ? 'rotate-180 text-primary' : ''}`} />
-              </button>
-              
-              <AnimatePresence>
-                {openIndex === idx && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3, ease: "easeInOut" }}
-                  >
-                    <div className="px-6 pb-5 text-slate-600 text-sm leading-relaxed">
-                      {faq.a}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                {faq.a}
+              </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
     </section>
   );

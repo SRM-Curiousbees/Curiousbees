@@ -30,7 +30,7 @@ const StatCard = ({
     transition={{ delay, duration: 0.35 }}
   >
     <Link href={href}>
-      <div className="bg-white border border-slate-200/70 rounded-2xl p-5 hover:border-blue-200 hover:shadow-md transition-all duration-200 group cursor-pointer">
+      <div className="bg-surface border border-slate-200/70 rounded-2xl p-5 hover:border-blue-200 hover:shadow-md transition-all duration-200 group cursor-pointer">
         <div className="flex items-start justify-between mb-4">
           <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center`}>
             <Icon className="w-5 h-5" />
@@ -90,7 +90,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex items-center gap-3 mb-1">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-sm">
+          <div className="theme-static w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-sm">
             <ShieldCheck className="w-4 h-4 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Institute Dashboard</h1>
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {quickActions.map(action => (
             <Link key={action.href} href={action.href}>
-              <div className="bg-white border border-slate-200/70 rounded-2xl p-5 hover:shadow-md hover:border-blue-200 transition-all duration-200 cursor-pointer group">
+              <div className="bg-surface border border-slate-200/70 rounded-2xl p-5 hover:shadow-md hover:border-blue-200 transition-all duration-200 cursor-pointer group">
                 <div className={`w-9 h-9 rounded-xl border ${action.color} flex items-center justify-center mb-3`}>
                   <action.icon className="w-4 h-4" />
                 </div>

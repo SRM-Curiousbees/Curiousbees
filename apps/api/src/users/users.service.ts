@@ -550,6 +550,21 @@ export class UsersService {
     return updated;
   }
 
+  /**
+   * Roles are assigned by administrators. Self-service onboarding/registration
+   * may only confirm the role already on the user's record, never change it.
+   */
+  private assertSelfServiceRoleMatches(currentRole: Role, requested: string) {
+    const requestedRole =
+      requested === 'SCHOLAR' ? Role.RESEARCH_SCHOLAR : requested === 'SUPERVISOR' ? Role.RESEARCH_SUPERVISOR : null;
+    if (!requestedRole) {
+      throw new BadRequestException('Invalid role selection.');
+    }
+    if (requestedRole !== currentRole) {
+      throw new ForbiddenException('Your role is assigned by an administrator and cannot be changed during onboarding.');
+    }
+  }
+
   async completeOnboarding(
     userId: string,
     payload: { role: 'SCHOLAR' | 'SUPERVISOR'; supervisorId?: string }
@@ -561,6 +576,7 @@ export class UsersService {
     if (user.status === UserStatus.ACTIVE) {
       throw new BadRequestException('User has already completed onboarding.');
     }
+    this.assertSelfServiceRoleMatches(user.role, payload.role);
 
     let status: UserStatus = UserStatus.PENDING_SUPERVISOR_APPROVAL;
     let supervisorEmail = null;
@@ -576,15 +592,15 @@ export class UsersService {
       status = UserStatus.PENDING_SUPERVISOR_APPROVAL;
       supervisorEmail = supervisor.email;
     } else if (payload.role === 'SUPERVISOR') {
-      status = UserStatus.ACTIVE; // Supervisors go active immediately after onboarding
+      // Supervisor approval is an administrator decision; onboarding never grants it.
+      status = user.status;
     }
 
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
-        role: payload.role === 'SCHOLAR' ? Role.RESEARCH_SCHOLAR : Role.RESEARCH_SUPERVISOR,
         status,
-        approved: payload.role === 'SUPERVISOR',
+        approved: payload.role === 'SUPERVISOR' ? user.approved : false,
         supervisorId: payload.role === 'SCHOLAR' ? payload.supervisorId : null,
         supervisorEmail
       }
@@ -673,6 +689,7 @@ export class UsersService {
 
     const email = user.email.toLowerCase();
     const { name, role, departmentId, supervisorId, employeeId, faculty } = input;
+    this.assertSelfServiceRoleMatches(user.role, role);
 
     // Verify department exists
     const department = await this.prisma.department.findUnique({
@@ -707,7 +724,8 @@ export class UsersService {
       if (!employeeId) {
         throw new BadRequestException('Research Supervisors must provide an Employee ID.');
       }
-      status = UserStatus.ACTIVE;
+      // Keep the administrator-controlled status; self-registration never activates a supervisor.
+      status = user.status;
     } else {
       throw new BadRequestException('Invalid registration role.');
     }
@@ -716,7 +734,6 @@ export class UsersService {
       where: { id: userId },
       data: {
         name,
-        role: role === 'SCHOLAR' ? Role.RESEARCH_SCHOLAR : Role.RESEARCH_SUPERVISOR,
         departmentId,
         department: department.name,
         faculty: faculty || null,
@@ -724,7 +741,7 @@ export class UsersService {
         supervisorEmail,
         employeeId: employeeId || null,
         status,
-        approved: role === 'SUPERVISOR',
+        approved: role === 'SUPERVISOR' ? user.approved : false,
       },
     });
 

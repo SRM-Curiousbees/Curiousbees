@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 import { useStore } from '@/store/useStore';
 
 export function PushNotificationPrompt() {
@@ -67,7 +68,7 @@ export function PushNotificationPrompt() {
 
   const handleEnable = async () => {
     if (!('Notification' in window)) {
-      alert('This browser does not support desktop notifications.');
+      setShowPrompt(false);
       return;
     }
 
@@ -76,8 +77,8 @@ export function PushNotificationPrompt() {
       setPermission(result);
       if (result === 'granted') {
         setShowPrompt(false);
-        new Notification('Notifications Enabled', {
-          body: 'You will now receive alerts for new messages and posts when this tab is in the background.'
+        new Notification('Notifications are on', {
+          body: 'You will be alerted to new messages and replies while CuriousBees is in the background.'
         });
       }
     } catch (error) {
@@ -94,41 +95,25 @@ export function PushNotificationPrompt() {
     <AnimatePresence>
       {showPrompt && (
         <motion.div
-          initial={{ opacity: 0, y: 50, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 50, scale: 0.95 }}
-          transition={{ duration: 0.3, ease: 'easeOut' }}
-          className="fixed bottom-6 left-6 z-50 max-w-sm w-full bg-white border border-slate-200 rounded-2xl shadow-xl p-4 flex gap-4"
+          role="dialog"
+          aria-labelledby="push-prompt-title"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 16 }}
+          className="fixed bottom-20 left-4 right-4 z-toast rounded-2xl border border-line bg-surface p-4 shadow-xl sm:bottom-6 sm:left-auto sm:right-6 sm:w-[360px]"
         >
-          {/* Bell Icon Container */}
-          <div className="shrink-0">
-            <div className="w-12 h-12 bg-slate-900 rounded-full flex items-center justify-center text-white">
-              <Bell className="w-6 h-6" />
+          <div className="flex gap-3">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-muted text-ink-secondary">
+              <Bell className="size-[18px]" aria-hidden />
             </div>
-          </div>
-
-          {/* Content */}
-          <div className="flex-1 pr-6">
-            <h3 className="text-base font-bold text-slate-900 leading-tight">Turn on notifications</h3>
-            <p className="text-sm text-slate-500 mt-1 leading-snug">
-              Get message alerts when this tab is in the background — like WhatsApp Web.
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="absolute right-4 top-4 flex flex-col justify-between h-[calc(100%-2rem)] items-end">
-            <button 
-              onClick={handleDismiss}
-              className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={handleEnable}
-              className="mt-auto px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold rounded-full transition-colors"
-            >
-              Enable
-            </button>
+            <div className="min-w-0 flex-1">
+              <h3 id="push-prompt-title" className="text-sm font-semibold text-ink">Get notified in this browser?</h3>
+              <p className="mt-0.5 text-sm text-ink-secondary">We&apos;ll alert you to new messages and replies while CuriousBees is open in the background.</p>
+              <div className="mt-3 flex gap-2">
+                <Button size="sm" onClick={handleEnable}>Turn on</Button>
+                <Button size="sm" variant="ghost" onClick={handleDismiss}>Not now</Button>
+              </div>
+            </div>
           </div>
         </motion.div>
       )}
