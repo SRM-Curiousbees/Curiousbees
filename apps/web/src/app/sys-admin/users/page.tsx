@@ -66,6 +66,9 @@ export default function AdminUsersPage() {
   });
 
   const handleAction = async (userId: string, action: 'approve' | 'suspend' | 'unsuspend') => {
+    const target = users.find((u) => u.id === userId);
+    if (target?.email?.toLowerCase() === 'srmcuriousbees@gmail.com') return;
+
     setActionLoading(userId + action);
     setOpenMenu(null);
     try {
@@ -211,29 +214,37 @@ export default function AdminUsersPage() {
                                     exit={{ opacity: 0, scale: 0.95, y: -4 }}
                                     className="absolute right-0 top-8 w-44 bg-surface border border-slate-200 rounded-xl shadow-lg z-10 overflow-hidden"
                                   >
-                                    {user.status === 'PENDING_ADMIN_APPROVAL' && (
-                                      <button
-                                        onClick={() => handleAction(user.id, 'approve')}
-                                        className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-emerald-700 hover:bg-emerald-50 transition-colors"
-                                      >
-                                        <UserCheck className="w-4 h-4" /> Approve
-                                      </button>
-                                    )}
-                                    {user.status === 'ACTIVE' && (
-                                      <button
-                                        onClick={() => handleAction(user.id, 'suspend')}
-                                        className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                                      >
-                                        <UserX className="w-4 h-4" /> Suspend
-                                      </button>
-                                    )}
-                                    {user.status === 'SUSPENDED' && (
-                                      <button
-                                        onClick={() => handleAction(user.id, 'unsuspend')}
-                                        className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
-                                      >
-                                        <ShieldAlert className="w-4 h-4" /> Reactivate
-                                      </button>
+                                    {user.email?.toLowerCase() === 'srmcuriousbees@gmail.com' ? (
+                                      <div className="px-4 py-3 text-xs text-brand font-medium">
+                                        Protected Root Admin
+                                      </div>
+                                    ) : (
+                                      <>
+                                        {user.status === 'PENDING_ADMIN_APPROVAL' && (
+                                          <button
+                                            onClick={() => handleAction(user.id, 'approve')}
+                                            className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-emerald-700 hover:bg-emerald-50 transition-colors"
+                                          >
+                                            <UserCheck className="w-4 h-4" /> Approve
+                                          </button>
+                                        )}
+                                        {user.status === 'ACTIVE' && (
+                                          <button
+                                            onClick={() => handleAction(user.id, 'suspend')}
+                                            className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                          >
+                                            <UserX className="w-4 h-4" /> Suspend
+                                          </button>
+                                        )}
+                                        {user.status === 'SUSPENDED' && (
+                                          <button
+                                            onClick={() => handleAction(user.id, 'unsuspend')}
+                                            className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+                                          >
+                                            <ShieldAlert className="w-4 h-4" /> Reactivate
+                                          </button>
+                                        )}
+                                      </>
                                     )}
                                     <div className="px-4 py-2.5 text-xs text-slate-400 border-t border-slate-100">
                                       ID: {user.id.slice(0, 8)}…

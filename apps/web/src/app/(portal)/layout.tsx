@@ -23,7 +23,20 @@ export default function PortalLayout({
   const { currentUser, setCurrentUser, fetchData, setTheme, syncUserSession } = useStore();
   const [authTimedOut, setAuthTimedOut] = useState(false);
   const [isAuthVerifying, setIsAuthVerifying] = useState(true);
+  const [isSlow, setIsSlow] = useState(false);
   const hasInitialized = useRef(false);
+
+  const showLoader = isAuthVerifying || !currentUser || !isRouteAllowedForRole(currentUser.role, pathname);
+
+  // Tell people it's still working if loading takes longer than usual.
+  useEffect(() => {
+    if (!showLoader) {
+      setIsSlow(false);
+      return;
+    }
+    const timer = setTimeout(() => setIsSlow(true), 5000);
+    return () => clearTimeout(timer);
+  }, [showLoader]);
 
   // Sync local storage theme on mount
   useEffect(() => {
@@ -142,7 +155,7 @@ export default function PortalLayout({
   }, [isAuthVerifying, currentUser, pathname, router]);
 
   // Never render a page the role may not use, even for the moment before the redirect.
-  if (isAuthVerifying || !currentUser || !isRouteAllowedForRole(currentUser.role, pathname)) {
+  if (showLoader) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-canvas px-6">
         {authTimedOut ? (
@@ -165,12 +178,14 @@ export default function PortalLayout({
             </Button>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-4" role="status" aria-live="polite">
-            <Logo size={40} />
-            <div className="h-1 w-40 overflow-hidden rounded-full bg-neutral-200">
-              <div className="cb-skeleton h-full w-full" />
-            </div>
-            <span className="sr-only">Loading your workspace</span>
+          <div className="flex flex-col items-center gap-5" role="status" aria-live="polite">
+            <span className="cb-breathe">
+              <Logo size={44} />
+            </span>
+            <div className="cb-progress w-44" aria-hidden />
+            <p className="text-sm text-ink-muted">
+              {isSlow ? 'Still connecting. This can take a moment on a slow network…' : 'Loading your workspace…'}
+            </p>
           </div>
         )}
       </div>

@@ -45,6 +45,9 @@ export default function AdminSupervisorsPage() {
   };
 
   const handleSuspendToggle = async (userId: string, currentSuspended: boolean) => {
+    const target = supervisors.find((s) => s.id === userId);
+    if (target?.email?.toLowerCase() === 'srmcuriousbees@gmail.com') return;
+
     const action = currentSuspended ? 'unsuspend' : 'suspend';
     if (confirm(`Are you sure you want to ${action} this supervisor?`)) {
       try {
@@ -276,17 +279,21 @@ export default function AdminSupervisorsPage() {
                         </td>
 
                         <td className="p-4 pr-6 text-right">
-                          <button
-                            onClick={() => handleSuspendToggle(sup.id, !!sup.suspended)}
-                            className={`px-3 py-1.5 rounded-lg text-2xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ml-auto border cursor-pointer ${
-                              sup.suspended
-                                ? 'bg-emerald-50 border-emerald-250 text-emerald-700 hover:bg-emerald-100/60'
-                                : 'bg-red-50 border-red-200 text-red-750 hover:bg-red-100/60'
-                            }`}
-                          >
-                            {sup.suspended ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                            <span>{sup.suspended ? 'Activate' : 'Suspend'}</span>
-                          </button>
+                          {sup.email?.toLowerCase() === 'srmcuriousbees@gmail.com' ? (
+                            <span className="text-2xs font-semibold text-brand">Protected Root</span>
+                          ) : (
+                            <button
+                              onClick={() => handleSuspendToggle(sup.id, !!sup.suspended)}
+                              className={`px-3 py-1.5 rounded-lg text-2xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1.5 ml-auto border cursor-pointer ${
+                                sup.suspended
+                                  ? 'bg-emerald-50 border-emerald-250 text-emerald-700 hover:bg-emerald-100/60'
+                                  : 'bg-red-50 border-red-200 text-red-750 hover:bg-red-100/60'
+                              }`}
+                            >
+                              {sup.suspended ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                              <span>{sup.suspended ? 'Activate' : 'Suspend'}</span>
+                            </button>
+                          )}
                         </td>
                       </tr>
                     );
@@ -376,17 +383,23 @@ export default function AdminSupervisorsPage() {
                   </div>
 
                   <div className="border-t border-slate-100/70 pt-3 flex justify-end">
-                    <button
-                      onClick={() => handleSuspendToggle(sup.id, !!sup.suspended)}
-                      className={`w-full py-2 rounded-lg text-2xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 border cursor-pointer ${
-                        sup.suspended
-                          ? 'bg-emerald-50 border-emerald-250 text-emerald-700 hover:bg-emerald-100/60'
-                          : 'bg-red-50 border-red-200 text-red-750 hover:bg-red-100/60'
-                      }`}
-                    >
-                      {sup.suspended ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
-                      <span>{sup.suspended ? 'Activate Account' : 'Suspend Account'}</span>
-                    </button>
+                    {sup.email?.toLowerCase() === 'srmcuriousbees@gmail.com' ? (
+                      <span className="text-2xs font-semibold text-brand text-center w-full py-2">
+                        Permanent Root Administrator
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleSuspendToggle(sup.id, !!sup.suspended)}
+                        className={`w-full py-2 rounded-lg text-2xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 border cursor-pointer ${
+                          sup.suspended
+                            ? 'bg-emerald-50 border-emerald-250 text-emerald-700 hover:bg-emerald-100/60'
+                            : 'bg-red-50 border-red-200 text-red-750 hover:bg-red-100/60'
+                        }`}
+                      >
+                        {sup.suspended ? <Unlock className="w-3 h-3" /> : <Lock className="w-3 h-3" />}
+                        <span>{sup.suspended ? 'Activate Account' : 'Suspend Account'}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               );

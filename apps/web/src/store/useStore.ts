@@ -3,7 +3,16 @@ import { User, Thread, Comment, Opportunity, UserRole, Event, CollaborationReque
 import { supabase } from '@/lib/supabase/client';
 import { getDashboardRoute } from '@/lib/auth/route-protection';
 import { ROLE_COOKIE_NAME } from '@curiousbees/constants';
+import { ROOT_ADMIN_EMAIL, isRootAdmin } from '@/lib/auth/email-domains';
 import { apiFetch, getAuthHeaders, readApiError, API_URL, resetAuthPromise } from '@/lib/api-client';
+
+const assertNotTargetRoot = (targetIdOrEmail: string, state: any, action: string) => {
+  const isMatch = isRootAdmin(targetIdOrEmail) ||
+    state.adminUsers?.some((u: any) => u.id === targetIdOrEmail && isRootAdmin(u.email));
+  if (isMatch) {
+    throw new Error(`The permanent root administrator (${ROOT_ADMIN_EMAIL}) cannot be ${action}.`);
+  }
+};
 
 const MOCK_INTERESTS = [
   'Generative AI & LLMs',
@@ -2245,6 +2254,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   changeUserRole: async (userId: string, role: UserRole) => {
+    assertNotTargetRoot(userId, get(), 'demoted or modified');
     set({ isLoading: true });
     try {
       const res = await apiFetch(`/api/admin/users/${userId}`, {
@@ -2299,6 +2309,10 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateAdminUser: async (id, data) => {
+    assertNotTargetRoot(id, get(), 'modified');
+    if (data?.email && isRootAdmin(data.email)) {
+      throw new Error(`The permanent root administrator (${ROOT_ADMIN_EMAIL}) cannot be reassigned.`);
+    }
     set({ isLoading: true });
     try {
       const res = await apiFetch(`/api/admin/users/${id}`, {
@@ -2322,6 +2336,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   deleteAdminUser: async (id, reason = 'Administrative account deletion') => {
+    assertNotTargetRoot(id, get(), 'deleted');
     set({ isLoading: true });
     try {
       const res = await apiFetch(`/api/admin/users/${id}`, {
@@ -2343,6 +2358,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   updateAdminUserAffiliation: async (userId: string, data: { facultyId: string; departmentId: string; reason?: string }) => {
+    assertNotTargetRoot(userId, get(), 'modified');
     try {
       const res = await apiFetch(`/api/admin/users/${userId}/affiliation`, {
         method: 'PUT',
@@ -2447,6 +2463,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   suspendUser: async (userId: string, reason: string) => {
+    assertNotTargetRoot(userId, get(), 'suspended');
     set({ isLoading: true });
     try {
       const res = await apiFetch(`/api/admin/users/${userId}/suspend`, {
@@ -2467,6 +2484,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   reactivateUser: async (userId: string, reason: string) => {
+    assertNotTargetRoot(userId, get(), 'modified');
     set({ isLoading: true });
     try {
       const res = await apiFetch(`/api/admin/users/${userId}/reactivate`, {
@@ -2487,6 +2505,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   deactivateUser: async (userId: string, reason: string) => {
+    assertNotTargetRoot(userId, get(), 'deactivated');
     set({ isLoading: true });
     try {
       const res = await apiFetch(`/api/admin/users/${userId}/deactivate`, {
@@ -2507,6 +2526,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   reassignSupervisor: async (scholarId: string, supervisorId: string, reason: string) => {
+    assertNotTargetRoot(scholarId, get(), 'reassigned');
     set({ isLoading: true });
     try {
       const res = await apiFetch(`/api/admin/users/${scholarId}/reassign-supervisor`, {
@@ -3357,6 +3377,7 @@ export const useStore = create<AppState>((set, get) => ({
   },
 
   suspendUserToggle: async (userId: string, suspended: boolean) => {
+    assertNotTargetRoot(userId, get(), 'suspended or unsuspended');
     set({ isLoading: true });
     try {
       const res = await apiFetch(`/api/users/${userId}/suspend`, {

@@ -41,6 +41,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { ActionMenu } from '@/components/ui/action-menu';
 import { Field, DetailItem } from '@/components/ui/field';
 import { RoleBadge } from '@/components/shared/role-badge';
+import { isRootAdmin, ROOT_ADMIN_EMAIL } from '@/lib/auth/email-domains';
 
 type UserTab = 'ALL' | 'SCHOLARS' | 'SUPERVISORS' | 'ADMINS' | 'SUSPENDED';
 type ActionType = 'SUSPEND' | 'REACTIVATE' | 'DEACTIVATE' | 'CHANGE_ROLE' | 'REASSIGN_SUPERVISOR' | 'DELETE';
@@ -176,6 +177,7 @@ function AdminUsersContent() {
   };
 
   const openAction = (type: ActionType, user: any) => {
+    if (isRootAdmin(user?.email)) return;
     setActionReason('');
     setActionModal({ type, user });
   };
@@ -248,6 +250,7 @@ function AdminUsersContent() {
 
   // Load supervisors list when needed
   const openReassignSupervisorModal = async (user: any) => {
+    if (isRootAdmin(user?.email)) return;
     setActionModal({ type: 'REASSIGN_SUPERVISOR', user });
     setActionReason('');
     setNewSupervisorId('');
@@ -263,6 +266,10 @@ function AdminUsersContent() {
   const handleActionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!actionModal) return;
+    if (isRootAdmin(actionModal.user?.email)) {
+      setActionModal(null);
+      return;
+    }
 
     setActionSubmitting(true);
     try {
@@ -298,6 +305,7 @@ function AdminUsersContent() {
 
   // Open Affiliation Modal
   const openAffiliationModal = (targetUser: any) => {
+    if (isRootAdmin(targetUser?.email)) return;
     setAffiliationUser(targetUser);
     const existingFacultyId =
       targetUser.departmentRef?.facultyId ||
@@ -313,6 +321,10 @@ function AdminUsersContent() {
   const handleAffiliationSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!affiliationUser || !modalFacultyId || !modalDeptId) return;
+    if (isRootAdmin(affiliationUser.email)) {
+      setAffiliationUser(null);
+      return;
+    }
 
     setAffiliationSubmitting(true);
     try {
@@ -508,8 +520,9 @@ function AdminUsersContent() {
                 {users.map((user) => {
                   const isSuspended = user.status === 'SUSPENDED' || user.suspended;
                   const isSelf = user.id === currentUser?.id;
+                  const isRoot = isRootAdmin(user.email);
                   const needsAffiliation =
-                    (user.role === 'RESEARCH_SCHOLAR' || user.role === 'RESEARCH_SUPERVISOR') && !user.departmentId;
+                    !isRoot && (user.role === 'RESEARCH_SCHOLAR' || user.role === 'RESEARCH_SUPERVISOR') && !user.departmentId;
                   const displayName = user.name || user.email;
 
                   return (
@@ -522,13 +535,20 @@ function AdminUsersContent() {
                             className="size-9 shrink-0 rounded-full border border-line bg-surface-muted object-cover"
                           />
                           <div className="min-w-0">
-                            <button
-                              type="button"
-                              onClick={() => openUserDrawer(user.id)}
-                              className="block max-w-full truncate text-left font-medium text-ink hover:text-brand hover:underline"
-                            >
-                              {user.name || 'Unnamed user'}
-                            </button>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => openUserDrawer(user.id)}
+                                className="block max-w-full truncate text-left font-medium text-ink hover:text-brand hover:underline"
+                              >
+                                {user.name || 'Unnamed user'}
+                              </button>
+                              {isRoot && (
+                                <Badge tone="brand" className="shrink-0 text-2xs py-0 px-1.5 font-semibold">
+                                  Root Admin
+                                </Badge>
+                              )}
+                            </div>
                             <p className="truncate text-xs text-ink-muted">{user.email}</p>
                             <div className="mt-1 flex flex-wrap gap-1 sm:hidden">
                               <RoleBadge role={user.role} />
@@ -583,25 +603,31 @@ function AdminUsersContent() {
                           </Button>
                           <ActionMenu
                             label={`Actions for ${displayName}`}
-                            items={[
-                              { label: 'View details', icon: Eye, onSelect: () => openUserDrawer(user.id) },
-                              { label: 'Edit affiliation', icon: Building, onSelect: () => openAffiliationModal(user) },
-                              ...(user.role === 'RESEARCH_SCHOLAR'
-                                ? [{ label: 'Reassign supervisor', icon: UserCog, onSelect: () => openReassignSupervisorModal(user) }]
-                                : []),
-                              isSuspended
-                                ? { label: 'Reactivate account', icon: CheckCircle, onSelect: () => openAction('REACTIVATE', user) }
-                                : { label: 'Suspend account', icon: Ban, onSelect: () => openAction('SUSPEND', user) },
-                              'separator',
-                              {
-                                label: 'Delete user',
-                                icon: Trash2,
-                                tone: 'danger',
-                                disabled: isSelf,
-                                hint: isSelf ? 'You cannot delete your own account' : undefined,
-                                onSelect: () => openAction('DELETE', user),
-                              },
-                            ]}
+                            items={
+                              isRoot
+                                ? [
+                                    { label: 'View details', icon: Eye, onSelect: () => openUserDrawer(user.id) },
+                                  ]
+                                : [
+                                    { label: 'View details', icon: Eye, onSelect: () => openUserDrawer(user.id) },
+                                    { label: 'Edit affiliation', icon: Building, onSelect: () => openAffiliationModal(user) },
+                                    ...(user.role === 'RESEARCH_SCHOLAR'
+                                      ? [{ label: 'Reassign supervisor', icon: UserCog, onSelect: () => openReassignSupervisorModal(user) }]
+                                      : []),
+                                    isSuspended
+                                      ? { label: 'Reactivate account', icon: CheckCircle, onSelect: () => openAction('REACTIVATE', user) }
+                                      : { label: 'Suspend account', icon: Ban, onSelect: () => openAction('SUSPEND', user) },
+                                    'separator',
+                                    {
+                                      label: 'Delete user',
+                                      icon: Trash2,
+                                      tone: 'danger',
+                                      disabled: isSelf,
+                                      hint: isSelf ? 'You cannot delete your own account' : undefined,
+                                      onSelect: () => openAction('DELETE', user),
+                                    },
+                                  ]
+                            }
                           />
                         </div>
                       </td>
@@ -703,7 +729,7 @@ function AdminUsersContent() {
                   <DetailItem label="Faculty">{drawerUser.departmentRef?.faculty?.name || drawerUser.faculty || '—'}</DetailItem>
                   <DetailItem label="Department">
                     {drawerUser.departmentRef?.name || drawerUser.department || '—'}
-                    {!drawerUser.departmentId && (
+                    {!drawerUser.departmentId && !isRootAdmin(drawerUser.email) && (
                       <Badge tone="warning" className="mt-1 block w-fit">
                         Not linked to a department
                       </Badge>
@@ -713,56 +739,74 @@ function AdminUsersContent() {
                   <DetailItem label="Joined">{formatDate(drawerUser.createdAt)}</DetailItem>
                 </dl>
 
-                <section aria-labelledby="user-admin-actions" className="space-y-2.5 border-t border-line pt-4">
-                  <h3 id="user-admin-actions" className="text-sm font-semibold text-ink">
-                    Administrative actions
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    <Button variant="secondary" size="sm" onClick={() => openAffiliationModal(drawerUser)}>
-                      <Building aria-hidden />
-                      Edit affiliation
-                    </Button>
-                    {drawerUser.role === 'RESEARCH_SCHOLAR' && (
-                      <Button variant="secondary" size="sm" onClick={() => openReassignSupervisorModal(drawerUser)}>
-                        <UserCog aria-hidden />
-                        Reassign supervisor
+                {isRootAdmin(drawerUser.email) ? (
+                  <section aria-labelledby="user-admin-actions" className="space-y-2 border-t border-line pt-4">
+                    <h3 id="user-admin-actions" className="text-sm font-semibold text-ink">
+                      Account governance
+                    </h3>
+                    <div className="rounded-xl border border-brand/20 bg-brand/5 p-3.5 text-xs text-ink-secondary">
+                      <div className="flex items-center gap-2 font-medium text-brand">
+                        <Shield className="size-4 shrink-0" />
+                        <span>Permanent Root Administrator</span>
+                      </div>
+                      <p className="mt-1 text-ink-muted leading-relaxed">
+                        This account ({drawerUser.email}) is the permanent root administrator of CuriousBees.
+                        It is permanently protected by institutional policy and cannot be altered, demoted, suspended, or deleted by any user or administrator.
+                      </p>
+                    </div>
+                  </section>
+                ) : (
+                  <section aria-labelledby="user-admin-actions" className="space-y-2.5 border-t border-line pt-4">
+                    <h3 id="user-admin-actions" className="text-sm font-semibold text-ink">
+                      Administrative actions
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="secondary" size="sm" onClick={() => openAffiliationModal(drawerUser)}>
+                        <Building aria-hidden />
+                        Edit affiliation
                       </Button>
-                    )}
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => {
-                        setNewRole(drawerUser.role);
-                        openAction('CHANGE_ROLE', drawerUser);
-                      }}
-                    >
-                      <Shield aria-hidden />
-                      Change role
-                    </Button>
-                    {drawerSuspended ? (
-                      <Button variant="secondary" size="sm" onClick={() => openAction('REACTIVATE', drawerUser)}>
-                        <CheckCircle aria-hidden />
-                        Reactivate account
+                      {drawerUser.role === 'RESEARCH_SCHOLAR' && (
+                        <Button variant="secondary" size="sm" onClick={() => openReassignSupervisorModal(drawerUser)}>
+                          <UserCog aria-hidden />
+                          Reassign supervisor
+                        </Button>
+                      )}
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setNewRole(drawerUser.role);
+                          openAction('CHANGE_ROLE', drawerUser);
+                        }}
+                      >
+                        <Shield aria-hidden />
+                        Change role
                       </Button>
-                    ) : (
-                      <Button variant="secondary" size="sm" onClick={() => openAction('SUSPEND', drawerUser)}>
-                        <Ban aria-hidden />
-                        Suspend account
+                      {drawerSuspended ? (
+                        <Button variant="secondary" size="sm" onClick={() => openAction('REACTIVATE', drawerUser)}>
+                          <CheckCircle aria-hidden />
+                          Reactivate account
+                        </Button>
+                      ) : (
+                        <Button variant="secondary" size="sm" onClick={() => openAction('SUSPEND', drawerUser)}>
+                          <Ban aria-hidden />
+                          Suspend account
+                        </Button>
+                      )}
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="text-danger-700 hover:border-danger-300 hover:bg-danger-50"
+                        disabled={drawerUser.id === currentUser?.id}
+                        title={drawerUser.id === currentUser?.id ? 'You cannot delete your own account' : undefined}
+                        onClick={() => openAction('DELETE', drawerUser)}
+                      >
+                        <Trash2 aria-hidden />
+                        Delete user
                       </Button>
-                    )}
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="text-danger-700 hover:border-danger-300 hover:bg-danger-50"
-                      disabled={drawerUser.id === currentUser?.id}
-                      title={drawerUser.id === currentUser?.id ? 'You cannot delete your own account' : undefined}
-                      onClick={() => openAction('DELETE', drawerUser)}
-                    >
-                      <Trash2 aria-hidden />
-                      Delete user
-                    </Button>
-                  </div>
-                </section>
+                    </div>
+                  </section>
+                )}
               </div>
             )}
 

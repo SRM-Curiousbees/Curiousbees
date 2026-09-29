@@ -16,6 +16,10 @@ export function getAllowedEmailDomains(): string[] {
 
 export const ROOT_ADMIN_EMAIL = 'srmcuriousbees@gmail.com';
 
+export function isRootAdmin(email: string | null | undefined): boolean {
+  return (email || '').trim().toLowerCase() === ROOT_ADMIN_EMAIL.toLowerCase();
+}
+
 export function isEmailDomainAllowed(email: string | null | undefined): boolean {
   const normalized = (email || '').trim().toLowerCase();
   if (normalized === ROOT_ADMIN_EMAIL) return true;

@@ -5,6 +5,7 @@ import { UpdateProfileSchema } from '@curiousbees/shared-utils';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MailService } from './mail.service';
 import { Role, UserStatus } from '@prisma/client';
+import { ROOT_ADMIN_EMAIL } from '../auth/email-policy';
 
 @Injectable()
 export class UsersService {
@@ -359,6 +360,9 @@ export class UsersService {
     if (!scholar) {
       throw new BadRequestException('Scholar mapping request not found for this supervisor.');
     }
+    if (scholar.email?.toLowerCase() === ROOT_ADMIN_EMAIL.toLowerCase()) {
+      throw new ForbiddenException(`The permanent root administrator (${ROOT_ADMIN_EMAIL}) cannot be modified.`);
+    }
 
     // Approve the scholar
     const approvedUser = await this.prisma.user.update({
@@ -396,6 +400,9 @@ export class UsersService {
 
     if (!scholar) {
       throw new BadRequestException('Scholar mapping request not found for this supervisor.');
+    }
+    if (scholar.email?.toLowerCase() === ROOT_ADMIN_EMAIL.toLowerCase()) {
+      throw new ForbiddenException(`The permanent root administrator (${ROOT_ADMIN_EMAIL}) cannot be modified.`);
     }
 
     // Reject the scholar
@@ -451,6 +458,12 @@ export class UsersService {
     const admin = await this.prisma.user.findUnique({ where: { id: adminId } });
     if (!admin || admin.role !== Role.INSTITUTE_ADMIN) {
       throw new ForbiddenException('Only administrators can change user roles.');
+    }
+
+    const targetUser = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!targetUser) throw new BadRequestException('User not found.');
+    if (targetUser.email?.toLowerCase() === ROOT_ADMIN_EMAIL.toLowerCase()) {
+      throw new ForbiddenException(`The permanent root administrator (${ROOT_ADMIN_EMAIL}) cannot be demoted or modified.`);
     }
 
     let prismaRole: Role;
@@ -531,6 +544,12 @@ export class UsersService {
     const admin = await this.prisma.user.findUnique({ where: { id: adminId } });
     if (!admin || admin.role !== Role.INSTITUTE_ADMIN) {
       throw new ForbiddenException('Only administrators can suspend or unsuspend users.');
+    }
+
+    const targetUser = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!targetUser) throw new BadRequestException('User not found.');
+    if (targetUser.email?.toLowerCase() === ROOT_ADMIN_EMAIL.toLowerCase()) {
+      throw new ForbiddenException(`The permanent root administrator (${ROOT_ADMIN_EMAIL}) cannot be suspended or modified.`);
     }
 
     const updated = await this.prisma.user.update({
@@ -619,6 +638,9 @@ export class UsersService {
     if (!supervisor || supervisor.role !== Role.RESEARCH_SUPERVISOR) {
       throw new BadRequestException('User is not a Research Supervisor.');
     }
+    if (supervisor.email?.toLowerCase() === ROOT_ADMIN_EMAIL.toLowerCase()) {
+      throw new ForbiddenException(`The permanent root administrator (${ROOT_ADMIN_EMAIL}) cannot be modified.`);
+    }
 
     const approvedUser = await this.prisma.user.update({
       where: { id: supervisorId },
@@ -653,6 +675,9 @@ export class UsersService {
     const supervisor = await this.prisma.user.findUnique({ where: { id: supervisorId } });
     if (!supervisor || supervisor.role !== Role.RESEARCH_SUPERVISOR) {
       throw new BadRequestException('User is not a Research Supervisor.');
+    }
+    if (supervisor.email?.toLowerCase() === ROOT_ADMIN_EMAIL.toLowerCase()) {
+      throw new ForbiddenException(`The permanent root administrator (${ROOT_ADMIN_EMAIL}) cannot be modified.`);
     }
 
     const declined = await this.prisma.user.update({

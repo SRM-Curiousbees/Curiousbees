@@ -1,6 +1,6 @@
 import { ForbiddenException, BadRequestException } from '@nestjs/common';
 import { Role, UserStatus } from '@prisma/client';
-import { assertKeepsAnActiveAdmin, assertNotSelf, assertProvisionableEmail, parseRole, parseUserStatus } from './admin-safety';
+import { assertKeepsAnActiveAdmin, assertNotRootAdmin, assertNotSelf, assertProvisionableEmail, parseRole, parseUserStatus } from './admin-safety';
 
 describe('admin safety rules', () => {
   const admin = { id: 'a1', role: Role.INSTITUTE_ADMIN, status: UserStatus.ACTIVE, suspended: false };
@@ -39,5 +39,12 @@ describe('admin safety rules', () => {
     expect(() => parseRole('SUPERADMIN')).toThrow(BadRequestException);
     expect(parseUserStatus('SUSPENDED')).toBe(UserStatus.SUSPENDED);
     expect(() => parseUserStatus('GOD_MODE')).toThrow(BadRequestException);
+  });
+
+  it('protects root administrator from any modification, suspension, or deletion', () => {
+    expect(() => assertNotRootAdmin('srmcuriousbees@gmail.com', 'modified')).toThrow(ForbiddenException);
+    expect(() => assertNotRootAdmin('SRMCURIOUSBEES@GMAIL.COM', 'suspended')).toThrow(ForbiddenException);
+    expect(() => assertNotRootAdmin(' srmcuriousbees@gmail.com ', 'deleted')).toThrow(ForbiddenException);
+    expect(() => assertNotRootAdmin('other@srmist.edu.in', 'modified')).not.toThrow();
   });
 });

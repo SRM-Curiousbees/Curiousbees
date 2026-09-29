@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SupabaseService } from '../auth/supabase.service';
 import { Role, UserStatus } from '@prisma/client';
 import * as xlsx from 'xlsx';
-import { assertKeepsAnActiveAdmin, assertNotSelf, assertProvisionableEmail, isEmailAllowedForImport, parseUserStatus } from './admin-safety';
+import { assertKeepsAnActiveAdmin, assertNotRootAdmin, assertNotSelf, assertProvisionableEmail, isEmailAllowedForImport, parseUserStatus, ROOT_ADMIN_EMAIL } from './admin-safety';
 
 @Injectable()
 export class AdminScholarsService {
@@ -98,6 +98,7 @@ export class AdminScholarsService {
 
   async createScholar(adminId: string, data: any) {
     const email = String(data.email).trim().toLowerCase();
+    assertNotRootAdmin(email, 'created as scholar');
     assertProvisionableEmail(email);
     
     const existing = await this.prisma.user.findUnique({ where: { email } });
@@ -171,6 +172,7 @@ export class AdminScholarsService {
   async updateScholarStatus(adminId: string, id: string, status: UserStatus) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Scholar not found.');
+    assertNotRootAdmin(user.email, 'suspended or deactivated');
     status = parseUserStatus(status);
     if (status !== user.status) {
       assertNotSelf(adminId, id, 'change the status of');
@@ -193,9 +195,11 @@ export class AdminScholarsService {
   async assignSupervisor(adminId: string, scholarId: string, supervisorId: string) {
     const scholar = await this.prisma.user.findUnique({ where: { id: scholarId } });
     if (!scholar) throw new BadRequestException('Scholar not found.');
+    assertNotRootAdmin(scholar.email, 'modified');
 
     const supervisor = await this.prisma.user.findUnique({ where: { id: supervisorId } });
     if (!supervisor) throw new BadRequestException('Supervisor not found.');
+    assertNotRootAdmin(supervisor.email, 'assigned as supervisor');
 
     const updated = await this.prisma.user.update({
       where: { id: scholarId },
@@ -212,7 +216,11 @@ export class AdminScholarsService {
   async updateScholar(adminId: string, id: string, data: any) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Scholar not found.');
-    if (data.email) assertProvisionableEmail(data.email);
+    assertNotRootAdmin(user.email, 'modified');
+    if (data.email) {
+      assertNotRootAdmin(data.email, 'reassigned to root email');
+      assertProvisionableEmail(data.email);
+    }
 
     let departmentName = user.department;
     let facultyName = user.faculty;
@@ -277,6 +285,7 @@ export class AdminScholarsService {
 
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new BadRequestException('Scholar not found.');
+    assertNotRootAdmin(user.email, 'deleted');
     await assertKeepsAnActiveAdmin(this.prisma, user, { deleted: true });
 
     await this.prisma.$transaction([
@@ -330,6 +339,7 @@ export class AdminScholarsService {
       const supervisorStr = String(row.supervisor || row.Supervisor || '').trim().toLowerCase();
 
       if (!email) { report.failedCount++; report.errors.push({ row: rowNum, message: 'Missing email' }); continue; }
+      if (email === ROOT_ADMIN_EMAIL.toLowerCase()) { report.failedCount++; report.errors.push({ row: rowNum, email, message: 'The permanent root administrator cannot be imported as a scholar.' }); continue; }
       if (!isEmailAllowedForImport(email)) { report.failedCount++; report.errors.push({ row: rowNum, email, message: 'Email domain is not in ALLOWED_EMAIL_DOMAINS' }); continue; }
       if (!name) { report.failedCount++; report.errors.push({ row: rowNum, email, message: 'Missing name' }); continue; }
       if (userEmails.has(email)) { report.failedCount++; report.errors.push({ row: rowNum, email, message: 'User already exists' }); continue; }

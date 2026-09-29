@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, ConflictException, ForbiddenException,
 import { PrismaService } from '../prisma/prisma.service';
 import { Role, UserStatus } from '@prisma/client';
 import * as xlsx from 'xlsx';
-import { assertKeepsAnActiveAdmin, assertNotSelf, assertProvisionableEmail, isEmailAllowedForImport, parseRole, parseUserStatus } from './admin-safety';
+import { assertKeepsAnActiveAdmin, assertNotRootAdmin, assertNotSelf, assertProvisionableEmail, isEmailAllowedForImport, parseRole, parseUserStatus, ROOT_ADMIN_EMAIL } from './admin-safety';
 
 @Injectable()
 export class AdminService {
@@ -30,6 +30,7 @@ export class AdminService {
     supervisorId?: string;
   }) {
     const email = data.email.trim().toLowerCase();
+    assertNotRootAdmin(email, 'created manually');
     assertProvisionableEmail(email);
     data.role = parseRole(data.role);
 
@@ -104,7 +105,11 @@ export class AdminService {
     if (!user) {
       throw new BadRequestException('User not found.');
     }
-    if (data.email) assertProvisionableEmail(data.email);
+    assertNotRootAdmin(user.email, 'modified');
+    if (data.email) {
+      assertNotRootAdmin(data.email, 'reassigned to root administrator email');
+      assertProvisionableEmail(data.email);
+    }
     if (data.role) data.role = parseRole(data.role);
     if (data.status) data.status = parseUserStatus(data.status);
     if ((data.role && data.role !== user.role) || (data.status && data.status !== user.status)) {
@@ -163,6 +168,7 @@ export class AdminService {
       throw new BadRequestException('User not found.');
     }
     assertNotSelf(actorId, id, 'delete');
+    assertNotRootAdmin(user.email, 'deleted');
     await assertKeepsAnActiveAdmin(this.prisma, user, { deleted: true });
     return this.prisma.user.delete({ where: { id } });
   }
@@ -217,6 +223,12 @@ export class AdminService {
       if (!email) {
         report.failedCount++;
         report.errors.push({ row: rowNum, message: 'Email is missing.' });
+        continue;
+      }
+
+      if (email === ROOT_ADMIN_EMAIL.toLowerCase()) {
+        report.failedCount++;
+        report.errors.push({ row: rowNum, email, message: 'The permanent root administrator cannot be modified or re-imported.' });
         continue;
       }
 

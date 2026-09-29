@@ -248,6 +248,8 @@ export class AdminUsersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found.');
 
+    assertNotRootAdmin(user.email, 'modified or reactivated');
+
     const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
@@ -364,6 +366,9 @@ export class AdminUsersService {
     if (!scholar) throw new NotFoundException('Scholar not found.');
     if (!newSupervisor) throw new NotFoundException('Selected supervisor not found.');
 
+    assertNotRootAdmin(scholar.email, 'modified or reassigned');
+    assertNotRootAdmin(newSupervisor.email, 'assigned as supervisor');
+
     if (newSupervisor.role !== Role.RESEARCH_SUPERVISOR) {
       throw new BadRequestException('Selected user is not a Research Supervisor.');
     }
@@ -475,6 +480,8 @@ export class AdminUsersService {
       include: { supervisorProfile: true, scholarProfile: true },
     });
     if (!user) throw new NotFoundException('User not found.');
+
+    assertNotRootAdmin(user.email, 'modified');
 
     if (!data.departmentId || !data.facultyId) {
       throw new BadRequestException('Both Faculty and Department selections are required.');

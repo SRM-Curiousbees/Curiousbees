@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AdminUsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditHelperService } from './audit-helper';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Role } from '@prisma/client';
 
 describe('AdminUsersService - Institutional Affiliation', () => {
@@ -243,5 +243,20 @@ describe('AdminUsersService - Institutional Affiliation', () => {
         departmentId: 'dept-1',
       },
     });
+  });
+
+  it('should reject affiliation update for the permanent root admin', async () => {
+    mockPrisma.user.findUnique.mockResolvedValueOnce({
+      id: 'root-admin-id',
+      email: 'srmcuriousbees@gmail.com',
+      role: Role.INSTITUTE_ADMIN,
+    });
+
+    await expect(
+      service.updateUserAffiliation(mockActor, 'root-admin-id', {
+        facultyId: 'fac-1',
+        departmentId: 'dept-1',
+      }),
+    ).rejects.toThrow(ForbiddenException);
   });
 });

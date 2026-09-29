@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Keyframes used by component classes below. Plain CSS on purpose: Tailwind only
+   emits keyframes for animate-* utilities it finds in markup, so keyframes that
+   only component classes use must live here. */
+@keyframes cb-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@keyframes cb-indeterminate {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(260%); }
+}
+@keyframes cb-breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.94); opacity: 0.8; }
+}
+@keyframes cb-soft-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
 /* ==========================================================================
    CuriousBees design tokens
    Single source of truth. Tailwind (tailwind.config.js) reads these as
@@ -493,9 +513,50 @@
 
   .cb-skeleton {
     border-radius: 6px;
-    background: linear-gradient(90deg, rgb(var(--neutral-100)) 0%, rgb(var(--neutral-200) / 0.7) 50%, rgb(var(--neutral-100)) 100%);
+    background: linear-gradient(90deg, rgb(var(--neutral-100)) 0%, rgb(var(--neutral-200)) 50%, rgb(var(--neutral-100)) 100%);
     background-size: 200% 100%;
-    animation: shimmer 1.6s linear infinite;
+    animation: cb-shimmer 1.6s linear infinite;
+  }
+
+  /* Indeterminate progress: a brand segment sweeping across a quiet track. */
+  .cb-progress {
+    position: relative;
+    height: 4px;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: rgb(var(--neutral-200));
+  }
+  .cb-progress::after {
+    content: '';
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 40%;
+    border-radius: inherit;
+    background: rgb(var(--brand-600));
+    animation: cb-indeterminate 1.3s var(--ease-in-out) infinite;
+  }
+
+  .cb-breathe {
+    animation: cb-breathe 2.4s ease-in-out infinite;
+  }
+
+  /* Reduced motion: loaders keep signalling progress with opacity instead of movement. */
+  @media (prefers-reduced-motion: reduce) {
+    .cb-skeleton {
+      background: rgb(var(--neutral-100));
+      animation: cb-soft-pulse 2s ease-in-out infinite !important;
+      animation-duration: 2s !important;
+      animation-iteration-count: infinite !important;
+    }
+    .cb-progress::after {
+      width: 100%;
+      animation: cb-soft-pulse 2s ease-in-out infinite !important;
+      animation-duration: 2s !important;
+      animation-iteration-count: infinite !important;
+    }
+    .cb-breathe {
+      animation: none !important;
+    }
   }
 
   /* Legacy classes still referenced by a few screens */
