@@ -10,24 +10,32 @@ import React, { useEffect, useState, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import {
+  AlertCircle,
   AlertTriangle,
   ArrowDownWideNarrow,
   ArrowUpNarrowWide,
   Ban,
   Building,
   CheckCircle,
+  CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Download,
   Eye,
+  FileSpreadsheet,
+  FileText,
   GraduationCap,
   History,
+  Plus,
   Search,
   Shield,
   ShieldAlert,
   Trash2,
+  Upload,
   UserCheck,
   UserCog,
   Users,
+  XCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getProfileImageUrl, handleAvatarError } from '@/lib/avatar';
@@ -101,6 +109,9 @@ function AdminUsersContent() {
     changeUserRole,
     reassignSupervisor,
     deleteAdminUser,
+    createAdminUser,
+    importAdminUsers,
+    addToast,
     fetchAdminFaculties,
     fetchAdminDepartments,
   } = useStore();
@@ -145,6 +156,31 @@ function AdminUsersContent() {
   const [modalDeptId, setModalDeptId] = useState('');
   const [modalAffiliationReason, setModalAffiliationReason] = useState('');
   const [affiliationSubmitting, setAffiliationSubmitting] = useState(false);
+
+  // Single User Provisioning Modal State
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createName, setCreateName] = useState('');
+  const [createEmail, setCreateEmail] = useState('');
+  const [createRole, setCreateRole] = useState<'RESEARCH_SCHOLAR' | 'RESEARCH_SUPERVISOR' | 'INSTITUTE_ADMIN'>('RESEARCH_SCHOLAR');
+  const [createFacultyId, setCreateFacultyId] = useState('');
+  const [createDeptId, setCreateDeptId] = useState('');
+  const [createSupervisorId, setCreateSupervisorId] = useState('');
+  const [createSubmitting, setCreateSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  // Bulk Import Modal State
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkFile, setBulkFile] = useState<File | null>(null);
+  const [bulkDragActive, setBulkDragActive] = useState(false);
+  const [bulkImportReport, setBulkImportReport] = useState<any | null>(null);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+
+  // Departments available in the Create User modal based on selected faculty
+  const availableCreateDepartments = useMemo(() => {
+    if (!createFacultyId) return [];
+    return departments.filter((d) => d.facultyId === createFacultyId);
+  }, [createFacultyId, departments]);
 
   // Filtered departments based on selected faculty filter
   const availableFilterDepartments = useMemo(() => {
@@ -262,6 +298,115 @@ function AdminUsersContent() {
     }
   };
 
+  const openCreateUserModal = async () => {
+    setCreateName('');
+    setCreateEmail('');
+    setCreateRole('RESEARCH_SCHOLAR');
+    setCreateFacultyId('');
+    setCreateDeptId('');
+    setCreateSupervisorId('');
+    setCreateError(null);
+    setIsCreateModalOpen(true);
+    try {
+      const res = await fetchAdminUsersPaginated({ role: 'RESEARCH_SUPERVISOR', limit: 100 });
+      setSupervisorsList(res.items || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleCreateUserSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!createName.trim() || !createEmail.trim()) {
+      setCreateError('Name and email are required.');
+      return;
+    }
+    setCreateSubmitting(true);
+    setCreateError(null);
+    try {
+      await createAdminUser({
+        name: createName.trim(),
+        email: createEmail.trim().toLowerCase(),
+        role: createRole,
+        departmentId: createDeptId || undefined,
+        supervisorId: createRole === 'RESEARCH_SCHOLAR' && createSupervisorId ? createSupervisorId : undefined,
+      });
+      setIsCreateModalOpen(false);
+      await loadUsers();
+    } catch (err: any) {
+      setCreateError(err.message || 'Failed to create user');
+    } finally {
+      setCreateSubmitting(false);
+    }
+  };
+
+  const downloadSampleTemplate = () => {
+    const headers = 'name,email,role,faculty,department,supervisor_email,employeeId\n';
+    const sampleData =
+      'Dr. Rajesh Kumar,rajesh.k@srmist.edu.in,SUPERVISOR,Faculty of Engineering & Technology,Computing Technologies,,EMP1024\n' +
+      'Priya Sharma,priya.s@srmist.edu.in,SCHOLAR,Faculty of Engineering & Technology,Computing Technologies,rajesh.k@srmist.edu.in,RA2411003010001\n' +
+      'Admin User,admin.office@srmist.edu.in,ADMIN,Faculty of Science & Humanities,Physics & Nanotechnology,,ADM001\n';
+
+    const blob = new Blob([headers + sampleData], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'curiousbees_users_template.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleBulkDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setBulkDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setBulkDragActive(false);
+    }
+  };
+
+  const handleBulkDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setBulkDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setBulkFile(e.dataTransfer.files[0]);
+      setBulkError(null);
+      setBulkImportReport(null);
+    }
+  };
+
+  const handleBulkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setBulkFile(e.target.files[0]);
+      setBulkError(null);
+      setBulkImportReport(null);
+    }
+  };
+
+  const handleBulkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bulkFile) return;
+
+    const formData = new FormData();
+    formData.append('file', bulkFile);
+
+    setBulkSubmitting(true);
+    setBulkError(null);
+    try {
+      const report = await importAdminUsers(formData);
+      setBulkImportReport(report);
+      setBulkFile(null);
+      await loadUsers();
+    } catch (err: any) {
+      setBulkError(err.message || 'Bulk import failed.');
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
+
   // Submit Action Handler
   const handleActionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -361,6 +506,33 @@ function AdminUsersContent() {
         meta="People & access"
         title={tabMeta.title}
         description={tabMeta.description}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setBulkFile(null);
+                setBulkError(null);
+                setBulkImportReport(null);
+                setIsBulkModalOpen(true);
+              }}
+              className="gap-1.5"
+            >
+              <FileSpreadsheet className="size-4" />
+              <span>Bulk import</span>
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={openCreateUserModal}
+              className="gap-1.5"
+            >
+              <Plus className="size-4" />
+              <span>Add user</span>
+            </Button>
+          </div>
+        }
       />
 
       <div role="tablist" aria-label="Account type" className="-mx-4 mb-4 flex gap-1 overflow-x-auto border-b border-line px-4 sm:mx-0 sm:px-0">
@@ -1070,6 +1242,320 @@ function AdminUsersContent() {
             />
           </Field>
         </form>
+      </Dialog>
+
+      {/* Provision New Single User Dialog */}
+      <Dialog
+        open={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        dismissible={!createSubmitting}
+        size="md"
+        title="Add new user"
+        description="Provision an account for a scholar, supervisor, or administrator."
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => setIsCreateModalOpen(false)}
+              disabled={createSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              form="create-user-form"
+              loading={createSubmitting}
+            >
+              Provision user
+            </Button>
+          </>
+        }
+      >
+        <form id="create-user-form" onSubmit={handleCreateUserSubmit} className="space-y-4">
+          {createError && (
+            <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-danger-200 bg-danger-50 p-3 text-sm text-danger-800">
+              <AlertCircle className="mt-0.5 size-4 shrink-0 text-danger-600" />
+              <span>{createError}</span>
+            </div>
+          )}
+
+          <Field label="Full name" htmlFor="create-name" required>
+            <input
+              id="create-name"
+              type="text"
+              required
+              placeholder="e.g. Dr. Rajesh Kumar"
+              value={createName}
+              onChange={(e) => setCreateName(e.target.value)}
+              className="cb-input"
+            />
+          </Field>
+
+          <Field label="Institutional email" htmlFor="create-email" required hint="Must be an authorized email domain address.">
+            <input
+              id="create-email"
+              type="email"
+              required
+              placeholder="e.g. rajesh.k@srmist.edu.in"
+              value={createEmail}
+              onChange={(e) => setCreateEmail(e.target.value)}
+              className="cb-input font-mono text-sm"
+            />
+          </Field>
+
+          <Field label="Platform role" htmlFor="create-role" required>
+            <select
+              id="create-role"
+              value={createRole}
+              onChange={(e) => setCreateRole(e.target.value as any)}
+              className="cb-input"
+            >
+              <option value="RESEARCH_SCHOLAR">Research Scholar</option>
+              <option value="RESEARCH_SUPERVISOR">Research Supervisor</option>
+              <option value="INSTITUTE_ADMIN">Institute Admin</option>
+            </select>
+          </Field>
+
+          <Field label="Faculty" htmlFor="create-faculty">
+            <select
+              id="create-faculty"
+              value={createFacultyId}
+              onChange={(e) => {
+                setCreateFacultyId(e.target.value);
+                setCreateDeptId('');
+              }}
+              className="cb-input"
+            >
+              <option value="">Select a faculty (optional)</option>
+              {faculties.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Department" htmlFor="create-dept">
+            <select
+              id="create-dept"
+              value={createDeptId}
+              onChange={(e) => setCreateDeptId(e.target.value)}
+              disabled={!createFacultyId && faculties.length > 0}
+              className="cb-input"
+            >
+              <option value="">
+                {createFacultyId || faculties.length === 0 ? 'Select a department (optional)' : 'Select a faculty first'}
+              </option>
+              {availableCreateDepartments.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.code ? `${d.code} - ` : ''}
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          {createRole === 'RESEARCH_SCHOLAR' && (
+            <Field label="Assigned research supervisor" htmlFor="create-supervisor" hint="Assigns primary academic supervision.">
+              <select
+                id="create-supervisor"
+                value={createSupervisorId}
+                onChange={(e) => setCreateSupervisorId(e.target.value)}
+                className="cb-input"
+              >
+                <option value="">Select supervisor (optional)</option>
+                {supervisorsList.map((sup) => (
+                  <option key={sup.id} value={sup.id}>
+                    {sup.name || sup.email}
+                    {sup.department ? ` (${sup.department})` : ''}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          )}
+        </form>
+      </Dialog>
+
+      {/* Bulk Import Users Dialog */}
+      <Dialog
+        open={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        dismissible={!bulkSubmitting}
+        size="lg"
+        title="Bulk import users"
+        description="Provision multiple scholars, supervisors, or administrators via spreadsheet."
+        footer={
+          bulkImportReport ? (
+            <Button
+              variant="primary"
+              onClick={() => {
+                setIsBulkModalOpen(false);
+                setBulkImportReport(null);
+                setBulkFile(null);
+              }}
+            >
+              Done
+            </Button>
+          ) : (
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => setIsBulkModalOpen(false)}
+                disabled={bulkSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                form="bulk-import-form"
+                loading={bulkSubmitting}
+                disabled={!bulkFile}
+                className="gap-1.5"
+              >
+                <Upload className="size-4" />
+                <span>Execute bulk provisioning</span>
+              </Button>
+            </>
+          )
+        }
+      >
+        <div className="space-y-5">
+          {/* Template Download Card */}
+          <div className="flex flex-col items-start justify-between gap-3 rounded-xl border border-line bg-surface-muted p-4 sm:flex-row sm:items-center">
+            <div className="space-y-0.5">
+              <p className="text-sm font-medium text-ink">Need the spreadsheet template?</p>
+              <p className="text-xs text-ink-muted">
+                Download the standardized CSV template with pre-formatted columns and examples.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={downloadSampleTemplate}
+              className="gap-1.5 shrink-0 text-xs font-semibold"
+            >
+              <Download className="size-3.5" />
+              <span>Download template (CSV)</span>
+            </Button>
+          </div>
+
+          {!bulkImportReport ? (
+            <form id="bulk-import-form" onSubmit={handleBulkSubmit} className="space-y-4">
+              {/* Drag and drop upload box */}
+              <div
+                onDragEnter={handleBulkDrag}
+                onDragLeave={handleBulkDrag}
+                onDragOver={handleBulkDrag}
+                onDrop={handleBulkDrop}
+                className={cn(
+                  'relative flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-6 text-center transition-colors',
+                  bulkDragActive
+                    ? 'border-brand bg-brand-50/50'
+                    : 'border-line hover:border-line-strong bg-surface'
+                )}
+              >
+                <input
+                  type="file"
+                  accept=".csv,.xlsx"
+                  onChange={handleBulkFileChange}
+                  className="absolute inset-0 cursor-pointer opacity-0"
+                  disabled={bulkSubmitting}
+                />
+                <div className="flex size-12 items-center justify-center rounded-full bg-surface-muted text-brand mb-3">
+                  <FileSpreadsheet className="size-6" />
+                </div>
+                <p className="text-sm font-medium text-ink">
+                  {bulkFile ? bulkFile.name : 'Click to select or drag and drop spreadsheet'}
+                </p>
+                <p className="mt-1 text-xs text-ink-muted">
+                  Supports CSV (.csv) and Excel (.xlsx) files up to 10MB
+                </p>
+                {bulkFile && (
+                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-line bg-surface-muted px-3 py-1.5 text-xs text-ink">
+                    <FileText className="size-3.5 text-brand" />
+                    <span className="font-medium">{bulkFile.name}</span>
+                    <span className="text-ink-muted">({(bulkFile.size / 1024).toFixed(1)} KB)</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setBulkFile(null);
+                      }}
+                      className="ml-1 text-ink-muted hover:text-danger-600"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {bulkError && (
+                <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-danger-200 bg-danger-50 p-3 text-sm text-danger-800">
+                  <AlertCircle className="mt-0.5 size-4 shrink-0 text-danger-600" />
+                  <span>{bulkError}</span>
+                </div>
+              )}
+            </form>
+          ) : (
+            /* Import Report */
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-center">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Successfully Provisioned</p>
+                  <p className="mt-1 text-2xl font-bold text-emerald-800">{bulkImportReport.successCount || 0}</p>
+                </div>
+                <div className="rounded-xl border border-danger-200 bg-danger-50/60 p-4 text-center">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-danger-700">Failed / Skipped</p>
+                  <p className="mt-1 text-2xl font-bold text-danger-800">{bulkImportReport.failedCount || 0}</p>
+                </div>
+              </div>
+
+              {bulkImportReport.successes && bulkImportReport.successes.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-emerald-700 flex items-center gap-1.5">
+                    <CheckCircle2 className="size-4" />
+                    <span>Provisioned Accounts ({bulkImportReport.successCount})</span>
+                  </p>
+                  <div className="max-h-32 overflow-y-auto rounded-xl border border-line bg-surface-muted p-2.5 font-mono text-xs text-ink-secondary space-y-1">
+                    {bulkImportReport.successes.map((item: string, idx: number) => (
+                      <div key={idx} className="truncate">{item}</div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {bulkImportReport.errors && bulkImportReport.errors.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-semibold text-danger-700 flex items-center gap-1.5">
+                    <XCircle className="size-4" />
+                    <span>Import Issues ({bulkImportReport.failedCount})</span>
+                  </p>
+                  <div className="max-h-44 overflow-y-auto rounded-xl border border-line overflow-hidden">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-surface-muted text-[11px] font-semibold uppercase tracking-wider text-ink-muted border-b border-line">
+                        <tr>
+                          <th className="px-3 py-2">Row</th>
+                          <th className="px-3 py-2">Email</th>
+                          <th className="px-3 py-2 text-right">Reason</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-line">
+                        {bulkImportReport.errors.map((err: any, idx: number) => (
+                          <tr key={idx} className="hover:bg-surface-muted/50">
+                            <td className="px-3 py-1.5 font-mono font-medium text-ink-muted">{err.row}</td>
+                            <td className="px-3 py-1.5 font-mono text-ink">{err.email || '—'}</td>
+                            <td className="px-3 py-1.5 text-right font-medium text-danger-600">{err.message}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </Dialog>
     </div>
   );
