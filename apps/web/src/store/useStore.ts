@@ -1304,7 +1304,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   signInWithGoogle: async (redirectTo?: string) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const targetRedirect = redirectTo || '/feed';
+    const targetRedirect = redirectTo || '/dashboard';
     const callbackUrl = `${origin}/auth/callback?redirectTo=${encodeURIComponent(targetRedirect)}`;
 
     const { error } = await supabase.auth.signInWithOAuth({
@@ -1326,7 +1326,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   signInWithMagicLink: async (email: string, redirectTo?: string) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
-    const targetRedirect = redirectTo || '/feed';
+    const targetRedirect = redirectTo || '/dashboard';
     const callbackUrl = `${origin}/auth/callback?redirectTo=${encodeURIComponent(targetRedirect)}`;
 
     const { error } = await supabase.auth.signInWithOtp({
@@ -1345,7 +1345,7 @@ export const useStore = create<AppState>((set, get) => ({
 
   signInWithOtp: async (email: string, redirectTo?: string) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
-    const targetRedirect = redirectTo || '/feed';
+    const targetRedirect = redirectTo || '/dashboard';
     const callbackUrl = `${origin}/auth/callback?redirectTo=${encodeURIComponent(targetRedirect)}`;
 
     const { error } = await supabase.auth.signInWithOtp({

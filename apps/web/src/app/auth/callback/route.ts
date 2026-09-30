@@ -6,11 +6,11 @@ import { isEmailDomainAllowed } from '@/lib/auth/email-domains';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  let next = searchParams.get('next') || searchParams.get('redirectTo') || '/feed';
+  let next = searchParams.get('next') || searchParams.get('redirectTo') || '/dashboard';
 
   // Prevent open redirect attacks: ensure next is a relative path
   if (!next.startsWith('/') || next.startsWith('//')) {
-    next = '/feed';
+    next = '/dashboard';
   }
 
   const token_hash = searchParams.get('token_hash');

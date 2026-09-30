@@ -8,10 +8,13 @@ import { AlertCircle, Loader2, ShieldCheck } from 'lucide-react';
 import Logo from '@/components/Logo';
 import SRMLogo from '@/components/SRMLogo';
 
+import { getDashboardRoute } from '@/lib/auth/route-protection';
+
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams?.get('redirectTo') || '/feed';
+  const rawRedirectTo = searchParams?.get('redirectTo');
+  const redirectTo = rawRedirectTo || '/dashboard';
   const queryError = searchParams?.get('error');
 
   const { syncUserSession, signInWithGoogle } = useStore();
@@ -26,10 +29,10 @@ function LoginContent() {
     // Check if session is already active
     syncUserSession({ throwOnError: false }).then((user) => {
       if (user) {
-        router.push(redirectTo);
+        router.push(rawRedirectTo || getDashboardRoute(user));
       }
     });
-  }, [router, redirectTo, syncUserSession]);
+  }, [router, rawRedirectTo, syncUserSession]);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);

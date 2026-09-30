@@ -14,7 +14,13 @@ export function getAllowedEmailDomains(): string[] {
     .filter(Boolean);
 }
 
-export const ROOT_ADMIN_EMAIL = 'srmcuriousbees@gmail.com';
+export const ROOT_ADMIN_EMAIL = (
+  process.env.BOOTSTRAP_ADMIN_EMAIL ||
+  process.env.MAIN_ADMIN_EMAIL ||
+  process.env.NEXT_PUBLIC_BOOTSTRAP_ADMIN_EMAIL ||
+  process.env.NEXT_PUBLIC_MAIN_ADMIN_EMAIL ||
+  'srmcuriousbees@gmail.com'
+).trim().toLowerCase();
 
 export function isRootAdmin(email: string | null | undefined): boolean {
   return (email || '').trim().toLowerCase() === ROOT_ADMIN_EMAIL.toLowerCase();

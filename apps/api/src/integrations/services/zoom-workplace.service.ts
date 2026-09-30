@@ -6,14 +6,19 @@ import { randomUUID } from 'crypto';
 export class ZoomWorkplaceService implements MeetingProviderInterface {
   private readonly logger = new Logger(ZoomWorkplaceService.name);
 
-  private readonly clientId = process.env.ZOOM_CLIENT_ID || process.env.ZOOM_WORKPLACE_CLIENT_ID || '';
-  private readonly clientSecret = process.env.ZOOM_CLIENT_SECRET || process.env.ZOOM_WORKPLACE_CLIENT_SECRET || '';
+  private getClientId(): string {
+    return process.env.ZOOM_CLIENT_ID || process.env.ZOOM_WORKPLACE_CLIENT_ID || '';
+  }
+
+  private getClientSecret(): string {
+    return process.env.ZOOM_CLIENT_SECRET || process.env.ZOOM_WORKPLACE_CLIENT_SECRET || '';
+  }
 
   /**
    * Generates the OAuth 2.0 authorization URL for connecting Zoom Workplace
    */
   getAuthorizationUrl(redirectUri: string, state: string): string {
-    const clientId = process.env.ZOOM_CLIENT_ID || process.env.ZOOM_WORKPLACE_CLIENT_ID || this.clientId;
+    const clientId = this.getClientId();
     if (!clientId) {
       throw new BadRequestException(
         'Zoom Workplace Client ID is not configured. Please add ZOOM_CLIENT_ID to your root .env file.',
@@ -40,8 +45,14 @@ export class ZoomWorkplaceService implements MeetingProviderInterface {
     scopes?: string;
     email?: string;
   }> {
+    const clientId = this.getClientId();
+    const clientSecret = this.getClientSecret();
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException('Zoom Workplace credentials are not configured on the server.');
+    }
+
     try {
-      const basicAuth = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
+      const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
       const response = await fetch(
         `https://zoom.us/oauth/token?grant_type=authorization_code&code=${code}&redirect_uri=${encodeURIComponent(
           redirectUri
@@ -96,8 +107,14 @@ export class ZoomWorkplaceService implements MeetingProviderInterface {
     refreshToken?: string;
     expiresIn: number;
   }> {
+    const clientId = this.getClientId();
+    const clientSecret = this.getClientSecret();
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException('Zoom Workplace credentials are not configured on the server.');
+    }
+
     try {
-      const basicAuth = Buffer.from(`${this.clientId}:${this.clientSecret}`).toString('base64');
+      const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
       const response = await fetch(
         `https://zoom.us/oauth/token?grant_type=refresh_token&refresh_token=${refreshToken}`,
         {

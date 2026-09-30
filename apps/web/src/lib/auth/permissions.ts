@@ -26,6 +26,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
   // same rule (ResearchParticipantGuard).
   INSTITUTE_ADMIN: [
     '/',
+    '/dashboard',
     '/admin',
     '/institute-admin',
     '/settings',
@@ -44,6 +45,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     '/researchers',
     '/my-scholars',
     '/supervisor',
+    '/approval-requests',
+    '/reports',
     '/profile',
     '/notifications',
     '/settings',
@@ -57,6 +60,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     '/publications',
     '/opportunities',
     '/my-research',
+    '/reports',
     '/nexus',
     '/workspace',
     '/events',

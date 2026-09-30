@@ -78,7 +78,7 @@ export default function MarketingNavbar() {
 
         <div className="flex items-center gap-2">
           {currentUser ? (
-            <Link href={dashboardRoute || '/feed'} className={buttonVariants({ variant: 'primary', size: 'sm' })}>
+            <Link href={dashboardRoute || '/dashboard'} className={buttonVariants({ variant: 'primary', size: 'sm' })}>
               Open CuriousBees
             </Link>
           ) : (

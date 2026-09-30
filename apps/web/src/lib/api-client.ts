@@ -124,6 +124,19 @@ export async function apiFetch(
     ...extraHeaders,
   };
 
+  // If a JSON string payload was provided and Content-Type was omitted, set application/json
+  if (
+    rest.body &&
+    typeof rest.body === 'string' &&
+    !mergedHeaders['Content-Type'] &&
+    !mergedHeaders['content-type']
+  ) {
+    const trimmed = rest.body.trim();
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      mergedHeaders['Content-Type'] = 'application/json';
+    }
+  }
+
   console.info('[APIClient] →', rest.method ?? 'GET', url, {
     hasAuth: Boolean(mergedHeaders['Authorization']),
     contentType: mergedHeaders['Content-Type'],

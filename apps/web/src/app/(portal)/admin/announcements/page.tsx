@@ -77,18 +77,23 @@ export default function AdminAnnouncementsPage() {
 
     setSaving(true);
     try {
-      const { apiFetch } = await import('@/lib/api-client');
+      const { apiFetch, readApiError } = await import('@/lib/api-client');
+      let res: Response;
       if (editingItem) {
-        await apiFetch(`/api/announcements/${editingItem.id}`, {
+        res = await apiFetch(`/api/announcements/${editingItem.id}`, {
           method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title, content, pushToEmail }),
         });
+        if (!res.ok) throw new Error(await readApiError(res) || 'Failed to update announcement');
         addToast('Announcement updated', 'success');
       } else {
-        await apiFetch('/api/announcements', {
+        res = await apiFetch('/api/announcements', {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title, content, pushToEmail }),
         });
+        if (!res.ok) throw new Error(await readApiError(res) || 'Failed to create announcement');
         addToast('Announcement created', 'success');
       }
       setIsDrawerOpen(false);

@@ -1,4 +1,4 @@
-import { PrismaClient, Role, UserStatus } from '@prisma/client';
+import { PrismaClient, Role, UserStatus, RequestStatus } from '@prisma/client';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
@@ -187,8 +187,46 @@ async function main() {
       bio: 'SRMIST Root Administrator for CuriousBees platform.',
       interests: [],
     },
+    // Institutional Test Accounts (Requirement 21)
+    {
+      name: 'CuriousBees Administrator',
+      email: 'maddybgmistoreog@gmail.com',
+      image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
+      role: Role.INSTITUTE_ADMIN,
+      facultyName: 'Faculty of Engineering & Technology',
+      departmentCode: 'MCA',
+      employeeId: 'ADM-89001',
+      bio: 'Institute Administrator for CuriousBees Governance & Operations.',
+      interests: [],
+    },
+    {
+      name: 'Dr. Matheshwaran (Supervisor)',
+      email: 'mrmatheshwaran17@gmail.com',
+      image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
+      role: Role.RESEARCH_SUPERVISOR,
+      facultyName: 'Faculty of Engineering & Technology',
+      departmentCode: 'MCA',
+      designation: 'Associate Professor / Research Supervisor',
+      employeeId: 'EMP-600991',
+      bio: 'Doctoral Research Supervisor focusing on Autonomous Distributed Systems, Scalable Cloud & AI.',
+      interests: ['Generative AI & LLMs', '5G/6G Wireless Networks', 'VLSI System Design'],
+    },
+    {
+      name: 'Matheshwaran R (Scholar)',
+      email: 'r.matheshwaran.io@gmail.com',
+      image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+      role: Role.RESEARCH_SCHOLAR,
+      facultyName: 'Faculty of Engineering & Technology',
+      departmentCode: 'MCA',
+      employeeId: 'SCH-800991',
+      researchArea: 'Autonomous Distributed Computing and AI Workload Optimization',
+      bio: 'Doctoral Research Scholar researching parameter-efficient LLMs in distributed environments.',
+      interests: ['Generative AI & LLMs', 'Quantum Computing'],
+      supervisorEmail: 'mrmatheshwaran17@gmail.com',
+    },
   ];
 
+  // First pass: upsert all users
   for (const u of seedUsers) {
     const deptRef = deptMap[u.departmentCode];
     const facultyRef = facultyMap[u.facultyName];
@@ -204,6 +242,10 @@ async function main() {
         departmentId: deptRef ? deptRef.id : null,
         faculty: facultyRef ? facultyRef.name : null,
         bio: u.bio,
+        approved: true,
+        status: UserStatus.ACTIVE,
+        onboardingCompleted: true,
+        ...(u.role === Role.INSTITUTE_ADMIN ? { supervisorId: null, supervisorEmail: null } : {}),
       },
       create: {
         name: u.name,
@@ -272,6 +314,47 @@ async function main() {
             create: {
               userId: user.id,
               interestId: intObj.id,
+            },
+          });
+        }
+      }
+    }
+  }
+
+  // Second pass: link scholar supervisors
+  for (const u of seedUsers) {
+    if (u.role === Role.RESEARCH_SCHOLAR && (u as any).supervisorEmail) {
+      const supervisor = await prisma.user.findUnique({
+        where: { email: (u as any).supervisorEmail },
+      });
+      if (supervisor) {
+        const scholarUser = await prisma.user.update({
+          where: { email: u.email },
+          data: {
+            supervisorId: supervisor.id,
+            supervisorEmail: supervisor.email,
+          },
+        });
+
+        // Ensure approved request record exists for portal views
+        const existingReq = await prisma.scholarSupervisorRequest.findFirst({
+          where: {
+            scholarId: scholarUser.id,
+            supervisorId: supervisor.id,
+          },
+        });
+
+        if (!existingReq) {
+          await prisma.scholarSupervisorRequest.create({
+            data: {
+              scholarId: scholarUser.id,
+              supervisorId: supervisor.id,
+              status: RequestStatus.APPROVED,
+              researchDomain: 'Computer Science & Engineering',
+              researchTopic: 'Autonomous Distributed Computing and AI Workload Optimization',
+              proposalTitle: 'Energy-Efficient Distributed Consensus Mechanisms for Scalable Computing',
+              message: 'Doctoral research supervision request under Dr. Matheshwaran.',
+              respondedAt: new Date(),
             },
           });
         }

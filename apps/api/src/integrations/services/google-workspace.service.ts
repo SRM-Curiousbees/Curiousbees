@@ -7,8 +7,13 @@ import { randomUUID } from 'crypto';
 export class GoogleWorkspaceService implements ChatProvider, MeetingProviderInterface {
   private readonly logger = new Logger(GoogleWorkspaceService.name);
 
-  private readonly clientId = process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_WORKSPACE_CLIENT_ID || '';
-  private readonly clientSecret = process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_WORKSPACE_CLIENT_SECRET || '';
+  private getClientId(): string {
+    return process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_WORKSPACE_CLIENT_ID || '';
+  }
+
+  private getClientSecret(): string {
+    return process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_WORKSPACE_CLIENT_SECRET || '';
+  }
 
   // Required Google Workspace scopes for Chat & Calendar/Meet
   private readonly scopes = [
@@ -24,7 +29,7 @@ export class GoogleWorkspaceService implements ChatProvider, MeetingProviderInte
    * Generates the OAuth 2.0 authorization URL for connecting Google Workspace
    */
   getAuthorizationUrl(redirectUri: string, state: string): string {
-    const clientId = process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_WORKSPACE_CLIENT_ID || this.clientId;
+    const clientId = this.getClientId();
     if (!clientId) {
       throw new BadRequestException(
         'Google Workspace Client ID is not configured. Please add GOOGLE_CLIENT_ID to your root .env file.',
@@ -55,14 +60,20 @@ export class GoogleWorkspaceService implements ChatProvider, MeetingProviderInte
     scopes: string;
     email?: string;
   }> {
+    const clientId = this.getClientId();
+    const clientSecret = this.getClientSecret();
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException('Google Workspace credentials are not configured on the server.');
+    }
+
     try {
       const response = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           code,
-          client_id: this.clientId,
-          client_secret: this.clientSecret,
+          client_id: clientId,
+          client_secret: clientSecret,
           redirect_uri: redirectUri,
           grant_type: 'authorization_code',
         }),
@@ -108,14 +119,20 @@ export class GoogleWorkspaceService implements ChatProvider, MeetingProviderInte
     accessToken: string;
     expiresIn: number;
   }> {
+    const clientId = this.getClientId();
+    const clientSecret = this.getClientSecret();
+    if (!clientId || !clientSecret) {
+      throw new BadRequestException('Google Workspace credentials are not configured on the server.');
+    }
+
     try {
       const response = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
           refresh_token: refreshToken,
-          client_id: this.clientId,
-          client_secret: this.clientSecret,
+          client_id: clientId,
+          client_secret: clientSecret,
           grant_type: 'refresh_token',
         }),
       });

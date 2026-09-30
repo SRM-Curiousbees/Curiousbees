@@ -22,7 +22,9 @@ export function normalizeEmail(email: string): string {
   return (email || '').trim().toLowerCase();
 }
 
-export const ROOT_ADMIN_EMAIL = 'srmcuriousbees@gmail.com';
+export const ROOT_ADMIN_EMAIL = normalizeEmail(
+  process.env.BOOTSTRAP_ADMIN_EMAIL || process.env.MAIN_ADMIN_EMAIL || 'srmcuriousbees@gmail.com'
+);
 
 export function isEmailDomainAllowed(email: string): boolean {
   const normalized = normalizeEmail(email);

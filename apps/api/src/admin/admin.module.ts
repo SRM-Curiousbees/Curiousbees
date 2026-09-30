@@ -3,7 +3,6 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 import { AuditHelperService } from './audit-helper';
 
-import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { AdminScholarsController } from './scholars.controller';
 import { AdminScholarsService } from './scholars.service';
@@ -46,7 +45,6 @@ import { AdminSettingsService } from './settings.service';
     AdminAnalyticsController,
     AdminRolesController,
     AdminSettingsController,
-    AdminController,
     AdminScholarsController,
     AdminSupervisorsController,
     AdminAdminsController,
