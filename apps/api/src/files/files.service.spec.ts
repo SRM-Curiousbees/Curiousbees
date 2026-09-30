@@ -33,6 +33,12 @@ describe('FilesService (private S3 storage)', () => {
       expect(() => service.validateUpload('a.pdf', 'application/pdf', 0)).toThrow(BadRequestException);
       expect(() => service.validateUpload('a.pdf', 'application/pdf', MAX_UPLOAD_BYTES + 1)).toThrow(/maximum/);
     });
+
+    it('rejects malicious double extensions and executable patterns', () => {
+      expect(() => service.validateUpload('paper.exe.pdf', 'application/pdf', 100)).toThrow(/prohibited/);
+      expect(() => service.validateUpload('thesis.docx.pdf', 'application/pdf', 100)).toThrow(/prohibited/);
+      expect(() => service.validateUpload('payload\0.pdf', 'application/pdf', 100)).toThrow(/invalid or malicious/);
+    });
   });
 
   describe('object keys', () => {

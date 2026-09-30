@@ -133,14 +133,14 @@ const SECTIONS: Section[] = [
       },
       {
         q: 'What can I do in a workspace?',
-        a: 'Share files (uploads up to 50 MB, or links), post updates, schedule meetings on Google Meet, Zoom or any video link, and track milestones. The workspace owner adds milestones; any member can mark one complete.',
+        a: 'Share files (uploads up to 50 MB, or links), post updates, schedule meetings on Google Meet or any external video link (Zoom, Teams), and track milestones. The workspace owner adds milestones; any member can mark one complete.',
       },
       {
-        q: 'Why can’t I schedule a Google Meet or Zoom meeting?',
+        q: 'Why can’t I schedule a Google Meet meeting?',
         a: (
           <>
-            Meetings are created with your own account, so connect Google Workspace or Zoom first in{' '}
-            <A href="/settings?tab=integrations">Settings → Connected apps</A>. You can always use an external meeting link instead.
+            Meetings are created with your own account, so connect Google Workspace first in{' '}
+            <A href="/settings?tab=integrations">Settings → Connected apps</A>. You can always use an external meeting link instead without connecting an account.
           </>
         ),
       },

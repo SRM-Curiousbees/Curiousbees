@@ -59,6 +59,12 @@ export class UsersService {
         publications: {
           orderBy: { year: 'desc' },
         },
+        userDomains: {
+          include: { domain: true },
+        },
+        userTopics: {
+          include: { topic: true },
+        },
         supervisor: {
           select: {
             id: true,
@@ -536,6 +542,20 @@ export class UsersService {
         },
         publications: true,
         submittedReports: true,
+        scholarProfile: true,
+        researchProfile: {
+          include: {
+            milestones: {
+              orderBy: { dueDate: 'asc' },
+            },
+          },
+        },
+        userTopics: {
+          include: { topic: true },
+        },
+        userDomains: {
+          include: { domain: true },
+        },
       },
       orderBy: { name: 'asc' },
     });

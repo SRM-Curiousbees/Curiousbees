@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { UserStatus, RequestStatus, Role } from '@prisma/client';
+import { UserStatus, RequestStatus, Role, ResearchStatus, ResearchStage } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MailService } from '../users/mail.service';
 import { MAX_SCHOLARS_PER_SUPERVISOR } from '@curiousbees/constants';
@@ -133,6 +133,23 @@ export class OnboardingService {
 
       await this.syncInterests(tx, userId, data.researchArea, (data as any).interests);
 
+      // Link supervisor's research areas to ResearchDomains
+      if (tx.researchDomain?.findFirst) {
+        const supervisorDomainList = data.researchArea.split(',').map((s) => s.trim()).filter(Boolean);
+        for (const domainName of supervisorDomainList) {
+          const dom = await tx.researchDomain.findFirst({
+            where: { name: { equals: domainName, mode: 'insensitive' } },
+          });
+          if (dom && tx.userDomain?.upsert) {
+            await tx.userDomain.upsert({
+              where: { userId_domainId: { userId, domainId: dom.id } },
+              create: { userId, domainId: dom.id },
+              update: {},
+            });
+          }
+        }
+      }
+
       await tx.auditLog.create({
         data: {
           userId,
@@ -177,6 +194,9 @@ export class OnboardingService {
       departmentId: string;
       researchArea: string;
       supervisorId?: string;
+      researchDomain?: string;
+      researchTopic?: string;
+      proposalTitle?: string;
     }
   ) {
     const user = await this.prisma.user.findUnique({
@@ -240,6 +260,10 @@ export class OnboardingService {
       }
     }
 
+    const effectiveTopic = data.researchTopic?.trim() || null;
+    const effectiveDomain = data.researchDomain?.trim() || data.researchArea?.trim() || null;
+    const effectiveTitle = data.proposalTitle?.trim() || effectiveTopic || 'Doctoral Dissertation';
+
     // Start transaction to create profile, update user, and create request
     return this.prisma.$transaction(async (tx) => {
       await tx.scholarProfile.upsert({
@@ -248,16 +272,60 @@ export class OnboardingService {
           userId,
           facultyId: data.facultyId,
           departmentId: data.departmentId,
-          researchArea: data.researchArea,
+          researchArea: effectiveTopic || effectiveDomain || data.researchArea,
         },
         update: {
           facultyId: data.facultyId,
           departmentId: data.departmentId,
-          researchArea: data.researchArea,
+          researchArea: effectiveTopic || effectiveDomain || data.researchArea,
         }
       });
 
-      await this.syncInterests(tx, userId, data.researchArea, (data as any).interests);
+      // Upsert scholar's ResearchProfile with specific thesis title & domain
+      if (tx.researchProfile?.upsert) {
+        await tx.researchProfile.upsert({
+          where: { scholarId: userId },
+          create: {
+            scholarId: userId,
+            title: effectiveTitle,
+            researchArea: effectiveDomain || data.researchArea,
+            status: ResearchStatus.ACTIVE,
+            currentStage: ResearchStage.PROPOSAL,
+          },
+          update: {
+            title: effectiveTitle,
+            researchArea: effectiveDomain || data.researchArea,
+          },
+        });
+      }
+
+      // Link UserDomain and UserTopic if matching records exist
+      if (effectiveDomain && tx.researchDomain?.findFirst) {
+        const dom = await tx.researchDomain.findFirst({
+          where: { name: { equals: effectiveDomain, mode: 'insensitive' } },
+        });
+        if (dom && tx.userDomain?.upsert) {
+          await tx.userDomain.upsert({
+            where: { userId_domainId: { userId, domainId: dom.id } },
+            create: { userId, domainId: dom.id },
+            update: {},
+          });
+        }
+      }
+      if (effectiveTopic && tx.researchTopic?.findFirst) {
+        const top = await tx.researchTopic.findFirst({
+          where: { name: { equals: effectiveTopic, mode: 'insensitive' } },
+        });
+        if (top && tx.userTopic?.upsert) {
+          await tx.userTopic.upsert({
+            where: { userId_topicId: { userId, topicId: top.id } },
+            create: { userId, topicId: top.id },
+            update: {},
+          });
+        }
+      }
+
+      await this.syncInterests(tx, userId, [effectiveDomain, effectiveTopic, data.researchArea].filter(Boolean).join(', '), (data as any).interests);
 
       if (data.supervisorId) {
         await tx.scholarSupervisorRequest.create({
@@ -265,6 +333,9 @@ export class OnboardingService {
             scholarId: userId,
             supervisorId: data.supervisorId,
             status: RequestStatus.PENDING,
+            researchDomain: effectiveDomain,
+            researchTopic: effectiveTopic,
+            proposalTitle: effectiveTitle,
           },
         });
       }

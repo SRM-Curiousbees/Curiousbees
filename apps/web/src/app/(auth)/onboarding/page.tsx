@@ -16,6 +16,7 @@ type SupervisorOption = {
   id: string;
   name: string;
   designation?: string;
+  researchArea?: string;
   currentScholars: number;
   maxScholars: number;
   isAtCapacity?: boolean;
@@ -35,6 +36,8 @@ export default function OnboardingPage() {
   const [step, setStep] = useState<1 | 2>(1);
   const [domains, setDomains] = useState<string[]>([]);
   const [domainQuery, setDomainQuery] = useState('');
+  const [scholarTopic, setScholarTopic] = useState('');
+  const [scholarProposalTitle, setScholarProposalTitle] = useState('');
 
   const [faculties, setFaculties] = useState<Option[]>([]);
   const [departments, setDepartments] = useState<Option[]>([]);
@@ -116,7 +119,12 @@ export default function OnboardingPage() {
 
   const toggleDomain = (d: string) => setDomains((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
 
-  const canSubmit = domains.length > 0 && !!facultyId && !!departmentId && (isSupervisor || !!supervisorId);
+  const canSubmit =
+    domains.length > 0 &&
+    (isSupervisor || scholarTopic.trim().length > 0) &&
+    !!facultyId &&
+    !!departmentId &&
+    (isSupervisor || !!supervisorId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,10 +133,21 @@ export default function OnboardingPage() {
     setError('');
     try {
       const researchArea = domains.join(', ');
+      const payload = isSupervisor
+        ? { facultyId, departmentId, researchArea }
+        : {
+            facultyId,
+            departmentId,
+            researchArea: domains[0] || researchArea,
+            researchDomain: domains[0] || researchArea,
+            researchTopic: scholarTopic.trim(),
+            proposalTitle: scholarProposalTitle.trim() || scholarTopic.trim(),
+            supervisorId,
+          };
       const res = await apiFetch(isSupervisor ? '/api/users/onboarding/supervisor' : '/api/users/onboarding/scholar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(isSupervisor ? { facultyId, departmentId, researchArea } : { facultyId, departmentId, researchArea, supervisorId }),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error((await readApiError(res)) || 'Your profile could not be saved.');
       await syncUserSession({ force: true });
@@ -171,8 +190,8 @@ export default function OnboardingPage() {
 
         <ol className="mt-6 grid grid-cols-2 gap-2" aria-label="Progress">
           {[
-            { n: 1, label: 'Research areas' },
-            { n: 2, label: isSupervisor ? 'Department' : 'Department and supervisor' },
+            { n: 1, label: isSupervisor ? 'Supervisory domains' : 'Domain & thesis topic' },
+            { n: 2, label: isSupervisor ? 'Department' : 'Department & supervisor' },
           ].map((s) => (
             <li key={s.n} aria-current={step === s.n ? 'step' : undefined}>
               <div className={cn('h-1 rounded-full', step >= s.n ? 'bg-brand' : 'bg-neutral-200')} />
@@ -193,8 +212,14 @@ export default function OnboardingPage() {
             <div>
               <div className="flex items-end justify-between gap-4">
                 <div>
-                  <h2 className="text-base font-semibold text-ink">Choose your research areas</h2>
-                  <p className="mt-0.5 text-sm text-ink-muted">Pick as many as fit. They shape your feed and who can find you.</p>
+                  <h2 className="text-base font-semibold text-ink">
+                    {isSupervisor ? 'Choose your supervisory research domains' : 'Select your research domain & thesis topic'}
+                  </h2>
+                  <p className="mt-0.5 text-sm text-ink-muted">
+                    {isSupervisor
+                      ? 'Pick the broad research domains, laboratory themes, and fields in which you supervise scholars.'
+                      : 'Supervisors guide scholars on different topics. Select your broader research domain, then specify your distinct thesis topic.'}
+                  </p>
                 </div>
                 <span className="shrink-0 text-sm tabular-nums text-ink-muted" aria-live="polite">
                   {domains.length} selected
@@ -207,14 +232,14 @@ export default function OnboardingPage() {
                   type="search"
                   value={domainQuery}
                   onChange={(e) => setDomainQuery(e.target.value)}
-                  placeholder={`Search ${RESEARCH_DOMAINS.length} research areas`}
-                  aria-label="Search research areas"
+                  placeholder={`Search ${RESEARCH_DOMAINS.length} research domains`}
+                  aria-label="Search research domains"
                   className="cb-input pl-9"
                 />
               </div>
 
               {domains.length > 0 && (
-                <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Selected research areas">
+                <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Selected research domains">
                   {domains.map((d) => (
                     <li key={d}>
                       <button
@@ -231,9 +256,9 @@ export default function OnboardingPage() {
                 </ul>
               )}
 
-              <div className="mt-3 max-h-80 overflow-y-auto rounded-xl border border-line p-1.5">
+              <div className="mt-3 max-h-60 overflow-y-auto rounded-xl border border-line p-1.5">
                 {filteredDomains.length === 0 ? (
-                  <p className="px-3 py-8 text-center text-sm text-ink-muted">No research areas match “{domainQuery}”.</p>
+                  <p className="px-3 py-8 text-center text-sm text-ink-muted">No research domains match “{domainQuery}”.</p>
                 ) : (
                   <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
                     {filteredDomains.map((d) => {
@@ -243,7 +268,14 @@ export default function OnboardingPage() {
                           <button
                             type="button"
                             aria-pressed={on}
-                            onClick={() => toggleDomain(d)}
+                            onClick={() => {
+                              if (!isSupervisor) {
+                                // Scholars select their primary domain
+                                setDomains([d]);
+                              } else {
+                                toggleDomain(d);
+                              }
+                            }}
                             className={cn(
                               'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors duration-fast',
                               on ? 'bg-brand-50 text-brand-800' : 'text-ink-secondary hover:bg-surface-muted hover:text-ink',
@@ -267,8 +299,49 @@ export default function OnboardingPage() {
                 )}
               </div>
 
+              {!isSupervisor && (
+                <div className="mt-6 space-y-4 border-t border-line pt-5">
+                  <div>
+                    <h3 className="text-sm font-semibold text-ink">Your Specific Research Topic</h3>
+                    <p className="mt-0.5 text-xs text-ink-muted">
+                      Every scholar conducts research on a specialized topic under their supervisor. Enter your thesis focus below.
+                    </p>
+                  </div>
+                  <Field
+                    label="Doctoral Thesis / Research Topic"
+                    htmlFor="ob-scholar-topic"
+                    required
+                    hint="e.g. Low-Bit Quantization for Edge Vision Transformers, or Fault-Tolerant Consensus in Geo-Distributed Clusters"
+                  >
+                    <input
+                      id="ob-scholar-topic"
+                      type="text"
+                      value={scholarTopic}
+                      onChange={(e) => setScholarTopic(e.target.value)}
+                      placeholder="e.g. Fault-Tolerant Consensus in Geo-Distributed Clusters"
+                      className="cb-input"
+                      required
+                    />
+                  </Field>
+                  <Field
+                    label="Working Dissertation Title"
+                    htmlFor="ob-scholar-title"
+                    hint="Optional. A working or tentative title for your thesis proposal."
+                  >
+                    <input
+                      id="ob-scholar-title"
+                      type="text"
+                      value={scholarProposalTitle}
+                      onChange={(e) => setScholarProposalTitle(e.target.value)}
+                      placeholder="e.g. Energy-Efficient and Fault-Tolerant Distributed Architectures for Edge AI"
+                      className="cb-input"
+                    />
+                  </Field>
+                </div>
+              )}
+
               <div className="mt-5 flex justify-end">
-                <Button onClick={() => setStep(2)} disabled={domains.length === 0}>
+                <Button onClick={() => setStep(2)} disabled={domains.length === 0 || (!isSupervisor && !scholarTopic.trim())}>
                   Continue
                   <ArrowRight aria-hidden />
                 </Button>
@@ -364,6 +437,11 @@ export default function OnboardingPage() {
                                   <span className="block truncate text-xs text-ink-muted">
                                     {[sup.designation, `${sup.currentScholars} of ${sup.maxScholars} places taken`].filter(Boolean).join(' · ')}
                                   </span>
+                                  {sup.researchArea && (
+                                    <span className="mt-0.5 block truncate text-xs font-medium text-brand">
+                                      Guides in: {sup.researchArea}
+                                    </span>
+                                  )}
                                 </span>
                                 {full ? (
                                   <span className="shrink-0 text-xs text-ink-muted">Full</span>
@@ -380,9 +458,24 @@ export default function OnboardingPage() {
                 </fieldset>
               )}
 
-              <p className="mt-6 text-sm text-ink-muted">
-                Research areas: <span className="text-ink-secondary">{domains.join(', ')}</span>
-              </p>
+              <div className="mt-6 rounded-xl border border-line bg-surface-muted p-3 text-sm text-ink-muted">
+                {isSupervisor ? (
+                  <p>
+                    Supervisory domains: <span className="font-medium text-ink-secondary">{domains.join(', ')}</span>
+                  </p>
+                ) : (
+                  <div className="space-y-1">
+                    <p>
+                      Domain: <span className="font-medium text-ink-secondary">{domains[0] || domains.join(', ')}</span>
+                    </p>
+                    {scholarTopic && (
+                      <p>
+                        Your thesis topic: <span className="font-medium text-brand">{scholarTopic}</span>
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-between">
                 <Button variant="secondary" onClick={() => setStep(1)} disabled={submitting}>

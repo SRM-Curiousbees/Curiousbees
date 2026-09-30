@@ -86,6 +86,20 @@ export default function ResearcherProfileModal({ isOpen, onClose, researcher }: 
               // Only claim there's no bio when the bio was actually loaded.
               <p className="text-sm text-ink-muted">{isSelf ? 'You haven’t added a bio yet.' : `${name} hasn’t added a bio yet.`}</p>
             ) : null}
+
+            {researcher?.role === 'RESEARCH_SUPERVISOR' && (researcher.researchArea || researcher.supervisorProfile?.researchArea) && (
+              <div className="mt-2 rounded-lg border border-line bg-surface-muted p-2 text-xs">
+                <span className="font-semibold text-ink-muted uppercase tracking-wider block text-[10px]">Supervisory Domains</span>
+                <span className="font-medium text-brand">{researcher.researchArea || researcher.supervisorProfile?.researchArea}</span>
+              </div>
+            )}
+            {researcher?.role === 'RESEARCH_SCHOLAR' && (researcher.researchTitle || researcher.researchTopic || researcher.scholarProfile?.researchArea) && (
+              <div className="mt-2 rounded-lg border border-line bg-surface-muted p-2 text-xs">
+                <span className="font-semibold text-ink-muted uppercase tracking-wider block text-[10px]">Doctoral Thesis Topic</span>
+                <span className="font-medium text-brand">{researcher.researchTitle || researcher.researchTopic || researcher.scholarProfile?.researchArea}</span>
+              </div>
+            )}
+
             {id && (
               <Link
                 href={isSelf ? '/profile' : `/researchers/${id}`}

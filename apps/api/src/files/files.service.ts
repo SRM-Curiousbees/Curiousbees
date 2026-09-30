@@ -33,6 +33,13 @@ export const ALLOWED_UPLOAD_TYPES: Record<string, string[]> = {
   'text/csv': ['csv'],
 };
 
+export const DANGEROUS_EXTENSIONS = new Set([
+  'exe', 'bat', 'cmd', 'sh', 'bin', 'msi', 'jar', 'com', 'scr', 'vbs', 'ps1', 'app', 'dmg', 'iso',
+  'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'asp', 'aspx', 'jsp', 'jspx', 'cgi', 'pl', 'py', 'rb',
+  'svg', 'html', 'htm', 'xhtml', 'shtml', 'xml', 'js', 'mjs', 'ts', 'wasm', 'swf', 'dll', 'so', 'dylib',
+  'htaccess', 'config', 'env', 'pem', 'crt', 'key', 'lnk', 'inf', 'reg', 'chm', 'hta', 'cpl',
+]);
+
 export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB
 
 const UPLOAD_URL_TTL_SECONDS = 300;
@@ -85,6 +92,15 @@ export class FilesService {
 
   /** Validates type, extension and size, and returns a filename safe for object keys. */
   validateUpload(filename: string, contentType: string, sizeBytes: number): string {
+    if (!filename || typeof filename !== 'string') {
+      throw new BadRequestException('A valid filename is required.');
+    }
+
+    // 1. Block null bytes, control characters, or path manipulation
+    if (/[\0\x00-\x1F\x7F]/.test(filename)) {
+      throw new BadRequestException('Filename contains invalid or malicious characters.');
+    }
+
     const type = (contentType || '').toLowerCase().trim();
     const allowedExtensions = ALLOWED_UPLOAD_TYPES[type];
     if (!allowedExtensions) {
@@ -94,9 +110,39 @@ export class FilesService {
     }
 
     const baseName = (filename || '').split(/[\\/]/).pop() || '';
-    const extension = baseName.includes('.') ? baseName.split('.').pop()!.toLowerCase() : '';
+    if (!baseName || baseName === '.' || baseName === '..') {
+      throw new BadRequestException('Filename is invalid.');
+    }
+
+    const parts = baseName.toLowerCase().split('.');
+    if (parts.length < 2) {
+      throw new BadRequestException('File must have a valid extension.');
+    }
+
+    const extension = parts[parts.length - 1];
     if (!allowedExtensions.includes(extension)) {
       throw new BadRequestException(`File extension ".${extension}" does not match content type ${type}.`);
+    }
+
+    // 2. Prohibit any dangerous or executable extension anywhere in the filename
+    for (let i = 1; i < parts.length; i++) {
+      if (DANGEROUS_EXTENSIONS.has(parts[i])) {
+        throw new BadRequestException(`Malicious or executable file pattern (".${parts[i]}") is strictly prohibited.`);
+      }
+    }
+
+    // 3. Prohibit double / disguised extensions (e.g. thesis.pdf.exe or data.docx.pdf)
+    if (parts.length > 2) {
+      const intermediate = parts.slice(1, -1);
+      const allKnownExts = new Set([
+        'pdf', 'doc', 'docx', 'ppt', 'pptx', 'xls', 'xlsx', 'zip', 'jpg', 'jpeg', 'png', 'webp', 'txt', 'csv',
+        ...DANGEROUS_EXTENSIONS,
+      ]);
+      for (const seg of intermediate) {
+        if (allKnownExts.has(seg)) {
+          throw new BadRequestException('Multiple or hidden file extensions are strictly prohibited.');
+        }
+      }
     }
 
     if (!Number.isInteger(sizeBytes) || sizeBytes <= 0) {

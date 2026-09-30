@@ -22,13 +22,196 @@ import {
   BarChart3,
   AtSign,
   Globe,
-  ChevronDown
+  ChevronDown,
+  ShieldCheck,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
 import { apiFetch, readApiError, API_URL } from '@/lib/api-client';
 import { getProfileImageUrl, handleAvatarError } from '@/lib/avatar';
 import { Button } from '@/components/ui/button';
+
+// Comprehensive blacklist of dangerous and executable extensions
+const DANGEROUS_EXTENSIONS = new Set([
+  'exe', 'bat', 'cmd', 'sh', 'bin', 'msi', 'jar', 'com', 'scr', 'vbs', 'ps1', 'app', 'dmg', 'iso',
+  'php', 'phtml', 'php3', 'php4', 'php5', 'phps', 'asp', 'aspx', 'jsp', 'jspx', 'cgi', 'pl', 'py', 'rb',
+  'svg', 'html', 'htm', 'xhtml', 'shtml', 'xml', 'js', 'mjs', 'ts', 'wasm', 'swf', 'dll', 'so', 'dylib',
+  'htaccess', 'config', 'env', 'pem', 'crt', 'key', 'lnk', 'inf', 'reg', 'chm', 'hta', 'cpl', 'tar', 'gz', '7z', 'rar',
+]);
+
+const ALLOWED_DOCUMENT_EXTENSIONS = new Set(['pdf', 'doc', 'docx']);
+const ALLOWED_IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp']);
+
+const ALLOWED_DOCUMENT_MIMES = new Set([
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/octet-stream',
+]);
+
+const ALLOWED_IMAGE_MIMES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
+/**
+ * Performs client-side deep security inspection:
+ * 1. Checks for null-bytes, control chars, dangerous names, double extensions.
+ * 2. Checks file size (max 10MB).
+ * 3. Inspects binary magic bytes to block executable headers and verify authentic file format.
+ */
+async function inspectAndValidateFile(
+  file: File,
+  category: 'image' | 'document',
+): Promise<{ safeContentType: string; error?: string }> {
+  // 1. Check size
+  if (file.size <= 0) {
+    return { safeContentType: '', error: 'File is empty (0 bytes).' };
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    return { safeContentType: '', error: 'File exceeds the maximum 10 MB limit for post attachments.' };
+  }
+
+  // 2. Check filename security
+  const filename = file.name || '';
+  if (/[\0\x00-\x1F\x7F]/.test(filename)) {
+    return { safeContentType: '', error: 'Filename contains invalid or malicious characters.' };
+  }
+
+  const baseName = filename.split(/[\\/]/).pop() || '';
+  const parts = baseName.toLowerCase().split('.');
+  if (parts.length < 2) {
+    return { safeContentType: '', error: 'File must have a valid extension (.pdf, .doc, .docx, .jpg, .png, .webp).' };
+  }
+
+  // Disallow any dangerous or executable extension anywhere in the filename
+  for (let i = 1; i < parts.length; i++) {
+    if (DANGEROUS_EXTENSIONS.has(parts[i])) {
+      return { safeContentType: '', error: `Malicious or executable file pattern (".${parts[i]}") is strictly prohibited.` };
+    }
+  }
+
+  // Disallow double / disguised extensions (e.g. thesis.docx.exe or data.pdf.sh)
+  if (parts.length > 2) {
+    const intermediate = parts.slice(1, -1);
+    const knownExts = new Set(['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png', 'webp']);
+    for (const seg of intermediate) {
+      if (knownExts.has(seg) || DANGEROUS_EXTENSIONS.has(seg)) {
+        return { safeContentType: '', error: 'Multiple or disguised file extensions are strictly prohibited.' };
+      }
+    }
+  }
+
+  const extension = parts[parts.length - 1];
+
+  // 3. Category-specific whitelist check
+  if (category === 'image') {
+    if (!ALLOWED_IMAGE_EXTENSIONS.has(extension)) {
+      return { safeContentType: '', error: `Only authentic image files (.jpg, .jpeg, .png, .webp) are permitted for images. Received: .${extension}` };
+    }
+    if (file.type && !ALLOWED_IMAGE_MIMES.has(file.type.toLowerCase())) {
+      return { safeContentType: '', error: `Invalid image content type (${file.type}). Only JPEG, PNG, and WebP are allowed.` };
+    }
+  } else {
+    if (!ALLOWED_DOCUMENT_EXTENSIONS.has(extension)) {
+      return { safeContentType: '', error: `Only authentic research documents (.pdf, .doc, .docx) are permitted for documents. Received: .${extension}` };
+    }
+    if (file.type && !ALLOWED_DOCUMENT_MIMES.has(file.type.toLowerCase())) {
+      return { safeContentType: '', error: `Invalid document content type (${file.type}). Only PDF and Word documents are allowed.` };
+    }
+  }
+
+  // 4. Magic bytes inspection (reading binary header)
+  try {
+    const buffer = await file.slice(0, 64).arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+
+    // Block Windows PE / DOS Executables (MZ: 0x4D 0x5A)
+    if (bytes.length >= 2 && bytes[0] === 0x4d && bytes[1] === 0x5a) {
+      return { safeContentType: '', error: 'Security Alert: Executable binary header (MZ) detected in file. Upload blocked.' };
+    }
+    // Block Linux ELF Executables (0x7F 0x45 0x4C 0x46)
+    if (bytes.length >= 4 && bytes[0] === 0x7f && bytes[1] === 0x45 && bytes[2] === 0x4c && bytes[3] === 0x46) {
+      return { safeContentType: '', error: 'Security Alert: Linux binary header (ELF) detected in file. Upload blocked.' };
+    }
+    // Block Java Class files (0xCA 0xFE 0xBA 0xBE)
+    if (bytes.length >= 4 && bytes[0] === 0xca && bytes[1] === 0xfe && bytes[2] === 0xba && bytes[3] === 0xbe) {
+      return { safeContentType: '', error: 'Security Alert: Java bytecode detected. Upload blocked.' };
+    }
+    // Block Mach-O binaries
+    if (
+      bytes.length >= 4 &&
+      ((bytes[0] === 0xfe && bytes[1] === 0xed && bytes[2] === 0xfa && (bytes[3] === 0xce || bytes[3] === 0xcf)) ||
+       (bytes[0] === 0xcf && bytes[1] === 0xfa && bytes[2] === 0xed && bytes[3] === 0xfe))
+    ) {
+      return { safeContentType: '', error: 'Security Alert: Mach-O executable header detected in file. Upload blocked.' };
+    }
+    // Block shell scripts (shebang #!)
+    if (bytes.length >= 2 && bytes[0] === 0x23 && bytes[1] === 0x21) {
+      return { safeContentType: '', error: 'Security Alert: Shell script shebang (#!) detected. Scripts cannot be uploaded.' };
+    }
+
+    // Verify format-specific signatures
+    if (extension === 'pdf') {
+      // %PDF = 0x25 0x50 0x44 0x46
+      if (bytes.length < 4 || bytes[0] !== 0x25 || bytes[1] !== 0x50 || bytes[2] !== 0x44 || bytes[3] !== 0x46) {
+        return { safeContentType: '', error: 'Security Alert: Corrupted or disguised PDF file. File header does not match %PDF signature.' };
+      }
+      return { safeContentType: 'application/pdf' };
+    }
+
+    if (extension === 'png') {
+      if (bytes.length < 4 || bytes[0] !== 0x89 || bytes[1] !== 0x50 || bytes[2] !== 0x4e || bytes[3] !== 0x47) {
+        return { safeContentType: '', error: 'Security Alert: Corrupted or disguised PNG file. File header does not match PNG signature.' };
+      }
+      return { safeContentType: 'image/png' };
+    }
+
+    if (extension === 'jpg' || extension === 'jpeg') {
+      if (bytes.length < 3 || bytes[0] !== 0xff || bytes[1] !== 0xd8 || bytes[2] !== 0xff) {
+        return { safeContentType: '', error: 'Security Alert: Corrupted or disguised JPEG file. File header does not match JPEG signature.' };
+      }
+      return { safeContentType: 'image/jpeg' };
+    }
+
+    if (extension === 'webp') {
+      // RIFF = 0x52 0x49 0x46 0x46, WEBP = 0x57 0x45 0x42 0x50 at offset 8
+      const isRiff = bytes.length >= 12 && bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46;
+      const isWebp = isRiff && bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50;
+      if (!isWebp) {
+        return { safeContentType: '', error: 'Security Alert: Corrupted or disguised WebP file. File header does not match WebP signature.' };
+      }
+      return { safeContentType: 'image/webp' };
+    }
+
+    if (extension === 'docx') {
+      if (bytes[0] !== 0x50 || bytes[1] !== 0x4b || bytes[2] !== 0x03 || bytes[3] !== 0x04) {
+        return { safeContentType: '', error: 'Security Alert: Corrupted or disguised DOCX file. File header does not match PK zip signature.' };
+      }
+      return { safeContentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' };
+    }
+
+    if (extension === 'doc') {
+      if (bytes[0] !== 0xd0 || bytes[1] !== 0xcf || bytes[2] !== 0x11 || bytes[3] !== 0xe0) {
+        return { safeContentType: '', error: 'Security Alert: Corrupted or disguised DOC file. File header does not match Word document signature.' };
+      }
+      return { safeContentType: 'application/msword' };
+    }
+  } catch (err: any) {
+    return { safeContentType: '', error: `Security check failed: ${err.message}` };
+  }
+
+  const fallbackMime =
+    extension === 'pdf' ? 'application/pdf' :
+    extension === 'docx' ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' :
+    extension === 'doc' ? 'application/msword' :
+    extension === 'png' ? 'image/png' :
+    extension === 'webp' ? 'image/webp' :
+    'image/jpeg';
+
+  return { safeContentType: fallbackMime };
+}
 
 // Types accepted by the threads API (CreateThreadSchema).
 const POST_TYPES = [
@@ -82,22 +265,24 @@ export default function CompactComposer({ onPostCreated }: CompactComposerProps)
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showTypeMenu]);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: 'image' | 'document') => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      addToast('File size must be less than 10MB', 'error');
+
+    // Deep client-side security inspection & magic bytes verification
+    const { safeContentType, error } = await inspectAndValidateFile(file, category);
+    if (error) {
+      addToast(error, 'error');
+      e.target.value = '';
       return;
     }
 
     setIsUploading(true);
     try {
-      const contentType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
-      
       const presignedRes = await apiFetch('/api/threads/files/upload-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: file.name, contentType, sizeBytes: file.size }),
+        body: JSON.stringify({ filename: file.name, contentType: safeContentType, sizeBytes: file.size }),
       });
       if (!presignedRes.ok) {
         throw new Error((await readApiError(presignedRes)) || 'Failed to initiate upload');
@@ -106,7 +291,7 @@ export default function CompactComposer({ onPostCreated }: CompactComposerProps)
 
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
-        headers: requiredHeaders || { 'Content-Type': contentType },
+        headers: requiredHeaders || { 'Content-Type': safeContentType },
         body: file,
       });
       if (!uploadRes.ok) {
@@ -114,19 +299,21 @@ export default function CompactComposer({ onPostCreated }: CompactComposerProps)
       }
 
       const fileUrl = downloadPath.startsWith('http') ? downloadPath : `${API_URL}${downloadPath}`;
-      const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      const isPdf = ext === 'pdf';
+      const isDoc = ext === 'doc' || ext === 'docx';
       
       setAttachment({
         name: file.name,
         size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
         url: fileUrl,
-        type: isPdf ? 'pdf' : 'image'
+        type: isPdf ? 'pdf' : isDoc ? 'doc' : 'image',
       });
 
-      if (isPdf) {
+      if (isPdf || isDoc) {
         setIsPaper(true);
       }
-      addToast('Attachment uploaded successfully', 'success');
+      addToast(`Verified & uploaded: ${file.name}`, 'success');
     } catch (err: any) {
       addToast(`Upload failed: ${err.message}`, 'error');
     } finally {
@@ -207,20 +394,20 @@ export default function CompactComposer({ onPostCreated }: CompactComposerProps)
 
   return (
     <>
-      {/* Hidden file inputs */}
+      {/* Hidden file inputs with strict type restrictions */}
       <input 
         ref={fileInputRef}
         type="file" 
         className="hidden" 
-        accept=".pdf,.doc,.docx"
-        onChange={handleFileUpload} 
+        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        onChange={(e) => handleFileUpload(e, 'document')} 
       />
       <input 
         ref={photoInputRef}
         type="file" 
         className="hidden" 
-        accept="image/jpeg,image/png,image/webp"
-        onChange={handleFileUpload} 
+        accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+        onChange={(e) => handleFileUpload(e, 'image')} 
       />
 
       <section aria-label="Share with your research network" className="rounded-2xl border border-line bg-surface shadow-xs transition-shadow duration-base focus-within:border-line-strong focus-within:shadow-md">
@@ -302,10 +489,20 @@ export default function CompactComposer({ onPostCreated }: CompactComposerProps)
             </AnimatePresence>
 
             {attachment && (
-              <div className="mb-3 flex items-center gap-2 rounded-xl border border-line bg-surface-muted px-3 py-2">
-                <FileText className="size-4 shrink-0 text-ink-muted" aria-hidden />
-                <span className="flex-1 truncate text-sm font-medium text-ink">{attachment.name}</span>
-                <span className="shrink-0 text-xs text-ink-muted">{attachment.size}</span>
+              <div className="mb-3 flex items-center gap-2.5 rounded-xl border border-line bg-surface-muted px-3.5 py-2.5">
+                <FileText className="size-4 shrink-0 text-brand" aria-hidden />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-sm font-medium text-ink">{attachment.name}</span>
+                    <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                      <ShieldCheck className="size-3 text-emerald-600" aria-hidden />
+                      Verified Clean
+                    </span>
+                  </div>
+                  <span className="text-xs text-ink-muted">
+                    {attachment.size} · {attachment.type === 'pdf' ? 'PDF Document' : attachment.type === 'doc' ? 'Word Document' : 'Image'}
+                  </span>
+                </div>
                 <button
                   type="button"
                   onClick={() => { setAttachment(null); setIsPaper(false); }}
@@ -338,8 +535,8 @@ export default function CompactComposer({ onPostCreated }: CompactComposerProps)
         <div className="flex items-center justify-between gap-2 border-t border-line px-3 py-2.5">
           <div className="flex items-center gap-0.5">
             {[
-              { label: 'Attach image', icon: ImageIcon, onClick: () => photoInputRef.current?.click(), disabled: isUploading },
-              { label: 'Attach PDF or document', icon: FileText, onClick: () => fileInputRef.current?.click(), disabled: isUploading },
+              { label: 'Attach image (JPG, PNG, WebP · max 10MB)', icon: ImageIcon, onClick: () => photoInputRef.current?.click(), disabled: isUploading },
+              { label: 'Attach paper or document (PDF, Word · max 10MB)', icon: FileText, onClick: () => fileInputRef.current?.click(), disabled: isUploading },
               { label: 'Mark as publication', icon: BookOpen, active: postType === 'PUBLICATION', onClick: () => { setPostType('PUBLICATION'); setIsPaper(true); setIsFocused(true); textareaRef.current?.focus(); } },
               { label: 'Add topic tag', icon: Hash, onClick: handleAddTag },
               { label: 'Collaboration request', icon: Users, active: postType === 'COLLABORATION_REQUEST', onClick: () => { setPostType('COLLABORATION_REQUEST'); setIsFocused(true); textareaRef.current?.focus(); } },

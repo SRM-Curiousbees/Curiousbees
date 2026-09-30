@@ -343,12 +343,17 @@ export default function MyResearchCommandCenterPage() {
             <div className="grid grid-cols-1 gap-6 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_16rem]">
               <div className="min-w-0 space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  {myResearchProfile?.researchArea && <Badge tone="brand">{myResearchProfile.researchArea}</Badge>}
+                  <Badge tone="brand">
+                    Domain: {myResearchProfile?.researchArea || currentUser.department || 'Research'}
+                  </Badge>
                   <StatusBadge status={myResearchProfile?.status || 'ACTIVE'} />
                 </div>
-                <h2 className={cn('font-serif text-2xl font-semibold leading-tight tracking-tight', thesisTitle(myResearchProfile) ? 'text-ink' : 'text-ink-muted')}>
-                  {thesisTitle(myResearchProfile) || 'Thesis title not set'}
-                </h2>
+                <div>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Doctoral Thesis Topic</span>
+                  <h2 className={cn('font-serif text-2xl font-semibold leading-tight tracking-tight mt-0.5', thesisTitle(myResearchProfile) ? 'text-ink' : 'text-ink-muted')}>
+                    {thesisTitle(myResearchProfile) || 'Thesis topic not set'}
+                  </h2>
+                </div>
                 {thesisAbstract(myResearchProfile) ? (
                   <p className="max-w-prose text-base leading-relaxed text-ink-secondary">{thesisAbstract(myResearchProfile)}</p>
                 ) : (
@@ -785,11 +790,11 @@ export default function MyResearchCommandCenterPage() {
         }
       >
         <form id="research-profile-form" onSubmit={handleSaveProfile} className="space-y-4">
-          <Field label="Thesis title" htmlFor="rp-title" required>
-            <input id="rp-title" type="text" required value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="cb-input" />
+          <Field label="Doctoral Thesis / Research Topic" htmlFor="rp-title" required hint="The specialized thesis topic you are investigating.">
+            <input id="rp-title" type="text" required value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="e.g. Low-Bit Quantization for Edge Vision Transformers" className="cb-input" />
           </Field>
-          <Field label="Research area" htmlFor="rp-area" required hint="For example: Federated learning, Thin-film photovoltaics.">
-            <input id="rp-area" type="text" required value={editArea} onChange={(e) => setEditArea(e.target.value)} className="cb-input" />
+          <Field label="Parent Research Domain" htmlFor="rp-area" required hint="The broader field or domain (e.g. Artificial Intelligence, Distributed Systems).">
+            <input id="rp-area" type="text" required value={editArea} onChange={(e) => setEditArea(e.target.value)} placeholder="e.g. Computer Science & Engineering" className="cb-input" />
           </Field>
           <Field label="Abstract" htmlFor="rp-abstract">
             <textarea id="rp-abstract" rows={4} value={editAbstract} onChange={(e) => setEditAbstract(e.target.value)} className="cb-input resize-y" />

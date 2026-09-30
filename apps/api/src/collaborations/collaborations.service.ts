@@ -314,8 +314,8 @@ export class CollaborationsService {
         status: 'ACTIVE',
       },
       include: {
-        requester: { select: { id: true, name: true, role: true, department: true, image: true } },
-        recipient: { select: { id: true, name: true, role: true, department: true, image: true } },
+        requester: { select: { id: true, name: true, role: true, department: true, image: true, email: true } },
+        recipient: { select: { id: true, name: true, role: true, department: true, image: true, email: true } },
         thread: { select: { id: true, title: true, content: true, tags: true, type: true } },
         workspace: {
           include: {

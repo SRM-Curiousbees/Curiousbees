@@ -363,6 +363,15 @@ function SupervisionPanelContent() {
                     const latestReport = reports
                       .filter((r) => r.scholarId === scholar.id)
                       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+                    const topic =
+                      scholar.researchProfile?.title ||
+                      scholar.userTopics?.[0]?.topic?.name ||
+                      scholar.scholarProfile?.researchArea ||
+                      scholar.researchArea;
+                    const stage = scholar.researchProfile?.currentStage;
+                    const domain =
+                      scholar.researchProfile?.researchArea ||
+                      scholar.userDomains?.[0]?.domain?.name;
 
                     return (
                       <li key={scholar.id}>
@@ -374,6 +383,25 @@ function SupervisionPanelContent() {
                               {scholar.department && <p className="truncate text-sm text-ink-muted">{scholar.department}</p>}
                             </div>
                             {needsAttention && <Badge tone="warning">Report to review</Badge>}
+                          </div>
+
+                          <div className="mx-5 mt-3 rounded-xl border border-line bg-surface-muted p-3">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">Research Topic</span>
+                              {stage && (
+                                <Badge tone="brand" className="text-[10px] py-0 px-2 font-medium">
+                                  {stage.replace(/_/g, ' ').toLowerCase()}
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="mt-1 font-serif text-sm font-semibold text-ink line-clamp-2">
+                              {topic || 'Thesis topic not yet defined'}
+                            </p>
+                            {domain && domain !== topic && (
+                              <p className="mt-1 text-xs text-ink-muted truncate">
+                                Domain: <span className="text-ink-secondary">{domain}</span>
+                              </p>
+                            )}
                           </div>
 
                           {scholar.bio && <p className="mt-3 line-clamp-2 px-5 text-sm text-ink-secondary">{scholar.bio}</p>}

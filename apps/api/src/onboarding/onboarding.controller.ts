@@ -33,6 +33,9 @@ export class OnboardingController {
       departmentId: string;
       researchArea: string;
       supervisorId: string;
+      researchDomain?: string;
+      researchTopic?: string;
+      proposalTitle?: string;
     }
   ) {
     if (!body.facultyId || !body.departmentId || !body.researchArea || !body.supervisorId) {

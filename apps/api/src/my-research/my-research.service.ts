@@ -31,12 +31,19 @@ export class MyResearchService {
         select: { department: true, faculty: true },
       });
 
+      const latestReq = await this.prisma.scholarSupervisorRequest.findFirst({
+        where: { scholarId },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      const initialTitle = latestReq?.proposalTitle || latestReq?.researchTopic || '';
+      const initialArea = latestReq?.researchDomain || latestReq?.researchTopic || user?.department || '';
+
       profile = await this.prisma.researchProfile.create({
         data: {
           scholarId,
-          // Left blank for the scholar to fill in; the UI prompts for it.
-          title: '',
-          researchArea: user?.department || '',
+          title: initialTitle,
+          researchArea: initialArea,
           abstract: null,
           status: ResearchStatus.ACTIVE,
           currentStage: ResearchStage.PROPOSAL,
@@ -153,6 +160,15 @@ export class MyResearchService {
           description: `Research stage advanced to ${dto.currentStage?.replace('_', ' ')}.`,
         },
       });
+    }
+
+    if (dto.researchArea || dto.title) {
+      await this.prisma.scholarProfile.updateMany({
+        where: { userId: scholarId },
+        data: {
+          researchArea: dto.title || dto.researchArea,
+        },
+      }).catch(() => {});
     }
 
     return updated;

@@ -310,11 +310,79 @@ export function AcademicProfileView({ user: initialUser, isOwnProfile = false }:
             </Card>
           )}
 
-          {/* Current research */}
-          {!isAdmin && (researchTitle || isOwnProfile) && (
+          {/* Supervisory Research Focus (for supervisors) */}
+          {isSupervisor && (
             <Card>
               <CardHeader
-                title="Current research"
+                title="Supervisory Research Domains & Lab Focus"
+                actions={
+                  isOwnProfile && (
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditDrawerOpen(true)}>
+                      Edit
+                    </Button>
+                  )
+                }
+              />
+              <div className="space-y-4 px-5 py-5">
+                <div className="flex flex-wrap gap-1.5">
+                  <Badge tone="brand">
+                    {user?.supervisorProfile?.designation || 'Research Supervisor'}
+                  </Badge>
+                  <Badge tone="neutral">
+                    {`${user?.scholars?.length || 0} of ${user?.supervisorProfile?.maxScholars || 6} scholar places filled`}
+                  </Badge>
+                </div>
+                {user?.supervisorProfile?.researchArea ? (
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Guidance Areas & Domains</p>
+                    <p className="mt-1 font-serif text-lg font-semibold leading-snug text-ink">
+                      {user.supervisorProfile.researchArea}
+                    </p>
+                  </div>
+                ) : (
+                  <EmptyPrompt>
+                    Supervisory domains have not been detailed yet.
+                  </EmptyPrompt>
+                )}
+                {user?.scholars && user.scholars.length > 0 && (
+                  <div className="border-t border-line pt-4">
+                    <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted mb-2">
+                      Active Research Group ({user.scholars.length} scholars researching on distinct topics)
+                    </p>
+                    <div className="space-y-2">
+                      {user.scholars.map((s: any) => {
+                        const sTopic = s.researchProfile?.title || s.scholarProfile?.researchArea || 'Doctoral Research';
+                        const sStage = s.researchProfile?.currentStage;
+                        return (
+                          <div key={s.id} className="flex items-center justify-between rounded-lg border border-line bg-surface-muted p-2.5 text-xs">
+                            <div className="min-w-0 flex-1">
+                              <Link href={`/researchers/${s.id}`} className="font-semibold text-ink hover:text-brand truncate block">
+                                {s.name}
+                              </Link>
+                              <p className="text-ink-secondary truncate mt-0.5">
+                                Topic: <span className="font-medium text-brand">{sTopic}</span>
+                              </p>
+                            </div>
+                            {sStage && (
+                              <Badge tone="neutral" className="text-[10px] ml-2 shrink-0">
+                                {sStage.replace(/_/g, ' ').toLowerCase()}
+                              </Badge>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          )}
+
+          {/* Doctoral Dissertation & Research Topic (for scholars) */}
+          {!isSupervisor && !isAdmin && (researchTitle || isOwnProfile) && (
+            <Card>
+              <CardHeader
+                title="Doctoral Dissertation & Research Topic"
                 actions={
                   isOwnProfile && (
                     <Button variant="ghost" size="sm" onClick={() => setIsEditDrawerOpen(true)}>
@@ -326,16 +394,16 @@ export function AcademicProfileView({ user: initialUser, isOwnProfile = false }:
               {researchTitle ? (
                 <div className="space-y-4 px-5 py-5">
                   <div className="flex flex-wrap gap-1.5">
-                    {research.researchArea && <Badge tone="brand">{research.researchArea}</Badge>}
-                    {research.status && <StatusBadge status={research.status} />}
-                    {research.startDate && <Badge tone="neutral">Since {monthYear(research.startDate)}</Badge>}
+                    {research?.researchArea && <Badge tone="brand">{research.researchArea}</Badge>}
+                    {research?.status && <StatusBadge status={research.status} />}
+                    {research?.startDate && <Badge tone="neutral">Since {monthYear(research.startDate)}</Badge>}
                   </div>
                   <h2 className="font-serif text-xl font-semibold leading-snug text-ink">{researchTitle}</h2>
                   {researchAbstract && <p className="text-base leading-relaxed text-ink-secondary">{researchAbstract}</p>}
                   {stageIdx >= 0 && (
                     <div>
                       <p className="mb-2 text-xs text-ink-muted">
-                        Stage {stageIdx + 1} of {STAGES.length}: <span className="font-medium text-ink">{STAGES[stageIdx].label}</span>
+                        Doctoral stage {stageIdx + 1} of {STAGES.length}: <span className="font-medium text-ink">{STAGES[stageIdx].label}</span>
                       </p>
                       <ol className="grid grid-cols-6 gap-1.5" aria-label="Research stages">
                         {STAGES.map((stage, i) => (
@@ -359,7 +427,7 @@ export function AcademicProfileView({ user: initialUser, isOwnProfile = false }:
                     </Link>
                   }
                 >
-                  Your thesis title, stage and abstract appear here.
+                  Your doctoral thesis title, stage and abstract appear here.
                 </EmptyPrompt>
               )}
             </Card>
@@ -500,7 +568,14 @@ export function AcademicProfileView({ user: initialUser, isOwnProfile = false }:
                 <ul className="divide-y divide-line">
                   {user.scholars.map((scholar: any) => (
                     <li key={scholar.id}>
-                      <PersonRow person={scholar} subtitle={thesisTitle(scholar.researchProfile) || scholar.department} />
+                      <PersonRow
+                        person={scholar}
+                        subtitle={
+                          thesisTitle(scholar.researchProfile)
+                            ? `Topic: ${thesisTitle(scholar.researchProfile)}`
+                            : scholar.scholarProfile?.researchArea || scholar.department
+                        }
+                      />
                     </li>
                   ))}
                 </ul>

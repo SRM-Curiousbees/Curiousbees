@@ -94,7 +94,9 @@ export function EditResearcherProfileDrawer({
         setSelectedDepartmentId(user.departmentId);
       }
 
-      if (user.researchProfile) {
+      if (user.role === 'RESEARCH_SUPERVISOR' && user.supervisorProfile?.researchArea) {
+        setResearchArea(user.supervisorProfile.researchArea);
+      } else if (user.researchProfile) {
         setResearchTitle(thesisTitle(user.researchProfile) || '');
         setResearchArea(user.researchProfile.researchArea || '');
         setAbstract(thesisAbstract(user.researchProfile) || '');
@@ -146,10 +148,23 @@ export function EditResearcherProfileDrawer({
         interests: interestsArray,
       });
 
-      // 2. Update Research Profile (for scholars & supervisors)
-      if (!isAdmin && researchTitle.trim()) {
+      // 2. Update Research Profile (for scholars) or Supervisor Profile (for supervisors)
+      const isSupervisor = user?.role === 'RESEARCH_SUPERVISOR';
+      if (isSupervisor) {
+        if (researchArea.trim()) {
+          await apiFetch('/api/users/profile', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              supervisorProfile: {
+                researchArea: researchArea.trim(),
+              },
+            }),
+          }).catch(() => {});
+        }
+      } else if (!isAdmin && (researchTitle.trim() || researchArea.trim())) {
         await updateResearchProfile({
-          title: researchTitle.trim(),
+          title: researchTitle.trim() || 'Doctoral Dissertation',
           researchArea: researchArea.trim(),
           abstract: abstract.trim(),
           currentStage,
@@ -251,25 +266,43 @@ export function EditResearcherProfileDrawer({
           />
         </Field>
 
-        {!isAdmin && (
+        {user?.role === 'RESEARCH_SUPERVISOR' ? (
           <fieldset className="space-y-4 border-t border-line pt-5">
-            <legend className="-mt-8 bg-surface pr-2 text-sm font-semibold text-ink">Current research</legend>
-            <Field label="Research title" htmlFor="ep-rtitle" hint="Leave empty if you have no current project.">
+            <legend className="-mt-8 bg-surface pr-2 text-sm font-semibold text-ink">Supervisory Research Focus</legend>
+            <Field
+              label="Supervisory Research Domains & Lab Focus"
+              htmlFor="ep-sup-area"
+              hint="Broad research fields, laboratory focus, and domains in which you supervise scholars (e.g. Distributed Systems, Computer Vision, High-Performance Computing)."
+            >
+              <textarea
+                id="ep-sup-area"
+                rows={3}
+                value={researchArea}
+                onChange={(e) => setResearchArea(e.target.value)}
+                placeholder="e.g. Distributed Computing, Autonomous AI Systems, Cloud Optimization"
+                className="cb-input resize-y"
+              />
+            </Field>
+          </fieldset>
+        ) : !isAdmin && (
+          <fieldset className="space-y-4 border-t border-line pt-5">
+            <legend className="-mt-8 bg-surface pr-2 text-sm font-semibold text-ink">Doctoral Dissertation & Research Topic</legend>
+            <Field label="Doctoral Thesis Title" htmlFor="ep-rtitle" hint="Your current dissertation title or working proposal title.">
               <input id="ep-rtitle" type="text" value={researchTitle} onChange={(e) => setResearchTitle(e.target.value)} className="cb-input" />
             </Field>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Research area" htmlFor="ep-rarea" required={!!researchTitle.trim()}>
+              <Field label="Research Domain / Area" htmlFor="ep-rarea" required={!!researchTitle.trim()} hint="Broad domain (e.g. Computer Vision)">
                 <input
                   id="ep-rarea"
                   type="text"
                   value={researchArea}
                   required={!!researchTitle.trim()}
                   onChange={(e) => setResearchArea(e.target.value)}
-                  placeholder="e.g. Computer vision"
+                  placeholder="e.g. Artificial Intelligence"
                   className="cb-input"
                 />
               </Field>
-              <Field label="Stage" htmlFor="ep-stage">
+              <Field label="Doctoral Stage" htmlFor="ep-stage">
                 <select id="ep-stage" value={currentStage} onChange={(e) => setCurrentStage(e.target.value)} className="cb-input">
                   {STAGES.map((stg) => (
                     <option key={stg.id} value={stg.id}>

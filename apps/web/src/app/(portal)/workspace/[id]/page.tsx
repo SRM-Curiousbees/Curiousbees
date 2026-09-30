@@ -429,7 +429,7 @@ export default function WorkspacePage() {
   };
 
   const openMeetingDialog = () => {
-    setMeetingProvider(provider === 'ZOOM_WORKPLACE' ? 'ZOOM' : 'GOOGLE_MEET');
+    setMeetingProvider('GOOGLE_MEET');
     setMeetingOpen(true);
   };
 
@@ -1009,13 +1009,10 @@ export default function WorkspacePage() {
               </>
             ) : (
               <>
-                <CardHeader title={COLLAB_PROVIDER_LABEL[provider]} description="This workspace talks things through in scheduled calls." />
+                <CardHeader title={COLLAB_PROVIDER_LABEL[provider]} description="This workspace communicates via scheduled calls and video links." />
                 <CardBody className="space-y-4">
                   <p className="text-sm text-ink-secondary">
-                    {provider === 'ZOOM_WORKPLACE'
-                      ? 'Zoom has no chat space here. Schedule a Zoom meeting when the group needs to talk.'
-                      : 'Schedule a meeting with a link to the tool your group uses.'}{' '}
-                    To use a Google Chat space instead, switch the collaboration tool to Google Workspace.
+                    Schedule video syncs with Google Meet or add external meeting links (such as Zoom or Teams) when your group needs to meet. To use a persistent chat space, create a Google Chat Space.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button onClick={openMeetingDialog}>
@@ -1070,8 +1067,8 @@ export default function WorkspacePage() {
               <div role="radiogroup" aria-label="Collaboration tool" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {(
                   [
-                    { id: 'GOOGLE_WORKSPACE', detail: 'Google Chat space and Google Meet', connected: googleConnected, account: integrationConnections?.google },
-                    { id: 'ZOOM_WORKPLACE', detail: 'Zoom meetings', connected: zoomConnected, account: integrationConnections?.zoom },
+                    { id: 'GOOGLE_WORKSPACE' as const, detail: 'Google Chat space and Google Meet video calls', connected: googleConnected, account: integrationConnections?.google },
+                    { id: 'EXTERNAL' as const, detail: 'External video links (Zoom, Teams, etc.)', connected: true, account: null },
                   ] as const
                 ).map((option) => {
                   const selected = provider === option.id;
@@ -1320,8 +1317,8 @@ export default function WorkspacePage() {
 
           <fieldset>
             <legend className="mb-1.5 block text-sm font-medium text-ink">Meeting service</legend>
-            <div role="radiogroup" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {(['GOOGLE_MEET', 'ZOOM', 'EXTERNAL'] as const).map((p) => {
+            <div role="radiogroup" className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {(['GOOGLE_MEET', 'EXTERNAL'] as const).map((p) => {
                 const selected = meetingProvider === p;
                 return (
                   <button
@@ -1335,7 +1332,7 @@ export default function WorkspacePage() {
                       selected ? 'border-brand-500 bg-brand-50 font-medium text-brand-800 ring-1 ring-brand-500' : 'border-line text-ink-secondary hover:border-line-strong',
                     )}
                   >
-                    {MEETING_PROVIDER_LABEL[p]}
+                    {p === 'EXTERNAL' ? 'External link (Zoom, Teams...)' : MEETING_PROVIDER_LABEL[p]}
                   </button>
                 );
               })}
@@ -1348,18 +1345,10 @@ export default function WorkspacePage() {
                 </Link>
               </p>
             )}
-            {integrationConnections && meetingProvider === 'ZOOM' && !zoomConnected && (
-              <p className="mt-2 text-sm text-warning-800">
-                Zoom needs your Zoom account.{' '}
-                <Link href="/settings?tab=integrations" className="font-medium underline underline-offset-2">
-                  Connect it
-                </Link>
-              </p>
-            )}
           </fieldset>
 
           {meetingProvider === 'EXTERNAL' && (
-            <Field label="Meeting link" htmlFor="ws-mt-url" required hint="Microsoft Teams, Jitsi or any other video call link.">
+            <Field label="Meeting link" htmlFor="ws-mt-url" required hint="Zoom, Microsoft Teams, or any other video call URL.">
               <input
                 id="ws-mt-url"
                 type="url"

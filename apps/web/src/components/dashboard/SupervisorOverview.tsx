@@ -192,12 +192,33 @@ export function SupervisorOverview() {
                     .filter((r) => r.scholarId === scholar.id)
                     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
                   const status = latest ? REPORT_TONE[latest.status] : null;
+                  const topic =
+                    scholar.researchProfile?.title ||
+                    scholar.userTopics?.[0]?.topic?.name ||
+                    scholar.scholarProfile?.researchArea ||
+                    scholar.researchArea;
+                  const stage = scholar.researchProfile?.currentStage;
+
                   return (
-                    <li key={scholar.id} className="flex items-center gap-3 px-5 py-3">
+                    <li key={scholar.id} className="flex items-start gap-3 px-5 py-3">
                       <Avatar src={scholar.image} />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium text-ink">{scholar.name}</p>
-                        <p className="truncate text-sm text-ink-muted">{latest ? latest.title : 'No progress report yet'}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="truncate font-medium text-ink">{scholar.name}</p>
+                          {stage && (
+                            <Badge tone="neutral" className="text-[10px] py-0 px-1.5 font-medium">
+                              {stage.replace(/_/g, ' ').toLowerCase()}
+                            </Badge>
+                          )}
+                        </div>
+                        {topic && (
+                          <p className="truncate text-xs font-medium text-brand">
+                            Topic: {topic}
+                          </p>
+                        )}
+                        <p className="truncate text-xs text-ink-muted">
+                          {latest ? `Latest report: ${latest.title}` : 'No progress report yet'}
+                        </p>
                       </div>
                       {status && <Badge tone={status.tone}>{status.label}</Badge>}
                     </li>

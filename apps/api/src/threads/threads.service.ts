@@ -516,6 +516,30 @@ export class ThreadsService {
     if (!this.files) {
       throw new BadRequestException('File storage service is not available.');
     }
+
+    // Thread/post attachments are strictly restricted to 10 MB
+    const MAX_THREAD_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+    if (input.sizeBytes > MAX_THREAD_ATTACHMENT_BYTES) {
+      throw new BadRequestException('Post attachments must be less than 10 MB.');
+    }
+
+    // Feed posts strictly allow ONLY research documents and images:
+    const POST_ALLOWED_TYPES: Record<string, string[]> = {
+      'application/pdf': ['pdf'],
+      'application/msword': ['doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['docx'],
+      'image/jpeg': ['jpg', 'jpeg'],
+      'image/png': ['png'],
+      'image/webp': ['webp'],
+    };
+
+    const type = (input.contentType || '').toLowerCase().trim();
+    if (!POST_ALLOWED_TYPES[type]) {
+      throw new BadRequestException(
+        'Only research documents (PDF, Word .doc/.docx) and images (JPEG, PNG, WebP) are permitted for feed posts.',
+      );
+    }
+
     const safeName = this.files.validateUpload(input.filename, input.contentType, input.sizeBytes);
     const storageKey = this.files.buildObjectKey('threads', 'posts', userId, safeName);
     const presigned = await this.files.createPresignedUpload(storageKey, input.contentType.toLowerCase(), input.sizeBytes);

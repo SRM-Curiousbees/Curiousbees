@@ -649,7 +649,7 @@ function UnifiedSettingsContent() {
             <Card>
               <CardHeader
                 title="Connected apps"
-                description="Create meetings from Curious Nexus with your own Google or Zoom account."
+                description="Connect your Google Workspace account for Google Meet, Calendar sync, and Google Chat spaces."
                 actions={
                   <Button
                     variant="ghost"
@@ -666,10 +666,10 @@ function UnifiedSettingsContent() {
                 }
               />
               <div className="space-y-4 p-5">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 max-w-xl">
                   <IntegrationCard
                     name="Google Workspace"
-                    detail="Google Meet links and Chat spaces for workspaces."
+                    detail="Google Meet links, Calendar sync, and Chat spaces for research collaborations."
                     provider="GOOGLE_WORKSPACE"
                     conn={googleConn}
                     onConnect={() => connect('GOOGLE')}
@@ -682,17 +682,9 @@ function UnifiedSettingsContent() {
                       </svg>
                     }
                   />
-                  <IntegrationCard
-                    name="Zoom"
-                    detail="Zoom meetings for supervision and collaboration."
-                    provider="ZOOM_WORKPLACE"
-                    conn={zoomConn}
-                    onConnect={() => connect('ZOOM')}
-                    icon={<Video className="size-5 text-brand" aria-hidden />}
-                  />
                 </div>
                 <p className="text-sm text-ink-muted">
-                  CuriousBees stores meeting links and who is invited. It does not record or transcribe meetings.
+                  CuriousBees integrates with Google Workspace for research video syncs and collaboration spaces. External video links (such as Zoom or Teams) can also be used directly when scheduling meetings without connecting an account.
                 </p>
               </div>
             </Card>

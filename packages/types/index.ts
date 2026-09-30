@@ -12,6 +12,11 @@ export interface User {
   departmentRef?: Department | null;
   faculty?: string | null;
   supervisorProfile?: any;
+  scholarProfile?: any;
+  researchProfile?: ResearchProfile | null;
+  researchArea?: string | null;
+  userTopics?: any[];
+  userDomains?: any[];
   bio: string | null;
   onboardingCompleted: boolean;
   approved: boolean;

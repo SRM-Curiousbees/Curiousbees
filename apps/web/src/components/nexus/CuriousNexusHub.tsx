@@ -12,13 +12,19 @@ import Link from 'next/link';
 import {
   ArrowLeft,
   ArrowUpRight,
+  Calendar,
   Check,
+  ChevronDown,
+  Copy,
+  ExternalLink,
   FileText,
   FolderGit2,
   Inbox,
   Link2,
+  Mail,
   MessageSquare,
   Network,
+  Plus,
   RefreshCw,
   Search,
   Send,
@@ -37,6 +43,17 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog } from '@/components/ui/dialog';
 import { Field } from '@/components/ui/field';
+
+export function GoogleIcon({ className = 'size-5' }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+    </svg>
+  );
+}
 
 type ChatMessage = { id: string; senderId: string; senderName: string; senderImage: string | null; content: string; timestamp: string };
 
@@ -87,14 +104,17 @@ export function CuriousNexusHub({
     sendCollabMessage,
     acceptCollabRequest,
     declineCollabRequest,
+    connectWorkspaceChatSpace,
   } = useStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [openedCollabId, setOpenedCollabId] = useState<string | null>(initialCollabId || null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [showArchivedMessages, setShowArchivedMessages] = useState(false);
   const [messageInput, setMessageInput] = useState('');
   const [sending, setSending] = useState(false);
+  const [creatingSpace, setCreatingSpace] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [showLinkDialog, setShowLinkDialog] = useState(false);
@@ -103,7 +123,6 @@ export function CuriousNexusHub({
   const [uploading, setUploading] = useState(false);
 
   const [pendingAcceptReq, setPendingAcceptReq] = useState<{ id: string; name: string; title: string } | null>(null);
-  const [selectedPlatform, setSelectedPlatform] = useState<'GOOGLE_WORKSPACE' | 'ZOOM_WORKPLACE'>('GOOGLE_WORKSPACE');
   const [acceptingLoading, setAcceptingLoading] = useState(false);
 
   const isSupervisor = currentUser?.role === 'RESEARCH_SUPERVISOR';
@@ -236,8 +255,8 @@ export function CuriousNexusHub({
     if (!pendingAcceptReq) return;
     try {
       setAcceptingLoading(true);
-      await acceptCollabRequest(pendingAcceptReq.id, selectedPlatform);
-      addToast('Collaboration started.', 'success');
+      await acceptCollabRequest(pendingAcceptReq.id, 'GOOGLE_WORKSPACE');
+      addToast('Collaboration started with Google Workspace.', 'success');
       setPendingAcceptReq(null);
       fetchMyCollabRequests();
       fetchMyCollaborations();
@@ -245,6 +264,20 @@ export function CuriousNexusHub({
       addToast(`The request could not be accepted: ${e.message}`, 'error');
     } finally {
       setAcceptingLoading(false);
+    }
+  };
+
+  const handleCreateSpace = async (targetWorkspaceId: string) => {
+    if (!targetWorkspaceId) return;
+    setCreatingSpace(true);
+    try {
+      await connectWorkspaceChatSpace(targetWorkspaceId);
+      addToast('Google Chat Space connected successfully.', 'success');
+      fetchWorkspaceDetails(targetWorkspaceId);
+    } catch (e: any) {
+      addToast(e.message || 'Could not connect Google Chat Space. Ensure Google Workspace is connected in Settings.', 'error');
+    } finally {
+      setCreatingSpace(false);
     }
   };
 
@@ -354,12 +387,10 @@ export function CuriousNexusHub({
                 <div className="mt-2 flex flex-wrap gap-1.5">
                   <StatusBadge status={selectedCollab.status} />
                   <Badge tone="neutral">Since {selectedCollab.startedAt}</Badge>
-                  {provider && (
-                    <Badge tone="brand">
-                      <Video className="size-3" aria-hidden />
-                      {provider === 'ZOOM_WORKPLACE' ? 'Zoom' : 'Google Workspace'}
-                    </Badge>
-                  )}
+                  <Badge tone="brand">
+                    <GoogleIcon className="size-3" />
+                    Google Workspace
+                  </Badge>
                 </div>
               </div>
             </div>
@@ -380,73 +411,223 @@ export function CuriousNexusHub({
         </Card>
 
         <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-          {/* Messages */}
-          <Card className="flex h-[min(70dvh,44rem)] flex-col overflow-hidden">
-            <CardHeader
-              title="Messages"
-              description="Visible to both of you and kept with this collaboration."
-              actions={
-                <IconButton label="Check for new messages" size="sm" onClick={loadMessages}>
-                  <RefreshCw className={cn(loadingMessages && 'animate-spin')} />
-                </IconButton>
-              }
-            />
-            <div className="flex-1 overflow-y-auto bg-surface-muted px-4 py-4" aria-live="polite">
-              {loadingMessages && messages.length === 0 ? (
-                <div className="space-y-3" role="status" aria-label="Loading messages">
-                  <Skeleton className="h-12 w-2/3 rounded-2xl" />
-                  <Skeleton className="ml-auto h-12 w-1/2 rounded-2xl" />
+          {/* Google Workspace & Chat Hub */}
+          <div className="space-y-6">
+            <Card className="overflow-hidden border border-line shadow-xs">
+              <div className="border-b border-line bg-surface-muted/50 p-5 sm:p-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-3.5">
+                    <div className="flex size-11 items-center justify-center rounded-2xl border border-line bg-surface shadow-xs">
+                      <GoogleIcon className="size-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-semibold tracking-tight text-ink">Google Workspace Hub</h2>
+                        <Badge tone="brand">Chat & Meet</Badge>
+                      </div>
+                      <p className="mt-0.5 text-xs text-ink-secondary">
+                        Direct messaging, group spaces, and video syncs for this collaboration.
+                      </p>
+                    </div>
+                  </div>
+                  <a
+                    href="https://chat.google.com/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+                  >
+                    <MessageSquare className="size-4" aria-hidden />
+                    Open Google Chat
+                    <ExternalLink className="size-3.5 opacity-70" aria-hidden />
+                  </a>
                 </div>
-              ) : messages.length === 0 ? (
-                <div className="flex h-full flex-col items-center justify-center text-center">
-                  <MessageSquare className="size-6 text-ink-muted" aria-hidden />
-                  <p className="mt-2 font-medium text-ink">No messages yet</p>
-                  <p className="mt-1 max-w-xs text-sm text-ink-muted">Start with what you would like to work on together, or propose a time to meet.</p>
-                </div>
-              ) : (
-                <ol className="space-y-3">
-                  {messages.map((msg) => {
-                    const mine = msg.senderId === currentUser?.id;
-                    return (
-                      <li key={msg.id} className={cn('flex gap-2', mine ? 'justify-end' : 'justify-start')}>
-                        {!mine && <Avatar person={{ image: msg.senderImage, name: msg.senderName }} size="sm" />}
-                        <div
-                          className={cn(
-                            'max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
-                            mine ? 'rounded-br-md bg-brand text-white' : 'rounded-bl-md border border-line bg-surface text-ink',
-                          )}
+              </div>
+
+              <div className="space-y-4 p-5 sm:p-6">
+                {/* 1-on-1 Google Chat */}
+                <div className="rounded-2xl border border-line bg-surface p-4 sm:p-5 transition-colors hover:border-line-strong">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3.5">
+                      <Avatar person={partner} size="md" />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate font-semibold text-ink">{partner?.name || 'Collaborator'}</p>
+                          <Badge tone="brand">Direct Chat</Badge>
+                        </div>
+                        <p className="mt-0.5 truncate text-xs text-ink-muted">
+                          {partner?.email ? partner.email : 'Google Workspace account'}
+                          {partner?.department ? ` · ${partner.department}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a
+                        href={partner?.email ? `https://mail.google.com/chat/u/0/#chat/dm/${encodeURIComponent(partner.email)}` : 'https://chat.google.com/'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={buttonVariants({ variant: 'primary', size: 'sm' })}
+                      >
+                        <MessageSquare className="size-4" aria-hidden />
+                        Chat with {partner?.name ? partner.name.split(' ')[0] : 'Collaborator'}
+                        <ExternalLink className="size-3.5 opacity-70" aria-hidden />
+                      </a>
+                      {partner?.email && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => {
+                            navigator.clipboard.writeText(partner.email);
+                            addToast(`Copied ${partner.email} to clipboard.`, 'success');
+                          }}
                         >
-                          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-                          <p className={cn('mt-1 text-[11px]', mine ? 'text-white/75' : 'text-ink-muted')}>
-                            {mine ? 'You' : msg.senderName} · {msg.timestamp}
+                          <Copy className="size-3.5" aria-hidden />
+                          Copy email
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs text-ink-muted">
+                    Opens Google Chat directly in your browser or Gmail to message in real-time.
+                  </p>
+                </div>
+
+                {/* Workspace Google Chat Space */}
+                {workspaceId && (
+                  <div className="rounded-2xl border border-line bg-surface p-4 sm:p-5 transition-colors hover:border-line-strong">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-start gap-3.5">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface-muted text-brand">
+                          <Users className="size-5" aria-hidden />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-semibold text-ink">Shared Workspace Space</h3>
+                            {ws?.googleChatSpaceUrl ? (
+                              <Badge tone="success">Space Active</Badge>
+                            ) : (
+                              <Badge tone="neutral">Google Chat Space</Badge>
+                            )}
+                          </div>
+                          <p className="mt-1 text-xs text-ink-muted">
+                            {ws?.googleChatSpaceUrl
+                              ? 'Dedicated Google Chat Space for group updates, research threads, and links.'
+                              : 'Create a dedicated Google Chat Space for all members of this collaboration workspace.'}
                           </p>
                         </div>
-                      </li>
-                    );
-                  })}
-                </ol>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-            <form onSubmit={handleSendMessage} className="flex gap-2 border-t border-line p-3">
-              <label htmlFor="nexus-message" className="sr-only">
-                Message {partner?.name}
-              </label>
-              <input
-                id="nexus-message"
-                type="text"
-                placeholder={`Message ${partner?.name || 'your collaborator'}`}
-                value={messageInput}
-                onChange={(e) => setMessageInput(e.target.value)}
-                className="cb-input"
-                autoComplete="off"
-              />
-              <Button type="submit" loading={sending} disabled={!messageInput.trim()}>
-                <Send aria-hidden />
-                <span className="hidden sm:inline">Send</span>
-              </Button>
-            </form>
-          </Card>
+                      </div>
+                      <div className="shrink-0">
+                        {ws?.googleChatSpaceUrl ? (
+                          <a
+                            href={ws.googleChatSpaceUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+                          >
+                            <ExternalLink className="size-3.5" aria-hidden />
+                            Open Space
+                          </a>
+                        ) : (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            loading={creatingSpace}
+                            onClick={() => handleCreateSpace(workspaceId)}
+                          >
+                            <Plus className="size-3.5" aria-hidden />
+                            Connect Chat Space
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Google Meet & Meetings */}
+                <div className="rounded-2xl border border-line bg-surface p-4 sm:p-5 transition-colors hover:border-line-strong">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-start gap-3.5">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-line bg-surface-muted text-emerald-600">
+                        <Video className="size-5" aria-hidden />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-sm font-semibold text-ink">Google Meet Video Calls</h3>
+                          <Badge tone="success">Google Meet</Badge>
+                        </div>
+                        <p className="mt-1 text-xs text-ink-muted">
+                          Launch a quick video call for doctoral supervision, paper reviews, or milestone syncs.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a
+                        href="https://meet.google.com/new"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+                      >
+                        <Video className="size-3.5" aria-hidden />
+                        Instant Meet
+                        <ExternalLink className="size-3.5 opacity-70" aria-hidden />
+                      </a>
+                      {workspaceId && (
+                        <Link
+                          href={`/workspace/${workspaceId}?tab=meetings`}
+                          className={buttonVariants({ variant: 'ghost', size: 'sm' })}
+                        >
+                          <Calendar className="size-3.5" aria-hidden />
+                          Schedule meeting
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Workflow helper note */}
+                <div className="rounded-xl border border-brand/20 bg-brand-50/50 p-4 text-xs leading-relaxed text-ink-secondary">
+                  <p className="font-semibold text-ink">Integrated Research Workflow</p>
+                  <ul className="mt-2 list-disc space-y-1.5 pl-4 text-ink-muted">
+                    <li>Use <strong>Google Chat</strong> for messaging, questions, and fast feedback.</li>
+                    <li>Files, draft revisions, datasets, and doctoral milestones stay organized in the <strong>Shared Workspace</strong> on the right.</li>
+                    <li>Supervision reviews and syncs can be held on <strong>Google Meet</strong> with calendar reminders.</li>
+                  </ul>
+                </div>
+
+                {/* Previous in-app message history (if any exists) */}
+                {messages.length > 0 && (
+                  <div className="rounded-xl border border-line bg-surface">
+                    <button
+                      type="button"
+                      onClick={() => setShowArchivedMessages((prev) => !prev)}
+                      className="flex w-full items-center justify-between p-4 text-left text-xs font-medium text-ink-secondary hover:text-ink"
+                    >
+                      <span className="flex items-center gap-2">
+                        <MessageSquare className="size-3.5 text-ink-muted" aria-hidden />
+                        Past internal messages ({messages.length})
+                      </span>
+                      <ChevronDown
+                        className={cn('size-4 transition-transform duration-fast', showArchivedMessages && 'rotate-180')}
+                        aria-hidden
+                      />
+                    </button>
+                    {showArchivedMessages && (
+                      <div className="max-h-60 overflow-y-auto border-t border-line bg-surface-muted/30 p-4 space-y-2.5">
+                        {messages.map((msg) => (
+                          <div key={msg.id} className="rounded-lg border border-line bg-surface p-3 text-xs">
+                            <div className="flex items-center justify-between gap-2 text-ink-muted">
+                              <span className="font-medium text-ink">{msg.senderName}</span>
+                              <span>{msg.timestamp}</span>
+                            </div>
+                            <p className="mt-1 text-ink whitespace-pre-wrap">{msg.content}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </Card>
+          </div>
 
           {/* Context */}
           <div className="space-y-6">
@@ -732,50 +913,30 @@ export function CuriousNexusHub({
         onClose={() => setPendingAcceptReq(null)}
         dismissible={!acceptingLoading}
         title="Accept collaboration"
-        description={pendingAcceptReq ? `Start “${pendingAcceptReq.title}” with ${pendingAcceptReq.name}. Choose where meetings will be created.` : undefined}
+        description={pendingAcceptReq ? `Start “${pendingAcceptReq.title}” with ${pendingAcceptReq.name}.` : undefined}
         footer={
           <>
             <Button variant="secondary" onClick={() => setPendingAcceptReq(null)} disabled={acceptingLoading}>
               Cancel
             </Button>
             <Button onClick={confirmAcceptCollab} loading={acceptingLoading}>
-              Accept
+              Accept Collaboration
             </Button>
           </>
         }
       >
-        <fieldset className="space-y-2">
-          <legend className="sr-only">Meeting platform</legend>
-          {[
-            { id: 'GOOGLE_WORKSPACE' as const, label: 'Google Workspace', detail: 'Google Meet and Chat spaces' },
-            { id: 'ZOOM_WORKPLACE' as const, label: 'Zoom', detail: 'Zoom meetings' },
-          ].map((opt) => (
-            <label
-              key={opt.id}
-              className={cn(
-                'flex cursor-pointer items-center gap-3 rounded-xl border p-3.5 transition-colors duration-fast',
-                selectedPlatform === opt.id ? 'border-brand bg-brand-50 ring-1 ring-brand' : 'border-line hover:border-line-strong',
-              )}
-            >
-              <input
-                type="radio"
-                name="nexus-platform"
-                value={opt.id}
-                checked={selectedPlatform === opt.id}
-                onChange={() => setSelectedPlatform(opt.id)}
-                className="size-4 accent-[rgb(var(--brand-solid))]"
-              />
-              <span>
-                <span className="block text-sm font-medium text-ink">{opt.label}</span>
-                <span className="block text-sm text-ink-muted">{opt.detail}</span>
-              </span>
-            </label>
-          ))}
-          <p className="pt-1 text-xs text-ink-muted">
-            <Inbox className="mr-1 inline size-3.5 align-[-2px]" aria-hidden />
-            Connect your account under Settings → Connected apps to create meetings.
+        <div className="space-y-4 py-1">
+          <p className="text-sm text-ink-secondary">
+            Accepting creates a shared collaboration workspace for <strong>{pendingAcceptReq?.title}</strong> with Google Workspace enabled for direct Google Chat messaging, team spaces, and Google Meet video syncs.
           </p>
-        </fieldset>
+          <div className="flex items-center gap-3 rounded-xl border border-line bg-surface-muted/60 p-3.5">
+            <GoogleIcon className="size-5 shrink-0" />
+            <div className="text-xs text-ink-secondary">
+              <span className="font-semibold text-ink">Google Workspace Powered</span>
+              <p className="mt-0.5 text-ink-muted">Chat with {pendingAcceptReq?.name} on Google Chat and schedule Google Meet calls directly.</p>
+            </div>
+          </div>
+        </div>
       </Dialog>
     </div>
   );

@@ -106,32 +106,45 @@ export function RequestSupervisorModal({ isOpen, onClose, supervisor, onSuccess 
             {errorMessage}
           </p>
         )}
-        <Field label="Proposed research title" htmlFor="sr-title" hint="A working title is fine; you can change it later.">
-          <input id="sr-title" type="text" value={proposalTitle} onChange={(e) => setProposalTitle(e.target.value)} className="cb-input" />
-        </Field>
-        {availableDomains.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Research domain" htmlFor="sr-domain">
-              <select id="sr-domain" value={researchDomain} onChange={(e) => handleDomainChange(e.target.value)} className="cb-input">
-                {availableDomains.map((d) => (
-                  <option key={d.id} value={d.name}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Topic" htmlFor="sr-topic">
-              <select id="sr-topic" value={researchTopic} onChange={(e) => setResearchTopic(e.target.value)} disabled={topics.length === 0} className="cb-input">
-                {topics.length === 0 && <option value="">No topics listed</option>}
-                {topics.map((t) => (
-                  <option key={t.id} value={t.name}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
+        {supervisor.supervisorProfile?.researchArea && (
+          <div className="rounded-xl border border-brand-200 bg-brand-50/50 p-3 text-sm">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-brand-800 block">Supervisor&apos;s Guided Domains & Lab Focus</span>
+            <span className="font-medium text-brand-900 mt-0.5 block">{supervisor.supervisorProfile.researchArea}</span>
           </div>
         )}
+
+        <Field label="Proposed research title" htmlFor="sr-title" hint="A working title for your thesis proposal.">
+          <input id="sr-title" type="text" value={proposalTitle} onChange={(e) => setProposalTitle(e.target.value)} placeholder="e.g. Robust Edge Architectures for Distributed AI" className="cb-input" />
+        </Field>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Research domain" htmlFor="sr-domain">
+            <select id="sr-domain" value={researchDomain} onChange={(e) => handleDomainChange(e.target.value)} className="cb-input">
+              {availableDomains.map((d) => (
+                <option key={d.id} value={d.name}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Specific thesis topic" htmlFor="sr-topic" hint="Your distinct research topic under this domain.">
+            <input
+              id="sr-topic"
+              type="text"
+              value={researchTopic}
+              onChange={(e) => setResearchTopic(e.target.value)}
+              placeholder="e.g. Low-Bit Quantization for Edge Vision Transformers"
+              list="common-topics"
+              className="cb-input"
+              required
+            />
+            <datalist id="common-topics">
+              {topics.map((t) => (
+                <option key={t.id} value={t.name} />
+              ))}
+            </datalist>
+          </Field>
+        </div>
         <Field label="Message" htmlFor="sr-message" hint="Why you'd like to work with this supervisor, and your research background.">
           <textarea id="sr-message" rows={5} value={message} onChange={(e) => setMessage(e.target.value)} className="cb-input resize-y" />
         </Field>

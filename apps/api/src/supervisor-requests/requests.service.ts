@@ -355,6 +355,41 @@ export class RequestsService {
         },
       });
 
+      // 5. Synchronize scholar's research profile and topic from the approved proposal
+      if (request.proposalTitle || request.researchTopic || request.researchDomain) {
+        const approvedTopic = request.researchTopic || null;
+        const approvedDomain = request.researchDomain || null;
+        const approvedTitle = request.proposalTitle || approvedTopic || 'Doctoral Dissertation';
+
+        await tx.researchProfile.upsert({
+          where: { scholarId: request.scholarId },
+          create: {
+            scholarId: request.scholarId,
+            title: approvedTitle,
+            researchArea: approvedDomain || approvedTopic || 'Doctoral Research',
+            status: 'ACTIVE',
+            currentStage: 'PROPOSAL',
+          },
+          update: {
+            title: approvedTitle,
+            researchArea: approvedDomain || approvedTopic || undefined,
+          },
+        });
+
+        if (approvedTopic) {
+          const top = await tx.researchTopic.findFirst({
+            where: { name: { equals: approvedTopic, mode: 'insensitive' } },
+          });
+          if (top) {
+            await tx.userTopic.upsert({
+              where: { userId_topicId: { userId: request.scholarId, topicId: top.id } },
+              create: { userId: request.scholarId, topicId: top.id },
+              update: {},
+            });
+          }
+        }
+      }
+
       return req;
     });
 
