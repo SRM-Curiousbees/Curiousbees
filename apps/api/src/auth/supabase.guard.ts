@@ -201,10 +201,19 @@ export class SupabaseAuthGuard implements CanActivate {
     }
 
     const avatarUrl = identity.user_metadata?.avatar_url || identity.user_metadata?.picture;
-    if (!user.image && avatarUrl) {
+    const isMockImage = user.image?.includes('unsplash.com') || user.image?.includes('placeholder');
+
+    if (avatarUrl && (!user.image || isMockImage || user.image !== avatarUrl)) {
       user = await this.prisma.user.update({
         where: { id: user.id },
         data: { image: avatarUrl },
+        include: USER_INCLUDE,
+      });
+      this.logger.log(`Synchronized Google account avatar for user ${email}`);
+    } else if (isMockImage && !avatarUrl) {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: { image: null },
         include: USER_INCLUDE,
       });
     }

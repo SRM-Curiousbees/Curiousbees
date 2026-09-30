@@ -174,10 +174,21 @@ function UnifiedSettingsContent() {
 
   const handleProfileSubmit = async (data: any) => {
     try {
-      await updateProfile({ ...data, interests: selectedInterests });
+      await updateProfile({
+        name: data.name,
+        bio: data.bio,
+        interests: selectedInterests,
+      });
       addToast('Profile saved.', 'success');
     } catch (e: any) {
       addToast(`Your profile could not be saved: ${e.message}`, 'error');
+    }
+  };
+
+  const onProfileInvalid = (formErrors: any) => {
+    const firstErr = Object.values(formErrors)[0] as any;
+    if (firstErr?.message) {
+      addToast(firstErr.message, 'error');
     }
   };
 
@@ -454,7 +465,7 @@ function UnifiedSettingsContent() {
                   )
                 }
               />
-              <form onSubmit={handleSubmit(handleProfileSubmit)}>
+              <form onSubmit={handleSubmit(handleProfileSubmit, onProfileInvalid)}>
                 <div className="space-y-5 p-5">
                   <div className="flex items-center gap-5">
                     <div className="relative">
