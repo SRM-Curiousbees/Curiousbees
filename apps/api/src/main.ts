@@ -14,7 +14,7 @@ const envPath = process.env.NODE_ENV === 'production'
   ? undefined
   : envCandidates.find((candidate) => fs.existsSync(candidate));
 if (envPath) {
-  dotenv.config({ path: envPath });
+  dotenv.config({ path: envPath, override: true });
   console.log(`[CuriousBees] Loaded root environment from ${envPath}`);
 }
 

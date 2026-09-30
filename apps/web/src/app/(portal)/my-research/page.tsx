@@ -9,7 +9,8 @@ import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
-import { getProfileImageUrl } from '@/lib/avatar';
+import { getProfileImageUrl, handleAvatarError } from '@/lib/avatar';
+import { thesisAbstract, thesisTitle } from '@/lib/research-profile';
 import { cn } from '@/lib/utils';
 import {
   AlertTriangle,
@@ -57,6 +58,14 @@ const MILESTONE_TABS: { id: MilestoneTab; label: string }[] = [
 const PRIORITY_TONE: Record<string, Tone> = { HIGH: 'danger', MEDIUM: 'warning', LOW: 'neutral' };
 const PRIORITY_LABEL: Record<string, string> = { HIGH: 'High priority', MEDIUM: 'Medium priority', LOW: 'Low priority' };
 
+// Same wording the supervisor sees when reviewing.
+const REPORT_STATUS: Record<string, { label: string; tone: Tone }> = {
+  APPROVED: { label: 'On track', tone: 'success' },
+  PENDING: { label: 'Awaiting review', tone: 'warning' },
+  NEEDS_INFO: { label: 'More information requested', tone: 'brand' },
+  REJECTED: { label: 'Delayed', tone: 'danger' },
+};
+
 const stageLabel = (key?: string) => STAGES.find((s) => s.key === key)?.label ?? (key || '').replace(/_/g, ' ');
 
 function formatMonth(value?: string | Date | null) {
@@ -89,8 +98,18 @@ export default function MyResearchCommandCenterPage() {
     createResearchMilestone,
     completeMilestone,
     fetchMyResearchMaterials,
+    reports,
+    fetchReports,
+    submitReport,
     addToast
   } = useStore();
+
+  // Progress reports go to the assigned supervisor, who reviews them in the Supervision Panel.
+  const [isReportOpen, setIsReportOpen] = useState(false);
+  const [reportTitle, setReportTitle] = useState('');
+  const [reportSummary, setReportSummary] = useState('');
+  const [reportEvidence, setReportEvidence] = useState('');
+  const [submittingReport, setSubmittingReport] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [activeMilestoneTab, setActiveMilestoneTab] = useState<MilestoneTab>('ALL');
@@ -118,7 +137,7 @@ export default function MyResearchCommandCenterPage() {
   useEffect(() => {
     if (currentUser) {
       setLoading(true);
-      Promise.all([fetchMyResearch(), fetchMyResearchMaterials()]).finally(() => {
+      Promise.all([fetchMyResearch(), fetchMyResearchMaterials(), fetchReports()]).finally(() => {
         setLoading(false);
       });
     }
@@ -127,9 +146,9 @@ export default function MyResearchCommandCenterPage() {
   // Populate Edit Profile Form when profile loads or drawer opens
   useEffect(() => {
     if (myResearchProfile) {
-      setEditTitle(myResearchProfile.title || '');
+      setEditTitle(thesisTitle(myResearchProfile) || '');
       setEditArea(myResearchProfile.researchArea || '');
-      setEditAbstract(myResearchProfile.abstract || '');
+      setEditAbstract(thesisAbstract(myResearchProfile) || '');
       setEditStage(myResearchProfile.currentStage || 'PROPOSAL');
       setEditStatus(myResearchProfile.status || 'ACTIVE');
       setEditStartDate(myResearchProfile.startDate ? new Date(myResearchProfile.startDate).toISOString().slice(0, 10) : '');
@@ -164,7 +183,7 @@ export default function MyResearchCommandCenterPage() {
       });
     }
 
-    if (myResearchProfile?.title === 'Scholar Thesis Research Project' || !myResearchProfile?.abstract) {
+    if (!thesisTitle(myResearchProfile) || !thesisAbstract(myResearchProfile)) {
       items.push({
         id: 'unconfigured-topic',
         title: 'Add your thesis topic',
@@ -327,11 +346,11 @@ export default function MyResearchCommandCenterPage() {
                   {myResearchProfile?.researchArea && <Badge tone="brand">{myResearchProfile.researchArea}</Badge>}
                   <StatusBadge status={myResearchProfile?.status || 'ACTIVE'} />
                 </div>
-                <h2 className="font-serif text-2xl font-semibold leading-tight tracking-tight text-ink">
-                  {myResearchProfile?.title || 'Untitled research'}
+                <h2 className={cn('font-serif text-2xl font-semibold leading-tight tracking-tight', thesisTitle(myResearchProfile) ? 'text-ink' : 'text-ink-muted')}>
+                  {thesisTitle(myResearchProfile) || 'Thesis title not set'}
                 </h2>
-                {myResearchProfile?.abstract ? (
-                  <p className="max-w-prose text-base leading-relaxed text-ink-secondary">{myResearchProfile.abstract}</p>
+                {thesisAbstract(myResearchProfile) ? (
+                  <p className="max-w-prose text-base leading-relaxed text-ink-secondary">{thesisAbstract(myResearchProfile)}</p>
                 ) : (
                   <p className="text-sm text-ink-muted">
                     No abstract yet.{' '}
@@ -574,6 +593,8 @@ export default function MyResearchCommandCenterPage() {
                       <img
                         src={getProfileImageUrl(supervisor)}
                         alt=""
+                        referrerPolicy="no-referrer"
+                        onError={(e) => handleAvatarError(e, supervisor.name)}
                         className="size-12 shrink-0 rounded-full border border-line bg-surface-muted object-cover"
                       />
                       <div className="min-w-0">
@@ -594,6 +615,47 @@ export default function MyResearchCommandCenterPage() {
                       </Link>
                     </div>
                   </div>
+                )}
+              </Card>
+
+              {/* Progress reports */}
+              <Card>
+                <CardHeader
+                  title="Progress reports"
+                  description={supervisor ? `Reviewed by ${supervisor.name || 'your supervisor'}` : undefined}
+                  actions={
+                    supervisor && (
+                      <Button size="sm" variant="secondary" onClick={() => setIsReportOpen(true)}>
+                        <Plus aria-hidden />
+                        Submit
+                      </Button>
+                    )
+                  }
+                />
+                {!supervisor ? (
+                  <p className="px-5 py-6 text-sm text-ink-muted">You can submit progress reports once a supervisor accepts your supervision request.</p>
+                ) : !reports || reports.length === 0 ? (
+                  <p className="px-5 py-6 text-sm text-ink-muted">
+                    No reports yet. Send one when you reach a milestone or your supervisor asks for an update.
+                  </p>
+                ) : (
+                  <ul className="divide-y divide-line">
+                    {reports.slice(0, 5).map((r: any) => {
+                      const status = REPORT_STATUS[r.status] || { label: r.status, tone: 'neutral' as Tone };
+                      return (
+                        <li key={r.id} className="px-5 py-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <p className="min-w-0 text-sm font-medium text-ink">{r.title}</p>
+                            <Badge tone={status.tone}>{status.label}</Badge>
+                          </div>
+                          <p className="mt-0.5 text-xs text-ink-muted">Sent {formatDay(r.createdAt)}</p>
+                          {r.feedback && (
+                            <p className="mt-2 border-l-2 border-line-strong pl-2.5 text-sm text-ink-secondary">{r.feedback}</p>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
               </Card>
 
@@ -647,6 +709,62 @@ export default function MyResearchCommandCenterPage() {
           </div>
         </div>
       )}
+
+      {/* Submit progress report */}
+      <Dialog
+        open={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        dismissible={!submittingReport}
+        title="Submit a progress report"
+        description={supervisor ? `${supervisor.name || 'Your supervisor'} reviews it and can mark it on track, ask for more information, or flag it as delayed.` : undefined}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsReportOpen(false)} disabled={submittingReport}>
+              Cancel
+            </Button>
+            <Button type="submit" form="progress-report-form" loading={submittingReport} disabled={reportTitle.trim().length < 3}>
+              Submit report
+            </Button>
+          </>
+        }
+      >
+        <form
+          id="progress-report-form"
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (!supervisor || reportTitle.trim().length < 3) return;
+            setSubmittingReport(true);
+            try {
+              await submitReport({
+                title: reportTitle.trim(),
+                description: reportSummary.trim() || undefined,
+                evidenceUrl: reportEvidence.trim() || undefined,
+                supervisorId: supervisor.id,
+              });
+              addToast('Report sent to your supervisor.', 'success');
+              setReportTitle('');
+              setReportSummary('');
+              setReportEvidence('');
+              setIsReportOpen(false);
+            } catch (err: any) {
+              addToast(err?.message || 'The report could not be submitted.', 'error');
+            } finally {
+              setSubmittingReport(false);
+            }
+          }}
+          className="space-y-4"
+        >
+          <Field label="Title" htmlFor="report-title" required hint="For example, the period or milestone it covers.">
+            <input id="report-title" type="text" required value={reportTitle} onChange={(e) => setReportTitle(e.target.value)} className="cb-input" />
+          </Field>
+          <Field label="Summary" htmlFor="report-summary" hint="What you did, what's next, and anything blocking you.">
+            <textarea id="report-summary" rows={6} value={reportSummary} onChange={(e) => setReportSummary(e.target.value)} className="cb-input resize-y" />
+          </Field>
+          <Field label="Evidence link" htmlFor="report-evidence" hint="Optional. A draft, dataset or results shared elsewhere.">
+            <input id="report-evidence" type="url" placeholder="https://" value={reportEvidence} onChange={(e) => setReportEvidence(e.target.value)} className="cb-input" />
+          </Field>
+        </form>
+      </Dialog>
 
       {/* Edit research details */}
       <Dialog

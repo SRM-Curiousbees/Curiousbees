@@ -1,53 +1,61 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+/**
+ * Account settings. Every control here does something: profile fields save through
+ * the users API, research interests drive researcher suggestions, integrations
+ * connect Google Workspace and Zoom for Nexus meetings, and appearance and
+ * notification filters are stored in this browser (and read by the feed and the
+ * notifications page).
+ */
+
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useStore } from '@/store/useStore';
-import { apiFetch } from '@/lib/api-client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { UpdateProfileSchema } from '@curiousbees/shared-utils';
 import {
-  User,
-  Tag,
-  Plus,
-  X,
-  Lock,
-  Loader2,
-  Check,
-  ShieldCheck,
-  Layers,
   Bell,
-  Sun,
-  Moon,
-  Monitor,
-  Palette,
-  ExternalLink,
-  RefreshCw,
-  Video,
-  MessageSquare,
-  Calendar,
-  Key,
-  Mail,
-  GraduationCap,
-  Sparkles,
-  Sliders,
+  Camera,
   CheckCircle2,
-  AlertCircle,
-  Radio,
-  Building,
-  HelpCircle,
-  Clock,
+  ExternalLink,
+  GraduationCap,
+  Layers,
   LogOut,
-  ChevronRight,
-  Globe,
-  SlidersHorizontal,
-  Bookmark
+  Moon,
+  Palette,
+  Plus,
+  RefreshCw,
+  Sun,
+  Tag,
+  User,
+  Video,
+  X,
 } from 'lucide-react';
-import Link from 'next/link';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useStore } from '@/store/useStore';
+import { cn } from '@/lib/utils';
+import { getProfileImageUrl, handleAvatarError } from '@/lib/avatar';
+import { apiFetch, readApiError, API_URL } from '@/lib/api-client';
+import { PageHeader } from '@/components/ui/page-header';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Card, CardHeader } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Dialog } from '@/components/ui/dialog';
+import { Field, DetailItem } from '@/components/ui/field';
+import { SwitchRow } from '@/components/ui/switch';
 import { RoleBadge } from '@/components/shared/role-badge';
-import { getProfileImageUrl } from '@/lib/avatar';
+
+type SettingsTab = 'identity' | 'domains' | 'integrations' | 'appearance' | 'notifications' | 'supervision';
+
+const NOTIFICATION_CATEGORIES = [
+  { key: 'researchPapers', label: 'Research posts and papers', desc: 'New papers and updates from people and topics you follow.' },
+  { key: 'collaborations', label: 'Collaboration', desc: 'Collaboration requests and workspace invitations.' },
+  { key: 'advisoryMilestones', label: 'Supervision and milestones', desc: 'Supervision requests, progress report reviews and milestones.' },
+  { key: 'opportunities', label: 'Opportunities', desc: 'New collaboration opportunities and calls.' },
+  { key: 'events', label: 'Events', desc: 'Conferences, workshops, seminars and thesis reviews.' },
+] as const;
+
+type NotifKey = (typeof NOTIFICATION_CATEGORIES)[number]['key'];
 
 function UnifiedSettingsContent() {
   const router = useRouter();
@@ -60,74 +68,58 @@ function UnifiedSettingsContent() {
     interestsList,
     theme,
     setTheme,
-    toggleTheme,
     integrationConnections,
     fetchIntegrationStatus,
     getGoogleAuthUrl,
     getZoomAuthUrl,
     disconnectIntegration,
+    myScholars,
+    fetchMyScholars,
     addToast,
-    logout
+    logout,
   } = useStore();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>(initialTab);
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [newInterestInput, setNewInterestInput] = useState('');
-  
-  // Integrations state
+  const [savingInterests, setSavingInterests] = useState(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const photoInputRef = React.useRef<HTMLInputElement>(null);
+
   const [loadingIntegrations, setLoadingIntegrations] = useState(false);
   const [connectingProvider, setConnectingProvider] = useState<'GOOGLE' | 'ZOOM' | null>(null);
   const [disconnectingProvider, setDisconnectingProvider] = useState<'GOOGLE_WORKSPACE' | 'ZOOM_WORKPLACE' | null>(null);
+  const [confirmDisconnect, setConfirmDisconnect] = useState<'GOOGLE_WORKSPACE' | 'ZOOM_WORKPLACE' | null>(null);
 
-  // Appearance & UI Preferences state (persisted in localStorage)
+  // Stored in this browser; read by the feed (sort, compact cards, abstracts).
   const [feedSortPreference, setFeedSortPreference] = useState<'latest' | 'top'>('latest');
   const [compactCards, setCompactCards] = useState<boolean>(false);
   const [autoExpandAbstracts, setAutoExpandAbstracts] = useState<boolean>(false);
 
-  // Notifications preferences state (persisted locally / profile)
-  const [notifPreferences, setNotifPreferences] = useState({
+  // Stored in this browser; read by the notifications page to filter the list.
+  const [notifPreferences, setNotifPreferences] = useState<Record<NotifKey, boolean>>({
     researchPapers: true,
     collaborations: true,
     advisoryMilestones: true,
     opportunities: true,
     events: true,
-    emailDigest: 'instant', // 'instant' | 'daily' | 'weekly' | 'none'
-    soundEffects: true
   });
 
-  // Supervisor specific state
-  const [supervisionCapacity, setSupervisionCapacity] = useState<number>(6);
-  const [acceptingScholars, setAcceptingScholars] = useState<boolean>(true);
-  const [labName, setLabName] = useState<string>('SRM Center for Advanced Intelligence & Systems');
-  const [departments, setDepartments] = useState<any[]>([]);
-
-  useEffect(() => {
-    async function loadDepts() {
-      try {
-        const res = await apiFetch('/api/departments');
-        if (res.ok) {
-          const data = await res.json();
-          setDepartments(Array.isArray(data) ? data : []);
-        }
-      } catch (err) {
-        console.error('Failed to load departments', err);
-      }
-    }
-    loadDepts();
-  }, []);
-
-  // Setup form validation
-  const { register, handleSubmit, formState: { errors, isSubmitting }, reset } = useForm({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm({
     resolver: zodResolver(UpdateProfileSchema),
     defaultValues: {
       name: currentUser?.name || '',
       role: currentUser?.role || 'RESEARCH_SCHOLAR',
       department: currentUser?.department || '',
       bio: currentUser?.bio || '',
-    }
+    },
   });
 
-  // Sync profile details on load
   useEffect(() => {
     if (currentUser) {
       reset({
@@ -136,32 +128,25 @@ function UnifiedSettingsContent() {
         department: currentUser.department || '',
         bio: currentUser.bio || '',
       });
-      setSelectedInterests(currentUser.interests?.map((i: any) => i.interest?.name || '') || []);
+      setSelectedInterests(currentUser.interests?.map((i: any) => i.interest?.name || '').filter(Boolean) || []);
     }
   }, [currentUser, reset]);
 
-  // Load preferences from local storage
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    try {
       const savedFeedSort = localStorage.getItem('cb_pref_feed_sort') as 'latest' | 'top';
       if (savedFeedSort) setFeedSortPreference(savedFeedSort);
-
       const savedCompact = localStorage.getItem('cb_pref_compact_cards');
       if (savedCompact !== null) setCompactCards(savedCompact === 'true');
-
       const savedAutoExpand = localStorage.getItem('cb_pref_auto_abstracts');
       if (savedAutoExpand !== null) setAutoExpandAbstracts(savedAutoExpand === 'true');
-
       const savedNotifs = localStorage.getItem('cb_pref_notifications');
-      if (savedNotifs) {
-        try {
-          setNotifPreferences(JSON.parse(savedNotifs));
-        } catch (e) {}
-      }
+      if (savedNotifs) setNotifPreferences((prev) => ({ ...prev, ...JSON.parse(savedNotifs) }));
+    } catch {
+      // Storage unavailable: defaults apply.
     }
   }, []);
 
-  // Fetch integrations when tab is active
   useEffect(() => {
     if (activeTab === 'integrations') {
       setLoadingIntegrations(true);
@@ -169,17 +154,113 @@ function UnifiedSettingsContent() {
     }
   }, [activeTab, fetchIntegrationStatus]);
 
-  const handleProfileSubmit = async (data: any) => {
-    const payload = {
-      ...data,
-      interests: selectedInterests
-    };
+  const isSupervisor = currentUser?.role === 'RESEARCH_SUPERVISOR';
+  const isAdmin = currentUser?.role === 'INSTITUTE_ADMIN';
 
+  useEffect(() => {
+    if (isSupervisor && activeTab === 'supervision') fetchMyScholars();
+  }, [isSupervisor, activeTab, fetchMyScholars]);
+
+  // A deep link to a research-only tab falls back to Identity for admins.
+  useEffect(() => {
+    if (isAdmin && (activeTab === 'domains' || activeTab === 'integrations')) setActiveTab('identity');
+    if (!isSupervisor && activeTab === 'supervision') setActiveTab('identity');
+  }, [isAdmin, isSupervisor, activeTab]);
+
+  const selectTab = (tab: SettingsTab) => {
+    setActiveTab(tab);
+    router.replace(`/settings?tab=${tab}`, { scroll: false });
+  };
+
+  const handleProfileSubmit = async (data: any) => {
     try {
-      await updateProfile(payload);
-      addToast('Profile & account settings saved successfully!', 'success');
+      await updateProfile({ ...data, interests: selectedInterests });
+      addToast('Profile saved.', 'success');
     } catch (e: any) {
-      addToast(`Error updating settings: ${e.message}`, 'error');
+      addToast(`Your profile could not be saved: ${e.message}`, 'error');
+    }
+  };
+
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      addToast('Please select a valid image file (PNG, JPG, WebP)', 'error');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      addToast('Photo size must be less than 5MB', 'error');
+      return;
+    }
+
+    setIsUploadingPhoto(true);
+    try {
+      const presignedRes = await apiFetch('/api/threads/files/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          filename: `avatar-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`,
+          contentType: file.type,
+          sizeBytes: file.size,
+        }),
+      });
+
+      if (!presignedRes.ok) {
+        throw new Error((await readApiError(presignedRes)) || 'Failed to prepare upload');
+      }
+
+      const { uploadUrl, requiredHeaders, downloadPath } = await presignedRes.json();
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: requiredHeaders || { 'Content-Type': file.type },
+        body: file,
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error(`Upload to storage failed (HTTP ${uploadRes.status})`);
+      }
+
+      const fileUrl = downloadPath.startsWith('http') ? downloadPath : `${API_URL}${downloadPath}`;
+      await updateProfile({ image: fileUrl });
+      addToast('Profile photo updated successfully', 'success');
+    } catch (err: any) {
+      addToast(`Failed to update photo: ${err.message}`, 'error');
+    } finally {
+      setIsUploadingPhoto(false);
+      if (e.target) e.target.value = '';
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!confirm('Are you sure you want to remove your profile photo?')) return;
+    try {
+      setIsUploadingPhoto(true);
+      await updateProfile({ image: null });
+      addToast('Profile photo removed', 'success');
+    } catch (err: any) {
+      addToast(`Failed to remove photo: ${err.message}`, 'error');
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const saveInterests = async () => {
+    setSavingInterests(true);
+    try {
+      await updateProfile({
+        name: currentUser?.name || undefined,
+        bio: currentUser?.bio || undefined,
+        department: currentUser?.department || undefined,
+        interests: selectedInterests,
+      });
+      addToast('Research interests saved.', 'success');
+    } catch (e: any) {
+      addToast(`Your interests could not be saved: ${e.message}`, 'error');
+    } finally {
+      setSavingInterests(false);
     }
   };
 
@@ -187,7 +268,7 @@ function UnifiedSettingsContent() {
     const cleaned = name.trim();
     if (cleaned && !selectedInterests.includes(cleaned)) {
       if (selectedInterests.length >= 8) {
-        addToast('You can select up to 8 research domains only.', 'info');
+        addToast('You can add up to 8 research interests.', 'info');
         return;
       }
       setSelectedInterests([...selectedInterests, cleaned]);
@@ -195,1090 +276,586 @@ function UnifiedSettingsContent() {
     setNewInterestInput('');
   };
 
-  const handleRemoveInterest = (name: string) => {
-    setSelectedInterests(selectedInterests.filter(t => t !== name));
-  };
-
-  const handleConnectGoogle = async () => {
+  const connect = async (provider: 'GOOGLE' | 'ZOOM') => {
     try {
-      setConnectingProvider('GOOGLE');
+      setConnectingProvider(provider);
       const callbackUrl = `${window.location.origin}/settings/integrations/callback`;
-      const res = await getGoogleAuthUrl(callbackUrl);
-      if (res?.authUrl) {
-        window.location.href = res.authUrl;
-      }
+      const res = provider === 'GOOGLE' ? await getGoogleAuthUrl(callbackUrl) : await getZoomAuthUrl(callbackUrl);
+      if (res?.authUrl) window.location.href = res.authUrl;
     } catch (err: any) {
-      addToast(err.message || 'Could not initialize Google Workspace authorization.', 'error');
+      addToast(err.message || `Could not start the ${provider === 'GOOGLE' ? 'Google' : 'Zoom'} connection.`, 'error');
       setConnectingProvider(null);
     }
   };
 
-  const handleConnectZoom = async () => {
-    try {
-      setConnectingProvider('ZOOM');
-      const callbackUrl = `${window.location.origin}/settings/integrations/callback`;
-      const res = await getZoomAuthUrl(callbackUrl);
-      if (res?.authUrl) {
-        window.location.href = res.authUrl;
-      }
-    } catch (err: any) {
-      addToast(err.message || 'Could not initialize Zoom authorization.', 'error');
-      setConnectingProvider(null);
-    }
-  };
-
-  const handleDisconnect = async (provider: 'GOOGLE_WORKSPACE' | 'ZOOM_WORKPLACE') => {
-    if (!confirm(`Are you sure you want to unlink ${provider === 'GOOGLE_WORKSPACE' ? 'Google Workspace' : 'Zoom Workplace'}?`)) {
-      return;
-    }
+  const handleDisconnect = async () => {
+    const provider = confirmDisconnect;
+    if (!provider) return;
     try {
       setDisconnectingProvider(provider);
       await disconnectIntegration(provider);
-      addToast(`${provider === 'GOOGLE_WORKSPACE' ? 'Google Workspace' : 'Zoom'} unlinked successfully.`, 'info');
+      addToast(`${provider === 'GOOGLE_WORKSPACE' ? 'Google Workspace' : 'Zoom'} disconnected.`, 'info');
+      setConfirmDisconnect(null);
     } catch (err: any) {
-      addToast(err.message || 'Failed to disconnect integration.', 'error');
+      addToast(err.message || 'The integration could not be disconnected.', 'error');
     } finally {
       setDisconnectingProvider(null);
     }
   };
 
+  const persist = (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // Storage unavailable: the choice applies until reload.
+    }
+  };
+
   const saveFeedSort = (val: 'latest' | 'top') => {
     setFeedSortPreference(val);
-    localStorage.setItem('cb_pref_feed_sort', val);
-    addToast(`Feed default sorting updated to ${val === 'latest' ? 'Most Recent' : 'Top Trending'}`, 'success');
+    persist('cb_pref_feed_sort', val);
   };
 
-  const toggleCompactMode = () => {
-    const nextVal = !compactCards;
-    setCompactCards(nextVal);
-    localStorage.setItem('cb_pref_compact_cards', String(nextVal));
-    addToast(`Card layout set to ${nextVal ? 'Compact view' : 'Comfortable view'}`, 'info');
-  };
-
-  const toggleAutoExpand = () => {
-    const nextVal = !autoExpandAbstracts;
-    setAutoExpandAbstracts(nextVal);
-    localStorage.setItem('cb_pref_auto_abstracts', String(nextVal));
-  };
-
-  const handleNotifToggle = (key: keyof typeof notifPreferences) => {
-    setNotifPreferences(prev => {
-      const updated = { ...prev, [key]: !prev[key] };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('cb_pref_notifications', JSON.stringify(updated));
-        window.dispatchEvent(new Event('cb-preferences-updated'));
-      }
+  const handleNotifToggle = (key: NotifKey, next: boolean) => {
+    setNotifPreferences((prev) => {
+      const updated = { ...prev, [key]: next };
+      persist('cb_pref_notifications', JSON.stringify(updated));
+      window.dispatchEvent(new Event('cb-preferences-updated'));
       return updated;
     });
-    addToast('Notification preferences updated.', 'info');
-  };
-
-  const handleDigestChange = (val: string) => {
-    setNotifPreferences(prev => {
-      const updated = { ...prev, emailDigest: val };
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('cb_pref_notifications', JSON.stringify(updated));
-        window.dispatchEvent(new Event('cb-preferences-updated'));
-      }
-      return updated;
-    });
-    addToast(`Email digest frequency set to: ${val}`, 'success');
   };
 
   const googleConn = integrationConnections?.google;
   const zoomConn = integrationConnections?.zoom;
-  const isSupervisor = currentUser?.role === 'RESEARCH_SUPERVISOR';
-  const isAdmin = currentUser?.role === 'INSTITUTE_ADMIN';
+  const capacity = (currentUser as any)?.supervisorProfile?.maxScholars ?? 6;
 
-  // A deep link to a research-only tab falls back to Identity for admins.
-  useEffect(() => {
-    if (isAdmin && (activeTab === 'domains' || activeTab === 'integrations')) setActiveTab('identity');
-  }, [isAdmin, activeTab]);
-
-  const tabs = [
-    { id: 'identity', label: 'Identity & Bio', icon: User, desc: 'Personal & academic profile metadata' },
-    // Research focus and meeting integrations serve research collaboration, which admins don't take part in.
+  const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
+    { id: 'identity', label: 'Profile', icon: User },
     ...(!isAdmin
       ? [
-          { id: 'domains', label: 'Research Focus', icon: Tag, desc: 'Domains, tags & matchmaking index' },
-          { id: 'integrations', label: 'Connected Apps', icon: Layers, desc: 'Google Workspace & Zoom meetings' },
+          { id: 'domains' as const, label: 'Research interests', icon: Tag },
+          { id: 'integrations' as const, label: 'Connected apps', icon: Layers },
         ]
       : []),
-    { id: 'appearance', label: 'Appearance & UI', icon: Palette, desc: 'Themes, feed sorting & density' },
-    { id: 'notifications', label: 'Notifications', icon: Bell, desc: 'Email digests, channels & alert rules' },
-    ...(isSupervisor ? [{ id: 'supervision', label: 'Advisory Panel', icon: GraduationCap, desc: 'Scholar intake capacity & lab settings' }] : [])
+    { id: 'appearance', label: 'Appearance', icon: Palette },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+    ...(isSupervisor ? [{ id: 'supervision' as const, label: 'Supervision', icon: GraduationCap }] : []),
   ];
 
-  return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-24 text-left select-none font-sans">
-      
-      {/* ─── PAGE HEADER & USER HERO PILL ─── */}
-      <div className="bg-surface border border-slate-200/90 rounded-2xl p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-brand to-blue-500 p-0.5 shadow-md shrink-0 flex items-center justify-center">
-            <div className="w-full h-full rounded-2xl bg-surface overflow-hidden flex items-center justify-center">
-              <img
-                src={getProfileImageUrl(currentUser)}
-                alt={currentUser?.name || 'User'}
-                className="w-full h-full object-cover"
-              />
+  const IntegrationCard = ({
+    name,
+    detail,
+    icon,
+    conn,
+    provider,
+    onConnect,
+  }: {
+    name: string;
+    detail: string;
+    icon: React.ReactNode;
+    conn: any;
+    provider: 'GOOGLE_WORKSPACE' | 'ZOOM_WORKPLACE';
+    onConnect: () => void;
+  }) => {
+    const connected = conn?.status === 'CONNECTED';
+    return (
+      <div className="flex flex-col justify-between gap-4 rounded-xl border border-line p-4">
+        <div className="flex items-start gap-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-muted">{icon}</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-medium text-ink">{name}</p>
+              {connected ? (
+                <Badge tone="success">
+                  <CheckCircle2 className="size-3" aria-hidden />
+                  Connected
+                </Badge>
+              ) : (
+                <Badge tone="neutral">Not connected</Badge>
+              )}
             </div>
-          </div>
-          <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h1 className="text-xl font-semibold text-slate-900 font-display tracking-tight">
-                {currentUser?.name || 'Researcher Settings'}
-              </h1>
-              {currentUser?.role && <RoleBadge role={currentUser.role} size="sm" />}
-              <span className="inline-flex items-center gap-1 text-2xs font-semibold text-brand bg-blue-50/80 border border-blue-200/60 px-2 py-0.5 rounded-full">
-                <ShieldCheck className="w-3 h-3 text-brand" />
-                <span>SRMIST Verified</span>
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
-              {currentUser?.email} · {currentUser?.department || 'SRM Institute of Science and Technology'}
-            </p>
+            <p className="mt-0.5 text-sm text-ink-muted">{detail}</p>
+            {connected && conn.externalAccountEmail && <p className="mt-1 truncate font-mono text-xs text-ink-muted">{conn.externalAccountEmail}</p>}
           </div>
         </div>
-
-        <div className="flex items-center gap-2 self-start md:self-auto">
-          {!isAdmin && (
-            <Link
-              href="/profile"
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all cursor-pointer"
-            >
-              <User className="w-3.5 h-3.5 text-slate-500" />
-              <span>View Public Profile</span>
-            </Link>
-          )}
-          {isAdmin && (
-            <Link
-              href="/admin/settings"
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-brand hover:bg-brand-strong rounded-xl transition-all shadow-sm cursor-pointer"
-            >
-              <Globe className="w-3.5 h-3.5" />
-              <span>Institute Global Settings</span>
-            </Link>
-          )}
-        </div>
+        {connected ? (
+          <Button variant="secondary" size="sm" className="self-start" loading={disconnectingProvider === provider} onClick={() => setConfirmDisconnect(provider)}>
+            Disconnect
+          </Button>
+        ) : (
+          <Button size="sm" className="self-start" loading={connectingProvider === (provider === 'GOOGLE_WORKSPACE' ? 'GOOGLE' : 'ZOOM')} onClick={onConnect}>
+            Connect
+            <ExternalLink aria-hidden />
+          </Button>
+        )}
       </div>
+    );
+  };
 
-      {/* ─── MAIN SETTINGS WORKBENCH (TABS + FORM) ─── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        
-        {/* LEFT TAB MENU (3 COLS) */}
-        <div className="lg:col-span-4 flex flex-col gap-1.5 bg-surface border border-slate-200/90 p-2.5 rounded-2xl shadow-xs">
-          <p className="text-xs font-medium capitalize text-slate-400 px-3 py-1.5">
-            Settings Navigation
-          </p>
+  return (
+    <div>
+      <PageHeader
+        meta="Account"
+        title="Settings"
+        description="Your profile, preferences and connected tools."
+        actions={
+          isAdmin && (
+            <Link href="/admin/settings" className={buttonVariants({ variant: 'secondary' })}>
+              Platform settings
+            </Link>
+          )
+        }
+      />
 
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveTab(tab.id as SettingsTab)}
-                className={`flex items-center gap-3 p-3 rounded-xl text-left transition-all duration-150 cursor-pointer group relative ${
-                  isActive
-                    ? 'bg-brand text-white shadow-sm  font-semibold'
-                    : 'text-slate-700 hover:bg-slate-100/90 hover:text-slate-900 font-bold'
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                    isActive
-                      ? 'bg-white/20 text-white'
-                      : 'bg-slate-100 text-slate-500 group-hover:text-brand group-hover:bg-blue-50'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs leading-none">{tab.label}</span>
-                    {isActive && (
-                      <ChevronRight className="w-3.5 h-3.5 text-white/80" />
+      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        {/* Section navigation */}
+        <nav aria-label="Settings sections" className="lg:sticky lg:top-[calc(var(--layout-header)+1.5rem)]">
+          <ul className="-mx-4 flex gap-1 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
+            {tabs.map((tab) => {
+              const selected = activeTab === tab.id;
+              return (
+                <li key={tab.id} className="shrink-0">
+                  <button
+                    type="button"
+                    aria-current={selected ? 'page' : undefined}
+                    onClick={() => selectTab(tab.id)}
+                    className={cn(
+                      'flex h-9 w-full items-center gap-2.5 rounded-lg px-3 text-sm transition-colors duration-fast',
+                      selected ? 'bg-brand-50 font-medium text-brand-800' : 'text-ink-secondary hover:bg-neutral-100 hover:text-ink',
                     )}
-                  </div>
-                  <p className={`text-2xs truncate mt-1 ${isActive ? 'text-blue-100 font-normal' : 'text-slate-400 font-medium'}`}>
-                    {tab.desc}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
+                  >
+                    <tab.icon className="size-4" aria-hidden />
+                    {tab.label}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <div className="mt-4 hidden border-t border-line pt-4 lg:block">
+            <Button variant="ghost" className="w-full justify-start text-danger-700 hover:bg-danger-50 hover:text-danger-700" onClick={() => logout()}>
+              <LogOut aria-hidden />
+              Sign out
+            </Button>
+          </div>
+        </nav>
 
-          <div className="h-px bg-slate-100 my-1 w-full" />
-
-          <button
-            onClick={logout}
-            className="flex items-center gap-3 p-3 text-xs font-bold text-rose-600 hover:bg-rose-50 rounded-xl transition-all cursor-pointer w-full text-left"
-          >
-            <div className="w-8 h-8 rounded-lg bg-rose-100/60 text-rose-600 flex items-center justify-center shrink-0">
-              <LogOut className="w-4 h-4" />
-            </div>
-            <span>Sign Out of CuriousBees</span>
-          </button>
-        </div>
-
-        {/* RIGHT CONTENT PANE (8 COLS) */}
-        <div className="lg:col-span-8 bg-surface border border-slate-200/90 rounded-2xl p-6 shadow-xs min-h-[520px] flex flex-col justify-between">
-          <AnimatePresence mode="wait">
-            
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* TAB 1: ACADEMIC IDENTITY & BIO */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeTab === 'identity' && (
-              <motion.div
-                key="tab-identity"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-6 flex-1 flex flex-col justify-between"
-              >
-                <form onSubmit={handleSubmit(handleProfileSubmit)} className="space-y-5 flex-1 flex flex-col justify-between">
-                  <div className="space-y-5">
-                    <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-                      <div>
-                        <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
-                          <User className="w-4 h-4 text-brand" />
-                          <span>Academic Identity & Credentials</span>
-                        </h2>
-                        <p className="text-2xs text-slate-500 font-medium mt-0.5">
-                          Personalize your public researcher bio and institutional department affiliation.
-                        </p>
-                      </div>
-                      <span className="text-2xs font-mono font-bold uppercase bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
-                        Live Sync
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="block text-xs font-medium text-slate-700 capitalize">
-                          Full Academic Name
-                        </label>
-                        <input
-                          type="text"
-                          {...register('name')}
-                          className="cb-input font-medium"
-                          placeholder="E.g. Dr. Ramesh Kumar"
-                        />
-                        {errors.name && (
-                          <p className="text-2xs text-rose-500 font-bold mt-1">
-                            {errors.name.message as string}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="block text-xs font-medium text-slate-700 capitalize">
-                          Institutional Primary Email
-                        </label>
-                        <input
-                          type="email"
-                          disabled
-                          value={currentUser?.email || ''}
-                          className="cb-input bg-slate-50/80 text-slate-500 border-slate-200 cursor-not-allowed font-mono text-xs"
-                        />
-                        <p className="text-2xs text-slate-400 font-semibold">Managed via SRMIST institutional identity system</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <label className="block text-xs font-medium text-slate-700 capitalize">
-                          Academic Department
-                        </label>
-                        <select
-                          {...register('department')}
-                          disabled
-                          className="cb-input bg-slate-50/80 text-slate-500 border-slate-200 cursor-not-allowed font-medium"
-                        >
-                          <option value="">{currentUser?.department || 'Select Academic Department'}</option>
-                          {departments.map((dept) => (
-                            <option key={dept.id} value={dept.name}>{dept.name}</option>
-                          ))}
-                        </select>
-                        <p className="text-2xs text-slate-400 font-semibold">Managed via SRMIST institutional identity system</p>
-                        {errors.department && (
-                          <p className="text-2xs text-rose-500 font-bold mt-1">
-                            {errors.department.message as string}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="block text-xs font-medium text-slate-700 capitalize">
-                          Institutional Role
-                        </label>
-                        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
-                          <span className="text-xs font-bold text-slate-800">
-                            {currentUser?.role === 'RESEARCH_SUPERVISOR' ? 'Faculty Research Supervisor' : currentUser?.role === 'INSTITUTE_ADMIN' ? 'Institutional Administrator' : 'PhD Research Scholar'}
-                          </span>
-                          <RoleBadge role={currentUser?.role || 'RESEARCH_SCHOLAR'} size="sm" />
+        <div className="min-w-0 space-y-6">
+          {/* Profile */}
+          {activeTab === 'identity' && (
+            <Card>
+              <CardHeader
+                title="Profile"
+                description="Shown on your researcher profile and next to your posts."
+                actions={
+                  !isAdmin && (
+                    <Link href="/profile" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+                      View profile
+                    </Link>
+                  )
+                }
+              />
+              <form onSubmit={handleSubmit(handleProfileSubmit)}>
+                <div className="space-y-5 p-5">
+                  <div className="flex items-center gap-5">
+                    <div className="relative">
+                      <img
+                        src={getProfileImageUrl(currentUser)}
+                        alt={currentUser?.name || 'Profile photo'}
+                        referrerPolicy="no-referrer"
+                        onError={(e) => handleAvatarError(e, currentUser?.name)}
+                        className="size-16 rounded-full border border-line bg-surface-muted object-cover shadow-xs"
+                      />
+                      {isUploadingPhoto && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 backdrop-blur-xs">
+                          <RefreshCw className="size-5 animate-spin text-white" />
                         </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="truncate font-medium text-ink">{currentUser?.name}</p>
+                        {currentUser?.role && <RoleBadge role={currentUser.role} />}
+                      </div>
+                      <div className="mt-2.5 flex items-center gap-2">
+                        <input
+                          ref={photoInputRef}
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp,image/gif"
+                          className="hidden"
+                          disabled={isUploadingPhoto}
+                          onChange={handlePhotoUpload}
+                        />
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={isUploadingPhoto}
+                          onClick={() => photoInputRef.current?.click()}
+                          className="gap-1.5 text-xs"
+                        >
+                          <Camera className="size-3.5" />
+                          {currentUser?.image ? 'Change photo' : 'Upload photo'}
+                        </Button>
+                        {currentUser?.image && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            disabled={isUploadingPhoto}
+                            onClick={handleRemovePhoto}
+                            className="text-xs text-ink-muted hover:text-danger-600"
+                          >
+                            Remove
+                          </Button>
+                        )}
                       </div>
                     </div>
-
-                    <div className="space-y-1">
-                      <label className="block text-xs font-medium text-slate-700 capitalize">
-                        Research Biography & Objective
-                      </label>
-                      <textarea
-                        rows={4}
-                        {...register('bio')}
-                        className="w-full bg-surface border border-slate-200 rounded-xl p-3 font-sans text-xs leading-relaxed text-slate-800 placeholder:text-slate-400 focus:border-brand focus:ring-2 focus:ring-brand/10 outline-none transition-all"
-                        placeholder="Detail your scientific focus, active lab specifications, computational tools, and primary academic goals..."
-                      />
-                      {errors.bio && (
-                        <p className="text-2xs text-rose-500 font-bold mt-1">
-                          {errors.bio.message as string}
-                        </p>
-                      )}
-                    </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-100 mt-4">
-                    <button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="px-5 py-2.5 bg-brand text-white hover:bg-brand-strong rounded-xl text-xs font-medium capitalize shadow-sm transition-all flex items-center gap-2 cursor-pointer"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>Saving Profile...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Save Changes</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
-            )}
-
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* TAB 2: RESEARCH FOCUS & DOMAINS */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeTab === 'domains' && !isAdmin && (
-              <motion.div
-                key="tab-domains"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-6 flex-1 flex flex-col justify-between"
-              >
-                <div className="space-y-5">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
-                      <Tag className="w-4 h-4 text-brand" />
-                      <span>Research Focus Areas & Matchmaking Tags</span>
-                    </h2>
-                    <p className="text-2xs text-slate-500 font-medium mt-0.5">
-                      Specify scientific domains that index your node in co-author matchmaking directories and Curious Nexus workspaces.
-                    </p>
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <Field label="Full name" htmlFor="set-name" error={errors.name?.message as string | undefined}>
+                      <input id="set-name" type="text" {...register('name')} className="cb-input" />
+                    </Field>
+                    <Field label="Email" htmlFor="set-email" hint="Your sign-in address. The research office can change it.">
+                      <input id="set-email" type="email" disabled value={currentUser?.email || ''} className="cb-input font-mono text-sm" />
+                    </Field>
                   </div>
 
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-medium text-slate-700 capitalize">
-                        Active Pinned Domains ({selectedInterests.length}/8)
-                      </label>
-                      <span className="text-2xs text-slate-400 font-bold">Max 8 Tags</span>
-                    </div>
+                  <dl className="grid grid-cols-1 gap-5 rounded-xl border border-line bg-surface-muted p-4 sm:grid-cols-2">
+                    <DetailItem label="Department">{currentUser?.department || 'Not assigned'}</DetailItem>
+                    <DetailItem label="Role">
+                      {isSupervisor ? 'Research supervisor' : isAdmin ? 'Institute admin' : 'Research scholar'}
+                    </DetailItem>
+                    <p className="text-xs text-ink-muted sm:col-span-2">Department and role are set by the research office.</p>
+                  </dl>
 
-                    <div className="flex flex-wrap gap-2 p-3.5 bg-slate-50/80 border border-slate-200/80 rounded-2xl min-h-[58px] items-center">
-                      {selectedInterests.length === 0 ? (
-                        <p className="text-slate-400 text-xs italic font-medium">
-                          No research focus tags pinned yet. Type below or select from recommended disciplines.
-                        </p>
-                      ) : (
-                        selectedInterests.map((interest) => (
-                          <span
-                            key={interest}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-brand/10 border border-brand/25 text-brand"
-                          >
-                            <span>{interest}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveInterest(interest)}
-                              className="text-brand/60 hover:text-rose-600 p-0.5 rounded-full hover:bg-rose-50 transition-colors cursor-pointer"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          </span>
-                        ))
-                      )}
-                    </div>
+                  <Field label="Bio" htmlFor="set-bio" hint="A few sentences about your research." error={errors.bio?.message as string | undefined}>
+                    <textarea id="set-bio" rows={4} {...register('bio')} className="cb-input resize-y" />
+                  </Field>
+                </div>
+                <div className="flex justify-end border-t border-line bg-surface-muted px-5 py-3.5">
+                  <Button type="submit" loading={isSubmitting}>
+                    Save profile
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          )}
 
-                    <div className="relative mt-2">
-                      <input
-                        type="text"
-                        value={newInterestInput}
-                        onChange={(e) => setNewInterestInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddInterest(newInterestInput);
-                          }
-                        }}
-                        placeholder="Type scientific discipline (e.g. Deep Reinforcement Learning) and press Enter..."
-                        className="cb-input pl-9 pr-12 font-medium"
-                      />
-                      <Tag className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
-                      <button
-                        type="button"
-                        onClick={() => handleAddInterest(newInterestInput)}
-                        className="absolute right-2 top-2 p-1.5 rounded-lg bg-brand text-white hover:bg-brand-strong transition-colors cursor-pointer"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
+          {/* Research interests */}
+          {activeTab === 'domains' && !isAdmin && (
+            <Card>
+              <CardHeader
+                title="Research interests"
+                description="Up to 8. Used to suggest researchers who share your interests, and shown on your profile."
+                actions={<span className="text-sm tabular-nums text-ink-muted">{selectedInterests.length}/8</span>}
+              />
+              <div className="space-y-5 p-5">
+                <div className="flex min-h-12 flex-wrap items-center gap-2 rounded-xl border border-line bg-surface-muted p-3">
+                  {selectedInterests.length === 0 ? (
+                    <p className="text-sm text-ink-muted">No interests added yet.</p>
+                  ) : (
+                    selectedInterests.map((interest) => (
+                      <span key={interest} className="inline-flex items-center gap-1 rounded-full bg-brand-50 py-1 pl-3 pr-1 text-sm text-brand-800 ring-1 ring-inset ring-brand-200">
+                        {interest}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedInterests(selectedInterests.filter((t) => t !== interest))}
+                          aria-label={`Remove ${interest}`}
+                          className="flex size-5 items-center justify-center rounded-full hover:bg-brand-100"
+                        >
+                          <X className="size-3" aria-hidden />
+                        </button>
+                      </span>
+                    ))
+                  )}
+                </div>
+
+                <Field label="Add an interest" htmlFor="set-interest" hint="Press Enter to add.">
+                  <div className="flex gap-2">
+                    <input
+                      id="set-interest"
+                      type="text"
+                      value={newInterestInput}
+                      onChange={(e) => setNewInterestInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddInterest(newInterestInput);
+                        }
+                      }}
+                      placeholder="e.g. Federated learning"
+                      className="cb-input"
+                    />
+                    <Button variant="secondary" onClick={() => handleAddInterest(newInterestInput)} disabled={!newInterestInput.trim()}>
+                      <Plus aria-hidden />
+                      Add
+                    </Button>
                   </div>
+                </Field>
 
-                  <div className="space-y-2.5 pt-3 border-t border-slate-100">
-                    <p className="text-xs font-medium text-slate-400 capitalize flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-amber-500" />
-                      <span>Suggested University Research Clusters</span>
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
+                {interestsList.filter((item) => !selectedInterests.includes(item)).length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-ink">Suggested</p>
+                    <div className="mt-2 flex flex-wrap gap-1.5">
                       {interestsList
-                        .filter(item => !selectedInterests.includes(item))
+                        .filter((item) => !selectedInterests.includes(item))
                         .map((tag) => (
                           <button
                             key={tag}
                             type="button"
                             onClick={() => handleAddInterest(tag)}
-                            className="px-3 py-1.5 rounded-xl text-2xs font-bold bg-surface hover:bg-blue-50 border border-slate-200 text-slate-700 hover:text-brand hover:border-brand/30 transition-all cursor-pointer shadow-xs flex items-center gap-1"
+                            className="inline-flex h-8 items-center gap-1 rounded-full border border-line bg-surface px-3 text-sm text-ink-secondary transition-colors duration-fast hover:border-line-strong hover:text-ink"
                           >
-                            <Plus className="w-3 h-3 text-slate-400" />
-                            <span>{tag}</span>
+                            <Plus className="size-3.5" aria-hidden />
+                            {tag}
                           </button>
                         ))}
                     </div>
                   </div>
-                </div>
+                )}
+              </div>
+              <div className="flex justify-end border-t border-line bg-surface-muted px-5 py-3.5">
+                <Button onClick={saveInterests} loading={savingInterests}>
+                  Save interests
+                </Button>
+              </div>
+            </Card>
+          )}
 
-                <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-100 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => handleProfileSubmit({ name: currentUser?.name, bio: currentUser?.bio, department: currentUser?.department })}
-                    className="px-5 py-2.5 bg-brand text-white hover:bg-brand-strong rounded-xl text-xs font-medium capitalize shadow-sm transition-all flex items-center gap-2 cursor-pointer"
+          {/* Connected apps */}
+          {activeTab === 'integrations' && !isAdmin && (
+            <Card>
+              <CardHeader
+                title="Connected apps"
+                description="Create meetings from Curious Nexus with your own Google or Zoom account."
+                actions={
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setLoadingIntegrations(true);
+                      fetchIntegrationStatus().finally(() => setLoadingIntegrations(false));
+                    }}
+                    aria-label="Refresh connection status"
                   >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Save Focus Domains</span>
-                  </button>
+                    <RefreshCw className={cn(loadingIntegrations && 'animate-spin')} aria-hidden />
+                    Refresh
+                  </Button>
+                }
+              />
+              <div className="space-y-4 p-5">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <IntegrationCard
+                    name="Google Workspace"
+                    detail="Google Meet links and Chat spaces for workspaces."
+                    provider="GOOGLE_WORKSPACE"
+                    conn={googleConn}
+                    onConnect={() => connect('GOOGLE')}
+                    icon={
+                      <svg className="size-5" viewBox="0 0 24 24" aria-hidden>
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                      </svg>
+                    }
+                  />
+                  <IntegrationCard
+                    name="Zoom"
+                    detail="Zoom meetings for supervision and collaboration."
+                    provider="ZOOM_WORKPLACE"
+                    conn={zoomConn}
+                    onConnect={() => connect('ZOOM')}
+                    icon={<Video className="size-5 text-brand" aria-hidden />}
+                  />
                 </div>
-              </motion.div>
-            )}
+                <p className="text-sm text-ink-muted">
+                  CuriousBees stores meeting links and who is invited. It does not record or transcribe meetings.
+                </p>
+              </div>
+            </Card>
+          )}
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* TAB 3: CONNECTED APPS & INTEGRATIONS */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeTab === 'integrations' && !isAdmin && (
-              <motion.div
-                key="tab-integrations"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-6 flex-1 flex flex-col justify-between"
-              >
-                <div className="space-y-5">
-                  <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-                    <div>
-                      <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
-                        <Layers className="w-4 h-4 text-brand" />
-                        <span>Connected Collaboration Tools</span>
-                      </h2>
-                      <p className="text-2xs text-slate-500 font-medium mt-0.5">
-                        Link external conferencing & chat tools to power Curious Nexus workspaces automatically.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLoadingIntegrations(true);
-                        fetchIntegrationStatus().finally(() => setLoadingIntegrations(false));
-                      }}
-                      className="p-2 text-slate-500 hover:text-brand rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                      title="Refresh connection statuses"
-                    >
-                      <RefreshCw className={`w-4 h-4 ${loadingIntegrations ? 'animate-spin text-brand' : ''}`} />
-                    </button>
-                  </div>
-
-                  {/* 🛡️ PRIVACY BOX */}
-                  <div className="p-4 bg-gradient-to-r from-blue-50/70 to-indigo-50/40 border border-brand/20 rounded-2xl flex items-start gap-3">
-                    <ShieldCheck className="w-5 h-5 text-brand shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-xs font-semibold text-slate-900 uppercase tracking-wide font-mono">
-                        Zero-Retention Architecture
-                      </h4>
-                      <p className="text-2xs text-slate-600 leading-relaxed mt-0.5 font-medium">
-                        CuriousBees orchestrates meeting metadata & memberships. No conversation transcripts, audio streams, or meeting recordings are ever stored on CuriousBees servers.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* INTEGRATIONS CARDS */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Google Workspace */}
-                    <div className="p-5 border border-slate-200/90 rounded-2xl bg-surface shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition-all">
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center p-2 shadow-xs">
-                              <svg className="w-full h-full" viewBox="0 0 24 24">
-                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                              </svg>
-                            </div>
-                            <div>
-                              <h3 className="text-xs font-semibold text-slate-900">Google Workspace</h3>
-                              <p className="text-2xs text-slate-500 font-medium">Chat Spaces · Meet</p>
-                            </div>
-                          </div>
-
-                          {googleConn?.status === 'CONNECTED' ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>Connected</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold bg-slate-100 text-slate-600">
-                              <span>Unlinked</span>
-                            </span>
-                          )}
-                        </div>
-
-                        <p className="text-2xs text-slate-600 leading-relaxed font-normal">
-                          Automated creation of dedicated Google Chat research spaces & Google Meet calls in workspaces.
-                        </p>
-                      </div>
-
-                      <div>
-                        {googleConn?.status === 'CONNECTED' ? (
-                          <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                            <span className="text-2xs text-slate-400 font-mono truncate max-w-[140px]">
-                              {googleConn.externalAccountEmail}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleDisconnect('GOOGLE_WORKSPACE')}
-                              disabled={disconnectingProvider === 'GOOGLE_WORKSPACE'}
-                              className="text-2xs font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded transition-colors cursor-pointer"
-                            >
-                              Disconnect
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={handleConnectGoogle}
-                            disabled={connectingProvider === 'GOOGLE'}
-                            className="w-full py-2 bg-brand hover:bg-brand-strong text-white rounded-xl text-xs font-medium capitalize transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                          >
-                            {connectingProvider === 'GOOGLE' ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <>
-                                <span>Connect Google</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Zoom Workplace */}
-                    <div className="p-5 border border-slate-200/90 rounded-2xl bg-surface shadow-xs flex flex-col justify-between space-y-4 hover:border-slate-300 transition-all">
-                      <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2.5">
-                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center p-2 text-blue-500 shadow-xs">
-                              <Video className="w-5 h-5" />
-                            </div>
-                            <div>
-                              <h3 className="text-xs font-semibold text-slate-900">Zoom Workplace</h3>
-                              <p className="text-2xs text-slate-500 font-medium">Video Conferencing</p>
-                            </div>
-                          </div>
-
-                          {zoomConn?.status === 'CONNECTED' ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>Connected</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-bold bg-slate-100 text-slate-600">
-                              <span>Unlinked</span>
-                            </span>
-                          )}
-                        </div>
-
-                        <p className="text-2xs text-slate-600 leading-relaxed font-normal">
-                          Instant participant joining and recurring video syncs inside research collaboration rooms.
-                        </p>
-                      </div>
-
-                      <div>
-                        {zoomConn?.status === 'CONNECTED' ? (
-                          <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                            <span className="text-2xs text-slate-400 font-mono truncate max-w-[140px]">
-                              {zoomConn.externalAccountEmail}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleDisconnect('ZOOM_WORKPLACE')}
-                              disabled={disconnectingProvider === 'ZOOM_WORKPLACE'}
-                              className="text-2xs font-bold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded transition-colors cursor-pointer"
-                            >
-                              Disconnect
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={handleConnectZoom}
-                            disabled={connectingProvider === 'ZOOM'}
-                            className="w-full py-2 bg-brand hover:bg-brand-strong text-white rounded-xl text-xs font-medium capitalize transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                          >
-                            {connectingProvider === 'ZOOM' ? (
-                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : (
-                              <>
-                                <span>Connect Zoom</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <Link
-                    href="/settings/integrations"
-                    className="text-xs font-bold text-brand hover:underline flex items-center gap-1"
-                  >
-                    <span>Open Full Integrations Management Hub</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </motion.div>
-            )}
-
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* TAB 4: APPEARANCE & UI PREFERENCES */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeTab === 'appearance' && (
-              <motion.div
-                key="tab-appearance"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-6 flex-1 flex flex-col justify-between"
-              >
-                <div className="space-y-5">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
-                      <Palette className="w-4 h-4 text-brand" />
-                      <span>Interface & Theme Preferences</span>
-                    </h2>
-                    <p className="text-2xs text-slate-500 font-medium mt-0.5">
-                      Tailor the visual aesthetics, density, and research feed presentation for your workflow.
-                    </p>
-                  </div>
-
-                  {/* Theme Mode Selector */}
-                  <div className="space-y-3">
-                    <label className="text-xs font-medium text-slate-700 capitalize block">
-                      Color Palette & Theme Mode
-                    </label>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTheme('light');
-                          addToast('Standard Light theme activated', 'success');
-                        }}
-                        className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-3 select-none ${
-                          theme === 'light'
-                            ? 'border-brand bg-blue-50/50 text-brand shadow-xs'
-                            : 'border-slate-200 bg-surface hover:border-slate-300 text-slate-700 hover:bg-slate-50/50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <Sun className="w-5 h-5 text-amber-500" />
-                          {theme === 'light' && <Check className="w-4 h-4 text-brand stroke-[2.5]" />}
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold">Light Mode</p>
-                          <p className="text-2xs text-slate-400 font-medium">Standard Academic Clean</p>
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setTheme('dark');
-                          addToast('Dark Studio theme activated', 'success');
-                        }}
-                        className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-3 select-none ${
-                          theme === 'dark'
-                            ? 'border-brand bg-blue-50/50 text-brand shadow-xs'
-                            : 'border-slate-200 bg-surface hover:border-slate-300 text-slate-700 hover:bg-slate-50/50'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <Moon className="w-5 h-5 text-indigo-500" />
-                          {theme === 'dark' && <Check className="w-4 h-4 text-brand stroke-[2.5]" />}
-                        </div>
-                        <div>
-                          <p className="text-xs font-semibold">Dark Mode</p>
-                          <p className="text-2xs text-slate-400 font-medium">Low Light Studio</p>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Feed and reading preferences apply to research content only */}
-                  {!isAdmin && (
-                  <>
-                  {/* Research Feed Sorting Preference */}
-                  <div className="space-y-3 pt-4 border-t border-slate-100">
-                    <label className="text-xs font-medium text-slate-700 capitalize block">
-                      Default Research Feed Ordering
-                    </label>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => saveFeedSort('latest')}
-                        className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-center justify-between select-none ${
-                          feedSortPreference === 'latest'
-                            ? 'border-brand bg-blue-50/50 text-brand font-semibold shadow-xs'
-                            : 'border-slate-200 bg-surface hover:border-slate-300 text-slate-700 font-bold hover:bg-slate-50/50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Clock className="w-4 h-4 text-brand" />
-                          <div>
-                            <p className="text-xs">Latest Submissions</p>
-                            <p className="text-2xs text-slate-400 font-normal">Strict chronological order</p>
-                          </div>
-                        </div>
-                        {feedSortPreference === 'latest' && <Check className="w-4 h-4 text-brand stroke-[2.5]" />}
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => saveFeedSort('top')}
-                        className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer flex items-center justify-between select-none ${
-                          feedSortPreference === 'top'
-                            ? 'border-brand bg-blue-50/50 text-brand font-semibold shadow-xs'
-                            : 'border-slate-200 bg-surface hover:border-slate-300 text-slate-700 font-bold hover:bg-slate-50/50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Sparkles className="w-4 h-4 text-amber-500" />
-                          <div>
-                            <p className="text-xs">Top Discussions</p>
-                            <p className="text-2xs text-slate-400 font-normal">Ranked by citation & engagement</p>
-                          </div>
-                        </div>
-                        {feedSortPreference === 'top' && <Check className="w-4 h-4 text-brand stroke-[2.5]" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* UI Density & Toggle Settings */}
-                  <div className="space-y-3 pt-4 border-t border-slate-100">
-                    <label className="text-xs font-medium text-slate-700 capitalize block">
-                      Reading Comfort
-                    </label>
-
-                    <div className="space-y-2">
-                      <div 
-                        onClick={toggleCompactMode}
-                        className="p-3.5 bg-slate-50/80 hover:bg-slate-100/70 border border-slate-200/80 rounded-2xl flex items-center justify-between cursor-pointer transition-all select-none"
-                      >
-                        <div className="pr-4">
-                          <p className="text-xs font-bold text-slate-800">Compact Layout Mode</p>
-                          <p className="text-2xs text-slate-500 font-medium">Reduce padding on publication list and feed items for high-density monitors</p>
-                        </div>
-                        <button
-                          type="button"
-                          aria-label="Toggle compact layout mode"
-                          className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
-                            compactCards ? 'bg-brand' : 'bg-slate-300'
-                          }`}
-                        >
-                          <div
-                            className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                              compactCards ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </div>
-
-                      <div 
-                        onClick={toggleAutoExpand}
-                        className="p-3.5 bg-slate-50/80 hover:bg-slate-100/70 border border-slate-200/80 rounded-2xl flex items-center justify-between cursor-pointer transition-all select-none"
-                      >
-                        <div className="pr-4">
-                          <p className="text-xs font-bold text-slate-800">Auto-expand Paper Abstracts</p>
-                          <p className="text-2xs text-slate-500 font-medium">Automatically reveal full abstract text on research feed items</p>
-                        </div>
-                        <button
-                          type="button"
-                          aria-label="Toggle auto-expand abstracts"
-                          className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
-                            autoExpandAbstracts ? 'bg-brand' : 'bg-slate-300'
-                          }`}
-                        >
-                          <div
-                            className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                              autoExpandAbstracts ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  </>
-                  )}
-                </div>
-              </motion.div>
-            )}
-
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* TAB 5: NOTIFICATIONS & COMMUNICATION */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeTab === 'notifications' && (
-              <motion.div
-                key="tab-notifications"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-6 flex-1 flex flex-col justify-between"
-              >
-                <div className="space-y-5">
-                  <div className="border-b border-slate-100 pb-3">
-                    <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
-                      <Bell className="w-4 h-4 text-brand" />
-                      <span>Notification Rules & Email Digest</span>
-                    </h2>
-                    <p className="text-2xs text-slate-500 font-medium mt-0.5">
-                      Configure instant alerts, supervisor advisory milestones, and periodic email updates.
-                    </p>
-                  </div>
-
-                  {/* Channel Notification Toggles */}
-                  <div className="space-y-2.5">
-                    <label className="text-xs font-medium text-slate-700 capitalize block">
-                      In-App & Push Notification Channels
-                    </label>
-
+          {/* Appearance */}
+          {activeTab === 'appearance' && (
+            <Card>
+              <CardHeader title="Appearance" description="Saved in this browser." />
+              <div className="space-y-6 p-5">
+                <fieldset>
+                  <legend className="text-sm font-medium text-ink">Theme</legend>
+                  <div className="mt-2 grid grid-cols-2 gap-3 sm:max-w-md">
                     {[
-                      { key: 'researchPapers', label: 'Research Paper Publications', desc: 'Alerts when co-authors or followed faculty release new peer-reviewed papers' },
-                      { key: 'collaborations', label: 'Collaboration Invitations', desc: 'Direct requests to join research workspaces and grant proposal groups' },
-                      { key: 'advisoryMilestones', label: 'PhD Advisory & Milestones', desc: 'Supervisor reviews, committee scheduling, and milestone approvals' },
-                      { key: 'opportunities', label: 'Grant & Funding Announcements', desc: 'Selective excellence opportunities, SERB, DST, and institutional grants' },
-                      { key: 'events', label: 'Seminars & Conferences', desc: 'Campus research symposiums, guest lectures, and defence dates' }
-                    ].map((item) => (
-                      <div
-                        key={item.key}
-                        onClick={() => handleNotifToggle(item.key as keyof typeof notifPreferences)}
-                        className="p-3.5 bg-slate-50/70 border border-slate-200/80 rounded-2xl flex items-center justify-between hover:bg-slate-100/70 transition-colors cursor-pointer select-none"
-                      >
-                        <div className="pr-4">
-                          <p className="text-xs font-bold text-slate-800">{item.label}</p>
-                          <p className="text-2xs text-slate-500 font-medium">{item.desc}</p>
-                        </div>
+                      { id: 'light' as const, label: 'Light', icon: Sun },
+                      { id: 'dark' as const, label: 'Dark', icon: Moon },
+                    ].map((opt) => {
+                      const selected = theme === opt.id;
+                      return (
                         <button
+                          key={opt.id}
                           type="button"
-                          aria-label={`Toggle ${item.label}`}
-                          className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors shrink-0 ${
-                            (notifPreferences as any)[item.key] ? 'bg-brand' : 'bg-slate-300'
-                          }`}
+                          aria-pressed={selected}
+                          onClick={() => setTheme(opt.id)}
+                          className={cn(
+                            'flex items-center gap-3 rounded-xl border p-3.5 text-left transition-colors duration-fast',
+                            selected ? 'border-brand bg-brand-50 text-ink ring-1 ring-brand' : 'border-line hover:border-line-strong',
+                          )}
                         >
-                          <div
-                            className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                              (notifPreferences as any)[item.key] ? 'translate-x-5' : 'translate-x-0'
-                            }`}
-                          />
+                          <opt.icon className={cn('size-5', selected ? 'text-brand' : 'text-ink-muted')} aria-hidden />
+                          <span className="text-sm font-medium">{opt.label}</span>
+                          {selected && <CheckCircle2 className="ml-auto size-4 text-brand" aria-hidden />}
                         </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+
+                {!isAdmin && (
+                  <>
+                    <div className="border-t border-line pt-5">
+                      <p className="text-sm font-medium text-ink">Research feed order</p>
+                      <div className="mt-2 inline-flex rounded-lg border border-line bg-surface-muted p-0.5" role="radiogroup" aria-label="Research feed order">
+                        {[
+                          { id: 'latest' as const, label: 'Latest first' },
+                          { id: 'top' as const, label: 'Most discussed' },
+                        ].map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={feedSortPreference === opt.id}
+                            onClick={() => saveFeedSort(opt.id)}
+                            className={cn(
+                              'h-8 rounded-md px-3.5 text-sm transition-colors duration-fast',
+                              feedSortPreference === opt.id ? 'bg-surface font-medium text-ink shadow-xs' : 'text-ink-muted hover:text-ink',
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Email Digest Frequency */}
-                  <div className="space-y-3 pt-4 border-t border-slate-100">
-                    <label className="text-xs font-medium text-slate-700 capitalize block">
-                      Institutional Email Digest Frequency
-                    </label>
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                      {[
-                        { id: 'instant', label: 'Real-time', desc: 'Immediate email' },
-                        { id: 'daily', label: 'Daily Brief', desc: 'Once every morning' },
-                        { id: 'weekly', label: 'Weekly Digest', desc: 'Monday summary' },
-                        { id: 'none', label: 'Muted', desc: 'In-app only' }
-                      ].map((freq) => (
-                        <button
-                          key={freq.id}
-                          type="button"
-                          onClick={() => handleDigestChange(freq.id)}
-                          className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                            notifPreferences.emailDigest === freq.id
-                              ? 'border-brand bg-blue-50/40 text-brand font-semibold'
-                              : 'border-slate-200 bg-surface hover:border-slate-300 text-slate-700 font-bold'
-                          }`}
-                        >
-                          <p className="text-xs">{freq.label}</p>
-                          <p className="text-2xs text-slate-400 font-normal mt-0.5">{freq.desc}</p>
-                        </button>
-                      ))}
                     </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
 
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {/* TAB 6: SUPERVISOR ADVISORY PANEL (IF SUPERVISOR) */}
-            {/* ═══════════════════════════════════════════════════════════════════ */}
-            {activeTab === 'supervision' && isSupervisor && (
-              <motion.div
-                key="tab-supervision"
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.15 }}
-                className="space-y-6 flex-1 flex flex-col justify-between"
-              >
-                <div className="space-y-5">
-                  <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
-                    <div>
-                      <h2 className="text-sm font-semibold text-slate-900 uppercase tracking-wider font-display flex items-center gap-2">
-                        <GraduationCap className="w-4 h-4 text-brand" />
-                        <span>Faculty Supervision & Lab Preferences</span>
-                      </h2>
-                      <p className="text-2xs text-slate-500 font-medium mt-0.5">
-                        Manage research scholar intake capacity, lab affiliation, and prospective scholar notifications.
-                      </p>
-                    </div>
-                    <Link
-                      href="/my-scholars"
-                      className="text-xs font-bold text-brand hover:underline flex items-center gap-1"
-                    >
-                      <span>Open Supervision Panel</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <label className="block text-xs font-medium text-slate-700 capitalize">
-                        Primary Research Laboratory / Research Center
-                      </label>
-                      <input
-                        type="text"
-                        value={labName}
-                        onChange={(e) => setLabName(e.target.value)}
-                        className="cb-input font-medium"
-                        placeholder="E.g. SRM AI & Quantum Computing Lab"
+                    <div className="divide-y divide-line border-t border-line">
+                      <SwitchRow
+                        checked={compactCards}
+                        onChange={(next) => {
+                          setCompactCards(next);
+                          persist('cb_pref_compact_cards', String(next));
+                        }}
+                        label="Compact posts"
+                        description="Less padding on feed posts, so more fit on screen."
+                      />
+                      <SwitchRow
+                        checked={autoExpandAbstracts}
+                        onChange={(next) => {
+                          setAutoExpandAbstracts(next);
+                          persist('cb_pref_auto_abstracts', String(next));
+                        }}
+                        label="Expand long posts"
+                        description="Show the full text of posts instead of a preview."
                       />
                     </div>
+                  </>
+                )}
+              </div>
+            </Card>
+          )}
 
-                    <div className="p-3.5 bg-slate-50/80 border border-slate-200/80 rounded-2xl flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-bold text-slate-800">Accepting New PhD Scholars</p>
-                        <p className="text-2xs text-slate-500 font-medium">Allow unassigned research scholars in your department to submit supervision requests</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAcceptingScholars(!acceptingScholars);
-                          addToast(`Scholar supervision requests ${!acceptingScholars ? 'enabled' : 'paused'}`, 'info');
-                        }}
-                        className={`w-11 h-6 flex items-center rounded-full p-1 cursor-pointer transition-colors ${
-                          acceptingScholars ? 'bg-brand' : 'bg-slate-300'
-                        }`}
-                      >
-                        <div
-                          className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${
-                            acceptingScholars ? 'translate-x-5' : 'translate-x-0'
-                          }`}
-                        />
-                      </button>
-                    </div>
+          {/* Notifications */}
+          {activeTab === 'notifications' && (
+            <Card>
+              <CardHeader
+                title="Notifications"
+                description="Choose which kinds of notifications appear in your list. Saved in this browser."
+              />
+              <div className="divide-y divide-line px-5">
+                {NOTIFICATION_CATEGORIES.map((item) => (
+                  <SwitchRow
+                    key={item.key}
+                    checked={notifPreferences[item.key]}
+                    onChange={(next) => handleNotifToggle(item.key, next)}
+                    label={item.label}
+                    description={item.desc}
+                  />
+                ))}
+              </div>
+              <p className="border-t border-line bg-surface-muted px-5 py-3.5 text-sm text-ink-muted">
+                Account and security notices always appear.
+              </p>
+            </Card>
+          )}
 
-                    <div className="space-y-1">
-                      <label className="block text-xs font-medium text-slate-700 capitalize">
-                        Maximum PhD Scholar Capacity
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="number"
-                          min={6}
-                          max={6}
-                          disabled
-                          value={supervisionCapacity}
-                          className="cb-input w-28 font-mono font-bold bg-slate-50/80 text-slate-500 border-slate-200 cursor-not-allowed"
-                        />
-                        <span className="text-xs text-slate-500 font-medium">Scholars under primary supervision</span>
-                      </div>
-                    </div>
+          {/* Supervision */}
+          {activeTab === 'supervision' && isSupervisor && (
+            <Card>
+              <CardHeader
+                title="Supervision"
+                actions={
+                  <Link href="/my-scholars" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+                    Supervision Panel
+                  </Link>
+                }
+              />
+              <div className="space-y-4 p-5">
+                <div>
+                  <div className="flex items-baseline justify-between text-sm">
+                    <span className="text-ink-secondary">Scholars you supervise</span>
+                    <span className="tabular-nums text-ink">
+                      <span className="font-semibold">{myScholars.length}</span> of {capacity}
+                    </span>
+                  </div>
+                  <div
+                    className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-100"
+                    role="progressbar"
+                    aria-label="Supervision capacity used"
+                    aria-valuemin={0}
+                    aria-valuemax={capacity}
+                    aria-valuenow={myScholars.length}
+                  >
+                    <div className="h-full rounded-full bg-brand" style={{ width: `${Math.min(100, (myScholars.length / capacity) * 100)}%` }} />
                   </div>
                 </div>
+                <p className="text-sm text-ink-muted">
+                  New supervision requests can be approved until you reach your capacity. Capacity is part of your supervisor record; contact
+                  the research office to change it.
+                </p>
+              </div>
+            </Card>
+          )}
 
-                <div className="flex items-center justify-end gap-3 pt-5 border-t border-slate-100 mt-4">
-                  <button
-                    type="button"
-                    onClick={() => addToast('Supervisor advisory settings saved.', 'success')}
-                    className="px-5 py-2.5 bg-brand text-white hover:bg-brand-strong rounded-xl text-xs font-medium capitalize shadow-sm transition-all flex items-center gap-2 cursor-pointer"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>Save Supervision Settings</span>
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-          </AnimatePresence>
+          <Button variant="ghost" className="text-danger-700 hover:bg-danger-50 hover:text-danger-700 lg:hidden" onClick={() => logout()}>
+            <LogOut aria-hidden />
+            Sign out
+          </Button>
         </div>
-
       </div>
 
+      <Dialog
+        open={!!confirmDisconnect}
+        onClose={() => setConfirmDisconnect(null)}
+        dismissible={!disconnectingProvider}
+        size="sm"
+        title={`Disconnect ${confirmDisconnect === 'GOOGLE_WORKSPACE' ? 'Google Workspace' : 'Zoom'}?`}
+        description="New meetings will no longer be created with this account. You can reconnect at any time."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setConfirmDisconnect(null)} disabled={!!disconnectingProvider}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleDisconnect} loading={!!disconnectingProvider}>
+              Disconnect
+            </Button>
+          </>
+        }
+      />
     </div>
   );
 }
 
-type SettingsTab = 'identity' | 'domains' | 'integrations' | 'appearance' | 'notifications' | 'supervision';
-
 export default function UnifiedSettingsPage() {
   return (
-    <React.Suspense fallback={<div className="min-h-[60vh] flex items-center justify-center text-xs font-bold text-slate-400 animate-pulse">Loading Settings...</div>}>
+    <React.Suspense fallback={null}>
       <UnifiedSettingsContent />
     </React.Suspense>
   );

@@ -11,13 +11,13 @@ import { cn } from '@/lib/utils';
 export default function MobileFeedNav({ onOpenCreate }: { onOpenCreate?: () => void }) {
   const pathname = usePathname();
   const { currentUser, unreadCount } = useStore();
-  const profileHref = currentUser?.role === 'RESEARCH_SCHOLAR' ? '/scholar/profile' : '/profile';
+  const profileHref = '/profile';
 
   const tabs = [
     { href: '/feed', label: 'Feed', icon: Home, active: pathname === '/feed' },
     { href: '/researchers', label: 'Explore', icon: Compass, active: pathname === '/researchers' },
     { href: '/notifications', label: 'Alerts', icon: Bell, active: pathname === '/notifications', badge: unreadCount },
-    { href: profileHref, label: 'Profile', icon: User, active: pathname === '/profile' || pathname === '/scholar/profile' },
+    { href: profileHref, label: 'Profile', icon: User, active: pathname === '/profile' },
   ];
 
   const item = 'relative flex h-14 flex-1 flex-col items-center justify-center gap-0.5 text-2xs font-medium';

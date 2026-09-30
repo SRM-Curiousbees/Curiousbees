@@ -9,21 +9,30 @@ Configure the following environment variables in your Railway service settings:
 ### Required Variables
 These variables must be set for the application to boot successfully:
 
-* `DATABASE_URL`: Connection string for the Supabase PostgreSQL database (with connection pooling enabled).
-* `DIRECT_URL`: Direct connection string to Supabase PostgreSQL (used by Prisma for migrations).
-* `NEXT_PUBLIC_SUPABASE_URL`: Supabase Project URL.
-* `SUPABASE_SERVICE_ROLE_KEY`: Service role API key for Supabase, used for backend service actions.
-* `FRONTEND_URL`: Absolute URL of the frontend application (e.g. `https://curiousbees.vercel.app`).
-* `ALLOWED_ORIGINS`: Comma-separated list of origins permitted to cross-origin resource share (e.g., `https://curiousbees.vercel.app,https://www.curiousbees.vercel.app`).
-* `AUTH_MODE`: Set to `GOOGLE_ADMIN_MANAGED`.
+* `DATABASE_URL`: Connection string for the AWS Managed PostgreSQL database (RDS / Aurora).
+* `FRONTEND_URL`: Absolute URL of the frontend application (e.g. `https://srmcuriousbees.in` or Vercel URL).
+* `ALLOWED_ORIGINS`: Comma-separated list of origins permitted to cross-origin resource share.
+* `SUPABASE_URL`: Supabase Project URL (retained ONLY for Google OAuth / session token verification).
+* `SUPABASE_SERVICE_ROLE_KEY`: Service role API key for Supabase, used solely for backend auth token verification.
+* `AWS_REGION`: AWS Region for S3 and OpenSearch (e.g. `ap-south-1`).
+* `AWS_S3_BUCKET`: AWS S3 bucket name for application object storage.
+* `BREVO_API_KEY`: API key for Brevo transactional email delivery.
+* `MAIL_FROM_EMAIL` (or `BREVO_SENDER_EMAIL`): Verified sender email address in Brevo.
+* `MAIL_FROM_NAME` (or `BREVO_SENDER_NAME`): Sender display name (e.g. `CuriousBees`).
 
 ### Optional Variables
-These variables enable additional integrations:
+These variables enable cloud search and external integrations:
 
-* `BREVO_API_KEY`: API key for Brevo transactional email notifications.
-* `MAIN_ADMIN_EMAIL`: Root administrative email (e.g. `admin@srmist.edu.in`).
-* `MAIL_FROM_EMAIL`: Verified sender email address in Brevo.
-* `MAIL_FROM_NAME`: Sender display name (e.g. `CuriousBees`).
+* `AWS_ACCESS_KEY_ID`: AWS IAM access key (if not using IAM role credential chain).
+* `AWS_SECRET_ACCESS_KEY`: AWS IAM secret key (if not using IAM role credential chain).
+* `OPENSEARCH_ENDPOINT`: AWS OpenSearch domain endpoint (e.g. `https://search-xxx.ap-south-1.es.amazonaws.com`).
+* `OPENSEARCH_REGION`: AWS Region for OpenSearch.
+* `OPENSEARCH_INDEX`: AWS OpenSearch search index name (defaults to `curiousbees`).
+* `GOOGLE_CLIENT_ID`: Google OAuth client ID for Google Workspace integrations.
+* `GOOGLE_CLIENT_SECRET`: Google OAuth client secret.
+* `ZOOM_CLIENT_ID`: Zoom Workplace client ID for meeting scheduling.
+* `ZOOM_CLIENT_SECRET`: Zoom Workplace client secret.
+* `MAIN_ADMIN_EMAIL`: Root administrative alerts email (`srmcuriousbees@gmail.com`).
 
 ---
 

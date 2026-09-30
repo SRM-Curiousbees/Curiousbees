@@ -67,10 +67,11 @@ export const viewport: Viewport = {
 };
 
 /**
- * Applies the saved theme before first paint so there is no flash of the wrong
- * theme. Mirrors `setTheme` in store/useStore.ts (key: curiousbees-theme).
+ * Runs before first paint: marks that JavaScript is available (`js`, used by scroll
+ * reveals so content is never hidden without JS) and applies the saved theme so there
+ * is no flash of the wrong one. Mirrors `setTheme` in store/useStore.ts.
  */
-const themeScript = `(function(){try{var d=localStorage.getItem('curiousbees-theme')==='dark';var r=document.documentElement;r.classList.toggle('dark',d);r.classList.toggle('light',!d);r.style.colorScheme=d?'dark':'light';}catch(e){}})();`;
+const themeScript = `(function(){var r=document.documentElement;r.classList.add('js');try{var d=localStorage.getItem('curiousbees-theme')==='dark';r.classList.toggle('dark',d);r.classList.toggle('light',!d);r.style.colorScheme=d?'dark':'light';}catch(e){}})();`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

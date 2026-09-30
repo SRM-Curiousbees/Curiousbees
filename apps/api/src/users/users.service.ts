@@ -114,7 +114,7 @@ export class UsersService {
       throw new BadRequestException(parsed.error.errors[0].message);
     }
 
-    const { name, department, departmentId, bio, interests } = parsed.data;
+    const { name, department, departmentId, bio, interests, image } = parsed.data;
 
     let resolvedDept: any = null;
     if (departmentId) {
@@ -144,6 +144,7 @@ export class UsersService {
     const updateData: any = {
       ...(name && { name }),
       ...(bio !== undefined && { bio }),
+      ...(image !== undefined && { image }),
     };
 
     if (resolvedDept) {

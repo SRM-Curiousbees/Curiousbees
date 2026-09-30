@@ -1,19 +1,47 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(scholarId: string, data: { title: string; description?: string; evidenceUrl?: string; supervisorId: string }) {
+  async create(scholarId: string, data: { title: string; description?: string; evidenceUrl?: string; supervisorId?: string }) {
+    // A report always goes to the scholar's own assigned supervisor; the client can't choose.
+    const scholar = await this.prisma.user.findUnique({
+      where: { id: scholarId },
+      select: { role: true, supervisorId: true },
+    });
+    if (!scholar || (scholar.role !== 'RESEARCH_SCHOLAR' && (scholar.role as string) !== 'SCHOLAR')) {
+      throw new ForbiddenException('Only research scholars submit progress reports.');
+    }
+    if (!scholar.supervisorId) {
+      throw new BadRequestException('You need an assigned supervisor before you can submit progress reports.');
+    }
+    if (data.supervisorId && data.supervisorId !== scholar.supervisorId) {
+      throw new ForbiddenException('Progress reports can only be sent to your own supervisor.');
+    }
+
+    const title = (data.title || '').trim();
+    if (title.length < 3 || title.length > 200) {
+      throw new BadRequestException('Give the report a title of 3 to 200 characters.');
+    }
+    const description = data.description?.trim() || undefined;
+    if (description && description.length > 5000) {
+      throw new BadRequestException('Keep the summary under 5,000 characters.');
+    }
+    const evidenceUrl = data.evidenceUrl?.trim() || undefined;
+    if (evidenceUrl && (!/^https?:\/\/\S+$/i.test(evidenceUrl) || evidenceUrl.length > 2048)) {
+      throw new BadRequestException('The evidence link must be an http(s) URL.');
+    }
+
     return this.prisma.report.create({
       data: {
-        title: data.title,
-        description: data.description,
-        evidenceUrl: data.evidenceUrl,
+        title,
+        description,
+        evidenceUrl,
         status: 'PENDING',
         scholarId,
-        supervisorId: data.supervisorId,
+        supervisorId: scholar.supervisorId,
       },
       include: {
         scholar: {

@@ -81,23 +81,26 @@ export class AdminAnalyticsService {
       }),
     ]);
 
-    // Build timeline buckets
+    // Timeline buckets sized to the range: daily up to a month, weekly up to six months, then monthly.
+    const bucket: 'day' | 'week' | 'month' = days <= 31 ? 'day' : days <= 186 ? 'week' : 'month';
+    const bucketKey = (date: Date) => {
+      const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+      if (bucket === 'week') d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); // Monday
+      if (bucket === 'month') d.setUTCDate(1);
+      return d.toISOString().split('T')[0];
+    };
     const timelineMap: Record<string, { date: string; users: number; posts: number }> = {};
-    for (let i = 0; i <= Math.min(days, 30); i++) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const key = d.toISOString().split('T')[0];
-      timelineMap[key] = { date: key, users: 0, posts: 0 };
+    for (const cursor = new Date(startDate); cursor <= new Date(); cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+      const key = bucketKey(cursor);
+      timelineMap[key] = timelineMap[key] || { date: key, users: 0, posts: 0 };
     }
-
     usersByDate.forEach((u) => {
-      const key = u.createdAt.toISOString().split('T')[0];
-      if (timelineMap[key]) timelineMap[key].users++;
+      const entry = timelineMap[bucketKey(u.createdAt)];
+      if (entry) entry.users++;
     });
-
     postsByDate.forEach((p) => {
-      const key = p.createdAt.toISOString().split('T')[0];
-      if (timelineMap[key]) timelineMap[key].posts++;
+      const entry = timelineMap[bucketKey(p.createdAt)];
+      if (entry) entry.posts++;
     });
 
     const userActivityTimeline = Object.values(timelineMap).sort((a, b) => a.date.localeCompare(b.date));
@@ -142,6 +145,7 @@ export class AdminAnalyticsService {
         scholarCount: d._count.scholarProfiles,
       })),
       timeline: userActivityTimeline,
+      timelineBucket: bucket,
       range,
     };
   }

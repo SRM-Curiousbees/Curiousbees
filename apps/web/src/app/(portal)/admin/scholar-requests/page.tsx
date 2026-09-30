@@ -1,276 +1,273 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useStore } from '@/store/useStore';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  GitMerge, Search, Loader2, Check, X, Clock, CheckCircle2, XCircle, RefreshCw
-} from 'lucide-react';
-import AvatarRing from '@/components/AvatarRing';
+import { GitMerge, RefreshCw, Search } from 'lucide-react';
+import { useStore } from '@/store/useStore';
+import { apiFetch, readApiError } from '@/lib/api-client';
+import { getProfileImageUrl, handleAvatarError } from '@/lib/avatar';
+import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/ui/page-header';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { StatusBadge } from '@/components/ui/badge';
+import { Dialog } from '@/components/ui/dialog';
+import { DetailItem } from '@/components/ui/field';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 
-function StatusBadge({ status }: { status: string }) {
-  if (status === 'APPROVED') {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200">
-        <Check className="w-2.5 h-2.5" /> Approved
-      </span>
-    );
-  }
-  if (status === 'REJECTED') {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold uppercase bg-red-50 text-red-700 border border-red-200">
-        <X className="w-2.5 h-2.5" /> Rejected
-      </span>
-    );
-  }
+type Filter = 'ALL' | 'PENDING' | 'APPROVED' | 'REJECTED';
+
+function formatDate(value?: string | null) {
+  const d = value ? new Date(value) : null;
+  return d && !isNaN(d.getTime()) ? d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+}
+
+function Person({ person }: { person?: any }) {
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-2xs font-semibold uppercase bg-amber-50 text-amber-700 border border-amber-200">
-      <Clock className="w-2.5 h-2.5" /> Pending
-    </span>
+    <div className="flex min-w-0 items-center gap-2.5">
+      <img
+        src={getProfileImageUrl(person)}
+        alt=""
+        referrerPolicy="no-referrer"
+        onError={(e) => handleAvatarError(e, person?.name)}
+        className="size-8 shrink-0 rounded-full border border-line bg-surface-muted object-cover"
+      />
+      <div className="min-w-0">
+        <p className="truncate font-medium text-ink">{person?.name || person?.email || 'Unknown'}</p>
+        {person?.email && person?.name && <p className="truncate text-xs text-ink-muted">{person.email}</p>}
+      </div>
+    </div>
   );
 }
 
+/**
+ * Every scholar–supervisor supervision request in the institution. Read-only:
+ * supervisors decide on their own requests.
+ */
 export default function AdminScholarRequestsPage() {
   const router = useRouter();
-  const { currentUser } = useStore();
-
-  const [requests, setRequests] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-
+  const currentUser = useStore((s) => s.currentUser);
   const isAdmin = currentUser?.role === 'INSTITUTE_ADMIN';
 
+  const [requests, setRequests] = useState<any[]>([]);
+  const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [error, setError] = useState('');
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<Filter>('ALL');
+  const [selected, setSelected] = useState<any | null>(null);
+
   useEffect(() => {
-    if (currentUser && !isAdmin) {
-      router.replace('/dashboard');
-    }
+    if (currentUser && !isAdmin) router.replace('/dashboard');
   }, [currentUser, isAdmin, router]);
 
-  const fetchRequests = async () => {
-    setLoading(true);
+  const load = useCallback(async () => {
+    setState('loading');
     try {
-      const { apiFetch } = await import('@/lib/api-client');
       const res = await apiFetch('/api/supervisor-requests');
-      if (res.ok) {
-        const data = await res.json();
-        setRequests(data);
-      }
-    } catch (e) {
-      console.error('Failed to load scholar requests:', e);
-    } finally {
-      setLoading(false);
+      if (!res.ok) throw new Error((await readApiError(res)) || 'Requests could not be loaded.');
+      const data = await res.json();
+      setRequests(Array.isArray(data) ? data : []);
+      setState('ready');
+    } catch (e: any) {
+      setError(e?.message || 'Requests could not be loaded.');
+      setState('error');
     }
-  };
+  }, []);
 
   useEffect(() => {
-    if (isAdmin) {
-      fetchRequests();
-    }
-  }, [currentUser, isAdmin]);
+    if (isAdmin) load();
+  }, [isAdmin, load]);
+
+  const counts = useMemo(
+    () => ({
+      ALL: requests.length,
+      PENDING: requests.filter((r) => r.status === 'PENDING').length,
+      APPROVED: requests.filter((r) => r.status === 'APPROVED').length,
+      REJECTED: requests.filter((r) => r.status === 'REJECTED').length,
+    }),
+    [requests],
+  );
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return requests.filter((r) => {
+      if (filter !== 'ALL' && r.status !== filter) return false;
+      if (!q) return true;
+      return [r.scholar?.name, r.scholar?.email, r.supervisor?.name, r.supervisor?.email, r.proposalTitle].join(' ').toLowerCase().includes(q);
+    });
+  }, [requests, query, filter]);
 
   if (!isAdmin) return null;
 
-  const filtered = requests.filter((req) => {
-    const term = searchTerm.toLowerCase();
-    const matchSearch =
-      (req.scholar?.name || '').toLowerCase().includes(term) ||
-      (req.scholar?.email || '').toLowerCase().includes(term) ||
-      (req.supervisor?.name || '').toLowerCase().includes(term) ||
-      (req.supervisor?.email || '').toLowerCase().includes(term);
-    const matchStatus = !statusFilter || req.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
-
-  const pendingCount = requests.filter((r) => r.status === 'PENDING').length;
-  const approvedCount = requests.filter((r) => r.status === 'APPROVED').length;
-  const rejectedCount = requests.filter((r) => r.status === 'REJECTED').length;
+  const FILTERS: { id: Filter; label: string }[] = [
+    { id: 'ALL', label: 'All' },
+    { id: 'PENDING', label: 'Pending' },
+    { id: 'APPROVED', label: 'Approved' },
+    { id: 'REJECTED', label: 'Declined' },
+  ];
 
   return (
-    <div className="space-y-6 text-left select-none">
+    <div className="mx-auto max-w-6xl">
+      <PageHeader
+        meta="Research governance"
+        title="Supervision requests"
+        description="Every request a scholar has sent to a supervisor, across the institution. Supervisors accept or decline their own requests."
+        actions={
+          <Button variant="secondary" onClick={load} disabled={state === 'loading'}>
+            <RefreshCw className={cn(state === 'loading' && 'animate-spin')} aria-hidden />
+            Refresh
+          </Button>
+        }
+      />
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5 gap-4">
-        <div>
-          <span className="text-xs font-medium text-primary capitalize flex items-center gap-1.5">
-            <GitMerge className="w-4 h-4 text-primary" />
-            <span>Scholar-Supervisor Mapping Audit</span>
-          </span>
-          <h1 className="cb-page-title mt-2 font-display">Scholar Supervision Requests</h1>
-          <p className="cb-page-subtitle">
-            View all supervision mapping requests across the institution — pending, approved, and rejected.
-          </p>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div role="tablist" aria-label="Status" className="inline-flex w-fit rounded-lg border border-line bg-surface-muted p-0.5">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              type="button"
+              role="tab"
+              aria-selected={filter === f.id}
+              onClick={() => setFilter(f.id)}
+              className={cn(
+                'h-8 rounded-md px-3 text-sm transition-colors duration-fast',
+                filter === f.id ? 'bg-surface font-medium text-ink shadow-xs' : 'text-ink-muted hover:text-ink',
+              )}
+            >
+              {f.label} <span className="tabular-nums text-ink-muted">{counts[f.id]}</span>
+            </button>
+          ))}
         </div>
-        <button
-          onClick={fetchRequests}
-          disabled={loading}
-          className="px-4 py-2.5 border border-slate-200 hover:bg-slate-50 rounded-lg text-slate-600 text-xs font-medium capitalize flex items-center gap-2 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-          <span>Refresh</span>
-        </button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="cb-card p-4 bg-surface/95 backdrop-blur-md flex items-center gap-3">
-          <div className="p-2.5 bg-amber-50 rounded-lg text-amber-600 border border-amber-100">
-            <Clock className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 font-medium capitalize">Pending</p>
-            <p className="text-lg font-semibold text-slate-800">{pendingCount}</p>
-          </div>
-        </div>
-        <div className="cb-card p-4 bg-surface/95 backdrop-blur-md flex items-center gap-3">
-          <div className="p-2.5 bg-emerald-50 rounded-lg text-emerald-600 border border-emerald-100">
-            <CheckCircle2 className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 font-medium capitalize">Approved</p>
-            <p className="text-lg font-semibold text-slate-800">{approvedCount}</p>
-          </div>
-        </div>
-        <div className="cb-card p-4 bg-surface/95 backdrop-blur-md flex items-center gap-3">
-          <div className="p-2.5 bg-red-50 rounded-lg text-red-600 border border-red-100">
-            <XCircle className="w-4 h-4" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-400 font-medium capitalize">Rejected</p>
-            <p className="text-lg font-semibold text-slate-800">{rejectedCount}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className="cb-card p-4 bg-surface/95 backdrop-blur-md grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="relative">
+        <div className="relative sm:w-72">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" aria-hidden />
           <input
-            type="text"
-            placeholder="Search scholar or supervisor name/email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search scholar or supervisor"
+            aria-label="Search requests"
             className="cb-input pl-9"
           />
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="w-full px-3 h-[42px] text-xs font-semibold rounded-lg bg-surface border border-slate-200 focus:outline-none transition-all cursor-pointer"
-        >
-          <option value="">All Statuses</option>
-          <option value="PENDING">Pending</option>
-          <option value="APPROVED">Approved</option>
-          <option value="REJECTED">Rejected</option>
-        </select>
       </div>
 
-      {/* Table */}
-      {loading && requests.length === 0 ? (
-        <div className="py-20 flex justify-center">
-          <Loader2 className="w-8 h-8 text-primary animate-spin" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="cb-card p-12 text-center bg-surface/95 backdrop-blur-md">
-          <GitMerge className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-          <p className="text-sm font-bold text-slate-700">No Requests Found</p>
-          <p className="text-xs text-slate-400 mt-1">
-            {searchTerm || statusFilter
-              ? 'Try adjusting your search or filter.'
-              : 'No scholar-supervisor mapping requests have been submitted yet.'}
-          </p>
-        </div>
-      ) : (
-        <>
-          {/* Desktop Table */}
-          <div className="hidden md:block cb-card overflow-hidden bg-surface/95 backdrop-blur-md border border-slate-100 shadow-sm">
-            <div className="relative overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="cb-table-header text-xs capitalize text-slate-450 border-b border-slate-100 bg-slate-50/50">
-                    <th className="p-4 pl-6">Scholar</th>
-                    <th className="p-4">Supervisor</th>
-                    <th className="p-4">Scholar Dept.</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4 pr-6">Submitted</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100/50">
-                  {filtered.map((req) => (
-                    <tr key={req.id} className="cb-table-row text-xs hover:bg-slate-50/20 transition-colors">
-                      <td className="p-4 pl-6">
-                        <div className="flex items-center space-x-3">
-                          <AvatarRing
-                            src={req.scholar?.image || undefined}
-                            name={req.scholar?.name || undefined}
-                            role="RESEARCH_SCHOLAR"
-                            size="sm"
-                          />
-                          <div>
-                            <h4 className="font-bold text-slate-900 leading-snug">{req.scholar?.name || 'N/A'}</h4>
-                            <p className="text-2xs text-slate-400 font-semibold">{req.scholar?.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center space-x-3">
-                          <AvatarRing
-                            src={req.supervisor?.image || undefined}
-                            name={req.supervisor?.name || undefined}
-                            role="RESEARCH_SUPERVISOR"
-                            size="sm"
-                          />
-                          <div>
-                            <h4 className="font-bold text-slate-900 leading-snug">{req.supervisor?.name || 'N/A'}</h4>
-                            <p className="text-2xs text-slate-400 font-semibold">{req.supervisor?.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="p-4 text-slate-650 font-bold">{req.scholar?.department || '—'}</td>
-                      <td className="p-4">
-                        <StatusBadge status={req.status} />
-                      </td>
-                      <td className="p-4 pr-6 text-slate-500 font-semibold text-2xs">
-                        {new Date(req.createdAt).toLocaleDateString('en-IN', {
-                          day: '2-digit', month: 'short', year: 'numeric'
-                        })}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Mobile Cards */}
-          <div className="grid grid-cols-1 gap-4 md:hidden">
-            {filtered.map((req) => (
-              <div key={req.id} className="cb-card p-5 bg-surface/95 backdrop-blur-md border border-slate-100 space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400 font-medium capitalize">Scholar → Supervisor</span>
-                  <StatusBadge status={req.status} />
-                </div>
-                <div className="flex items-center gap-3">
-                  <AvatarRing src={req.scholar?.image} name={req.scholar?.name} role="RESEARCH_SCHOLAR" size="sm" />
-                  <div>
-                    <p className="font-bold text-xs text-slate-900">{req.scholar?.name || 'N/A'}</p>
-                    <p className="text-2xs text-slate-400">{req.scholar?.email}</p>
-                  </div>
-                </div>
-                <div className="text-2xs text-slate-400 font-semibold flex items-center gap-1">
-                  <span>→</span>
-                  <span className="font-bold text-slate-700">{req.supervisor?.name || 'N/A'}</span>
-                  <span className="text-slate-400">({req.supervisor?.email})</span>
-                </div>
-                <p className="text-2xs text-slate-400 font-semibold">
-                  {new Date(req.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
-                </p>
-              </div>
+      <Card className="overflow-hidden">
+        {state === 'loading' && requests.length === 0 ? (
+          <div className="space-y-3 p-5" aria-busy="true" aria-label="Loading requests">
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-12 w-full" />
             ))}
           </div>
-        </>
-      )}
+        ) : state === 'error' ? (
+          <EmptyState
+            icon={GitMerge}
+            title="Requests could not be loaded"
+            description={error}
+            action={
+              <Button variant="secondary" onClick={load}>
+                Try again
+              </Button>
+            }
+          />
+        ) : visible.length === 0 ? (
+          <EmptyState
+            icon={GitMerge}
+            title={requests.length === 0 ? 'No supervision requests yet' : 'No requests match'}
+            description={
+              requests.length === 0
+                ? 'Requests appear here when scholars ask a supervisor to supervise them.'
+                : 'Try another search or status.'
+            }
+          />
+        ) : (
+          <div className="relative overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <caption className="sr-only">Supervision requests</caption>
+              <thead>
+                <tr className="border-b border-line bg-surface-muted text-xs text-ink-secondary">
+                  <th scope="col" className="px-4 py-2.5 font-medium">Scholar</th>
+                  <th scope="col" className="hidden px-4 py-2.5 font-medium md:table-cell">Supervisor</th>
+                  <th scope="col" className="hidden px-4 py-2.5 font-medium sm:table-cell">Status</th>
+                  <th scope="col" className="hidden px-4 py-2.5 font-medium lg:table-cell">Sent</th>
+                  <th scope="col" className="hidden px-4 py-2.5 font-medium lg:table-cell">Decided</th>
+                  <th scope="col" className="px-4 py-2.5 text-right font-medium">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {visible.map((r) => (
+                  <tr key={r.id} className="transition-colors duration-fast hover:bg-surface-muted">
+                    <td className="max-w-[18rem] px-4 py-3">
+                      <Person person={r.scholar} />
+                      <div className="mt-1.5 space-y-1 text-xs text-ink-muted md:hidden">
+                        <p className="truncate">To {r.supervisor?.name || r.supervisor?.email}</p>
+                        <div className="sm:hidden">
+                          <StatusBadge status={r.status} />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="hidden max-w-[16rem] px-4 py-3 md:table-cell">
+                      <Person person={r.supervisor} />
+                    </td>
+                    <td className="hidden px-4 py-3 sm:table-cell">
+                      <StatusBadge status={r.status} />
+                    </td>
+                    <td className="hidden whitespace-nowrap px-4 py-3 text-ink-muted lg:table-cell">{formatDate(r.createdAt)}</td>
+                    <td className="hidden whitespace-nowrap px-4 py-3 text-ink-muted lg:table-cell">{formatDate(r.respondedAt)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <Button variant="ghost" size="sm" onClick={() => setSelected(r)}>
+                        Details
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      <Dialog
+        open={!!selected}
+        onClose={() => setSelected(null)}
+        title="Supervision request"
+        description={selected ? `Sent ${formatDate(selected.createdAt)}` : undefined}
+        footer={<Button onClick={() => setSelected(null)}>Close</Button>}
+      >
+        {selected && (
+          <div className="space-y-5">
+            <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <DetailItem label="Scholar">{selected.scholar?.name || selected.scholar?.email}</DetailItem>
+              <DetailItem label="Supervisor">{selected.supervisor?.name || selected.supervisor?.email}</DetailItem>
+              <DetailItem label="Status">
+                <StatusBadge status={selected.status} />
+              </DetailItem>
+              <DetailItem label="Decided">{formatDate(selected.respondedAt)}</DetailItem>
+              {selected.proposalTitle && (
+                <DetailItem label="Working title" className="sm:col-span-2">
+                  {selected.proposalTitle}
+                </DetailItem>
+              )}
+              {selected.researchDomain && <DetailItem label="Domain">{selected.researchDomain}</DetailItem>}
+              {selected.researchTopic && <DetailItem label="Topic">{selected.researchTopic}</DetailItem>}
+            </dl>
+            {selected.message && (
+              <div>
+                <p className="text-xs text-ink-muted">Message</p>
+                <blockquote className="mt-1 whitespace-pre-line border-l-2 border-line-strong pl-3 text-sm text-ink-secondary">{selected.message}</blockquote>
+              </div>
+            )}
+            {selected.rejectionReason && (
+              <div>
+                <p className="text-xs text-ink-muted">Reason given</p>
+                <p className="mt-1 whitespace-pre-line text-sm text-ink-secondary">{selected.rejectionReason}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </Dialog>
     </div>
   );
 }

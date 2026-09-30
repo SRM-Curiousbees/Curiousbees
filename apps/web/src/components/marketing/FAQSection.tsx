@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
+import { SceneLabel } from './SceneLabel';
 
 const FAQS = [
   {
@@ -23,7 +24,7 @@ const FAQS = [
   },
   {
     q: 'How do supervisors follow scholar progress?',
-    a: 'Each supervision relationship has a workspace with milestones, progress reports, files and meeting notes, so both sides see the same record.',
+    a: 'Scholars keep their research stage and milestones up to date and submit progress reports; supervisors review them in the Supervision Panel. Shared workspaces hold the files, milestones and announcements, so both sides see the same record.',
   },
 ];
 
@@ -31,12 +32,18 @@ export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section aria-labelledby="faq-title" className="mx-auto grid max-w-6xl gap-10 px-4 py-20 sm:px-6 md:grid-cols-[1fr_1.6fr] md:py-24">
+    <section aria-labelledby="faq-title" className="mx-auto grid max-w-6xl grid-cols-1 gap-12 px-4 py-24 sm:px-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] md:py-32">
       <div>
-        <h2 id="faq-title" className="font-serif text-3xl font-semibold tracking-tight text-ink md:text-4xl">Questions</h2>
-        <p className="mt-3 text-[15px] text-ink-secondary">
+        <SceneLabel index="05">Questions</SceneLabel>
+        <h2 id="faq-title" className="mt-6 font-serif text-4xl font-semibold leading-[1.1] tracking-[-0.02em] text-ink md:text-5xl">
+          Good to know
+        </h2>
+        <p className="mt-4 text-base text-ink-secondary">
           Can&apos;t find what you need?{' '}
-          <Link href="/contact" className="font-medium text-brand hover:underline">Contact the CuriousBees team</Link>.
+          <Link href="/contact" className="font-medium text-brand hover:underline">
+            Contact the CuriousBees team
+          </Link>
+          .
         </p>
       </div>
       <div className="divide-y divide-line border-y border-line">

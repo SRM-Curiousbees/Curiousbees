@@ -15,10 +15,22 @@ const baseSchema = z.object({
   NEXT_PUBLIC_SUPABASE_URL: z.string().url().optional(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   AWS_REGION: z.string().optional(),
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
   AWS_S3_BUCKET: z.string().optional(),
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(5).optional(),
   BREVO_API_KEY: z.string().optional(),
+  BREVO_SENDER_EMAIL: z.string().email().optional(),
+  BREVO_SENDER_NAME: z.string().optional(),
   MAIL_FROM_EMAIL: z.string().email().optional(),
+  MAIL_FROM_NAME: z.string().optional(),
+  OPENSEARCH_ENDPOINT: z.string().url().optional(),
+  OPENSEARCH_REGION: z.string().optional(),
+  OPENSEARCH_INDEX: z.string().optional(),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  GOOGLE_CLIENT_SECRET: z.string().optional(),
+  ZOOM_CLIENT_ID: z.string().optional(),
+  ZOOM_CLIENT_SECRET: z.string().optional(),
   ENABLE_CRON: z.enum(['true', 'false']).optional(),
   ENABLE_SWAGGER: z.enum(['true', 'false']).optional(),
 });
@@ -29,25 +41,33 @@ const baseSchema = z.object({
  * misconfigured task fails at boot instead of running with unsafe behaviour.
  */
 const productionSchema = baseSchema.extend({
-  DIRECT_URL: z.string().url('DIRECT_URL must be a valid connection URL'),
+  DATABASE_URL: z.string().url('DATABASE_URL is required in production'),
   FRONTEND_URL: z.string().url().refine((v) => v.startsWith('https://'), 'FRONTEND_URL must use https in production'),
   ALLOWED_EMAIL_DOMAINS: nonEmptyCommaList('ALLOWED_EMAIL_DOMAINS must list at least one domain'),
-  SUPABASE_URL: z.string().url('SUPABASE_URL is required in production'),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required in production'),
+  SUPABASE_URL: z.string().url('SUPABASE_URL is required in production for auth'),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, 'SUPABASE_SERVICE_ROLE_KEY is required in production for auth'),
   AWS_REGION: z.string().min(1, 'AWS_REGION is required in production'),
   AWS_S3_BUCKET: z.string().min(1, 'AWS_S3_BUCKET is required in production'),
-  // Production always sits behind at least the ALB (CloudFront + ALB = 2).
-  TRUST_PROXY_HOPS: z.coerce.number().int().min(1, 'TRUST_PROXY_HOPS must be >= 1 behind the load balancer').max(5),
   BREVO_API_KEY: z.string().min(1, 'BREVO_API_KEY is required in production'),
-  MAIL_FROM_EMAIL: z.string().email('MAIL_FROM_EMAIL is required in production'),
+  MAIL_FROM_EMAIL: z.string().email('MAIL_FROM_EMAIL or BREVO_SENDER_EMAIL is required in production'),
 });
 
 export type EnvConfig = z.infer<typeof baseSchema>;
 
 export function validateEnv(config: Record<string, unknown>) {
   const isProduction = config.NODE_ENV === 'production';
-  // SUPABASE_URL may be provided under the shared NEXT_PUBLIC_ name in local development.
-  const input = { ...config, SUPABASE_URL: config.SUPABASE_URL || config.NEXT_PUBLIC_SUPABASE_URL };
+  const mailFromEmail = config.MAIL_FROM_EMAIL || config.BREVO_SENDER_EMAIL;
+  const mailFromName = config.MAIL_FROM_NAME || config.BREVO_SENDER_NAME;
+  const directUrl = config.DIRECT_URL || config.DATABASE_URL;
+
+  const input = {
+    ...config,
+    SUPABASE_URL: config.SUPABASE_URL || config.NEXT_PUBLIC_SUPABASE_URL,
+    DIRECT_URL: directUrl,
+    MAIL_FROM_EMAIL: mailFromEmail,
+    MAIL_FROM_NAME: mailFromName,
+  };
+
   const result = (isProduction ? productionSchema : baseSchema).safeParse(input);
 
   if (!result.success) {

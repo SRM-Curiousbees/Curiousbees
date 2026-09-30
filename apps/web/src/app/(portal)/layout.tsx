@@ -6,11 +6,12 @@ import { useStore } from '@/store/useStore';
 import React, { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { ToastContainer } from '@/components/Toast';
+import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner';
 import { PushNotificationPrompt } from '@/components/shared/PushNotificationPrompt';
 import { AlertTriangle } from 'lucide-react';
 import { isRouteAllowedForRole } from '@/lib/auth/permissions';
 import PortalLoading from './loading';
-import Logo from '@/components/Logo';
+import { NetworkMark } from '@/components/brand/network-mark';
 import { Button } from '@/components/ui/button';
 
 export default function PortalLayout({
@@ -179,9 +180,7 @@ export default function PortalLayout({
           </div>
         ) : (
           <div className="flex flex-col items-center gap-5" role="status" aria-live="polite">
-            <span className="cb-breathe">
-              <Logo size={44} />
-            </span>
+            <NetworkMark variant="cycle" size={56} />
             <div className="cb-progress w-44" aria-hidden />
             <p className="text-sm text-ink-muted">
               {isSlow ? 'Still connecting. This can take a moment on a slow network…' : 'Loading your workspace…'}
@@ -209,6 +208,7 @@ export default function PortalLayout({
           <Navbar />
         </Suspense>
         <main id="main-content" className="mx-auto w-full max-w-content flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+          <AnnouncementBanner />
           <Suspense fallback={<PortalLoading />}>{children}</Suspense>
         </main>
       </div>

@@ -1,113 +1,90 @@
-'use client';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { Mail, MapPin } from 'lucide-react';
+import { MarketingPage } from '@/components/marketing/MarketingPage';
 
-import React from 'react';
-import MarketingNavbar from '@/components/marketing/MarketingNavbar';
-import MarketingFooter from '@/components/marketing/MarketingFooter';
-import { Mail, MapPin, Phone, MessageSquare } from 'lucide-react';
+export const metadata: Metadata = {
+  title: 'Contact',
+  description: 'How to get access to CuriousBees, and who to contact for help.',
+};
+
+// Set NEXT_PUBLIC_CONTACT_EMAIL to publish a contact address. Nothing is shown until it is.
+const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim();
+
+const TOPICS = [
+  { subject: 'Request access to CuriousBees', title: 'Request access', body: 'Your name, department, role (scholar or supervisor) and the email address you sign in with.' },
+  { subject: 'Problem signing in to CuriousBees', title: 'Trouble signing in', body: 'The email address you tried and what you saw on screen.' },
+  { subject: 'Question about CuriousBees', title: 'Anything else', body: 'Questions about the platform or how your data is handled.' },
+];
 
 export default function ContactPage() {
   return (
-    <div className="bg-surface text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-primary/20">
-      <MarketingNavbar />
-      
-      <main className="flex-grow w-full pt-32 pb-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-tight mb-4 text-slate-900">
-              Get in Touch
-            </h1>
-            <p className="text-xl text-slate-500 leading-relaxed max-w-2xl mx-auto">
-              Whether you need platform support, have an institutional inquiry, or want to discuss a research collaboration, we're here to help.
-            </p>
+    <MarketingPage
+      label="Contact"
+      title="Get access, or get help."
+      intro="CuriousBees accounts are created by SRMIST. There’s no public sign-up, so access requests go to the people who manage the platform."
+      cta={false}
+    >
+      <section className="border-b border-line">
+        <div className="mx-auto grid max-w-6xl grid-cols-1 gap-12 px-4 py-16 sm:px-6 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:py-24">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-tight text-ink">What to include</h2>
+            <ul className="mt-8 space-y-6">
+              {TOPICS.map((t) => (
+                <li key={t.title} className="border-t border-line-strong pt-5">
+                  <h3 className="text-lg font-semibold tracking-tight text-ink">{t.title}</h3>
+                  <p className="mt-1.5 text-base leading-relaxed text-ink-secondary">{t.body}</p>
+                  {CONTACT_EMAIL && (
+                    <a
+                      href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(t.subject)}`}
+                      className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-brand underline-offset-4 hover:underline"
+                    >
+                      <Mail className="size-4" aria-hidden />
+                      Email about this
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-5xl mx-auto">
-            {/* Contact Form */}
-            <div className="bg-surface border border-slate-200 rounded-3xl p-8 shadow-sm">
-              <h3 className="text-2xl font-bold text-slate-900 mb-6">Send us a message</h3>
-              <form className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-slate-700">First Name</label>
-                    <input type="text" className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="John" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-semibold text-slate-700">Last Name</label>
-                    <input type="text" className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="Doe" />
-                  </div>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">University Email</label>
-                  <input type="email" className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all" placeholder="johndoe@srmist.edu.in" />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Inquiry Type</label>
-                  <select className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all bg-surface">
-                    <option>Technical Support</option>
-                    <option>Institutional Access</option>
-                    <option>Research Collaboration</option>
-                    <option>Other</option>
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-sm font-semibold text-slate-700">Message</label>
-                  <textarea rows={4} className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none" placeholder="How can we help you?"></textarea>
-                </div>
-                <button type="button" className="w-full bg-ink text-ink-inverse font-bold py-3 rounded-lg hover:bg-ink/90 transition-colors">
-                  Submit Inquiry
-                </button>
-              </form>
+          <aside className="space-y-8">
+            <div className="rounded-2xl border border-line bg-surface-muted p-6">
+              <h2 className="text-base font-semibold text-ink">Already have an account?</h2>
+              <p className="mt-2 text-sm leading-relaxed text-ink-secondary">
+                Your institute administrator can fix access, roles and departments. Once you’re signed in, the{' '}
+                <Link href="/help" className="font-medium text-brand hover:underline">
+                  help page
+                </Link> answers most questions about how things work.
+              </p>
             </div>
-
-            {/* Contact Info & FAQ Shortcuts */}
-            <div className="space-y-8">
+            {CONTACT_EMAIL ? (
               <div>
-                <h3 className="text-2xl font-bold text-slate-900 mb-6">Contact Information</h3>
-                <div className="space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                      <Mail className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-900">Email Support</h4>
-                      <p className="text-sm text-slate-500 mb-1">Our team typically responds within 24 hours.</p>
-                      <a href="mailto:support@curiousbees.edu" className="text-primary hover:underline font-medium text-sm">support@curiousbees.edu</a>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-600 flex items-center justify-center shrink-0">
-                      <MapPin className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-slate-900">Research Office</h4>
-                      <p className="text-sm text-slate-500 leading-relaxed">
-                        SRM Institute of Science and Technology<br />
-                        Kattankulathur, Chennai<br />
-                        Tamil Nadu 603203, India
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <h2 className="text-base font-semibold text-ink">Email</h2>
+                <a href={`mailto:${CONTACT_EMAIL}`} className="mt-2 inline-flex items-center gap-2 text-base font-medium text-brand hover:underline">
+                  <Mail className="size-4" aria-hidden />
+                  {CONTACT_EMAIL}
+                </a>
               </div>
-
-              <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200">
-                <div className="flex items-center gap-3 mb-4">
-                  <MessageSquare className="w-6 h-6 text-slate-400" />
-                  <h4 className="font-bold text-slate-900">Quick Help</h4>
-                </div>
-                <ul className="space-y-3 text-sm text-slate-600">
-                  <li><a href="/#faq" className="hover:text-primary transition-colors flex items-center gap-2">How to request supervisor access?</a></li>
-                  <li><a href="/#faq" className="hover:text-primary transition-colors flex items-center gap-2">I can't login with my university email.</a></li>
-                  <li><a href="/#faq" className="hover:text-primary transition-colors flex items-center gap-2">How does semantic discovery work?</a></li>
-                </ul>
-              </div>
+            ) : (
+              <p className="text-sm leading-relaxed text-ink-muted">
+                Contact your department’s research coordinator or the Directorate of Research at SRMIST.
+              </p>
+            )}
+            <div>
+              <h2 className="text-base font-semibold text-ink">SRM Institute of Science and Technology</h2>
+              <p className="mt-2 flex gap-2 text-sm leading-relaxed text-ink-secondary">
+                <MapPin className="mt-0.5 size-4 shrink-0 text-ink-muted" aria-hidden />
+                <span>
+                  Kattankulathur, Chengalpattu District
+                  <br />
+                  Tamil Nadu 603203, India
+                </span>
+              </p>
             </div>
-          </div>
-          
+          </aside>
         </div>
-      </main>
-      <MarketingFooter />
-    </div>
+      </section>
+    </MarketingPage>
   );
 }

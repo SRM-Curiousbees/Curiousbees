@@ -111,6 +111,24 @@ describe('Institutional Hierarchy & Onboarding Validation', () => {
     ).rejects.toThrow('The selected department does not belong to the selected faculty.');
   });
 
+  it('keeps the department an administrator assigned to the scholar', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: 'scholar-1',
+      email: 'scholar@srmist.edu.in',
+      role: Role.RESEARCH_SCHOLAR,
+      departmentId: 'dept-assigned',
+    });
+
+    await expect(
+      service.onboardScholar('scholar-1', {
+        facultyId: 'fac-A',
+        departmentId: 'dept-other',
+        researchArea: 'Artificial Intelligence',
+      })
+    ).rejects.toThrow('Your department was set by your institute administrator.');
+    expect(mockPrisma.scholarProfile.upsert).not.toHaveBeenCalled();
+  });
+
   it('should reject non-existent department', async () => {
     mockPrisma.user.findUnique.mockResolvedValue({
       id: 'scholar-1',

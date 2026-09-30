@@ -120,6 +120,7 @@ export const UpdateProfileSchema = z.object({
     .string()
     .max(250, 'Bio cannot exceed 250 characters')
     .optional(),
+  image: z.string().nullable().optional(),
   interests: z
     .array(z.string().min(1, 'Interest name must be valid'))
     .max(8, 'You can select up to 8 interests')

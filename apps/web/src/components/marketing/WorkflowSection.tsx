@@ -1,9 +1,11 @@
-import React from 'react';
+import * as React from 'react';
+import { Reveal } from '@/components/motion/reveal';
+import { SceneLabel } from './SceneLabel';
 
 const STEPS = [
   {
     title: 'Get added by your institution',
-    body: 'Your research office creates your account with the right role, faculty and department. You then sign in with Google.',
+    body: 'The research office creates your account with the right role, faculty and department. You then sign in with Google.',
   },
   {
     title: 'Connect with your supervisor',
@@ -11,24 +13,28 @@ const STEPS = [
   },
   {
     title: 'Work in a shared workspace',
-    body: 'Files, milestones, meetings and announcements stay together, visible only to the members of that workspace.',
+    body: 'Files, milestones and announcements stay together, visible only to the members of that workspace.',
   },
 ];
 
+/** Scene 4 — getting started. Server component; only the reveals hydrate. */
 export default function WorkflowSection() {
   return (
-    <section id="how-it-works" aria-labelledby="how-title" className="scroll-mt-20 border-y border-line bg-surface-muted">
-      <div className="mx-auto max-w-6xl px-4 py-20 sm:px-6 md:py-24">
-        <h2 id="how-title" className="font-serif text-3xl font-semibold tracking-tight text-ink md:text-4xl">How it works</h2>
-        <ol className="mt-12 grid gap-10 md:grid-cols-3 md:gap-8">
+    <section id="how-it-works" aria-labelledby="how-title" className="scroll-mt-16 border-b border-line bg-surface-muted">
+      <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 md:py-32">
+        <SceneLabel index="04">Getting started</SceneLabel>
+        <h2 id="how-title" className="mt-6 max-w-2xl font-serif text-4xl font-semibold leading-[1.1] tracking-[-0.02em] text-ink md:text-5xl">
+          Three steps to your first shared workspace.
+        </h2>
+        <ol className="mt-16 grid grid-cols-1 gap-12 md:grid-cols-3 md:gap-10">
           {STEPS.map((step, i) => (
-            <li key={step.title} className="relative border-t-2 border-line pt-6">
-              <span
-                aria-hidden
-                className={`absolute -top-[2px] left-0 h-[2px] w-16 ${i === 0 ? 'bg-gold' : 'bg-brand-700'}`}
-              />
-              <h3 className="text-lg font-semibold text-ink">{step.title}</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-ink-secondary">{step.body}</p>
+            <li key={step.title} className="relative">
+              <Reveal variant="line" delay={i * 160} className="h-px w-full bg-line-strong" aria-hidden />
+              <Reveal delay={120 + i * 160}>
+                <p className="mt-6 font-mono text-xs text-ink-muted">Step {i + 1}</p>
+                <h3 className="mt-3 text-xl font-semibold tracking-tight text-ink">{step.title}</h3>
+                <p className="mt-2 text-base leading-relaxed text-ink-secondary">{step.body}</p>
+              </Reveal>
             </li>
           ))}
         </ol>

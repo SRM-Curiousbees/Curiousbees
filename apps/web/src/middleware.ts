@@ -26,8 +26,6 @@ const PUBLIC_PATH_PREFIXES = [
   '/account-suspended',
   '/not-provisioned',
   '/sso-callback',
-  '/sys-admin-login',
-  '/sys-admin',
   '/error',
 ];
 
@@ -44,6 +42,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
     pathname === '/healthz' ||
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml' ||
     pathname === '/favicon.ico' ||
     pathname === '/icon.png' ||
     pathname === '/apple-touch-icon.png' ||
@@ -99,6 +99,6 @@ export const config = {
   // Node.js runtime: reads server-only configuration (APP_URL, ALLOWED_EMAIL_DOMAINS) at runtime.
   runtime: 'nodejs',
   matcher: [
-    '/((?!api|healthz|_next/static|_next/image|favicon.ico|icon.png|apple-touch-icon.png|logo.png|logo_icon.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)',
+    '/((?!api|healthz|robots.txt|sitemap.xml|_next/static|_next/image|favicon.ico|icon.png|apple-touch-icon.png|logo.png|logo_icon.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)',
   ],
 };

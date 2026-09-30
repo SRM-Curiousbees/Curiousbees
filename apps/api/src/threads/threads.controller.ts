@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Query, Param, UseGuards, Req, Put, Delete, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, UseGuards, Req, Res, Put, Delete, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
 import { ResearchParticipantGuard } from '../auth/guards/research-participant.guard';
 import { ApprovedGuard } from '../auth/approved.guard';
@@ -31,6 +32,32 @@ export class ThreadsController {
   @Get('saved')
   async getSavedThreads(@Req() req: any) {
     return this.threadsService.getSavedThreads(req.user.id);
+  }
+
+  @Post('files/upload-url')
+  @UseGuards(ResearchParticipantGuard)
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  async requestFileUpload(
+    @Req() req: any,
+    @Body() body: { filename: string; contentType: string; sizeBytes: number },
+  ) {
+    if (!body?.filename || !body?.contentType || !body?.sizeBytes) {
+      throw new BadRequestException('filename, contentType, and sizeBytes are required.');
+    }
+    return this.threadsService.createFileUpload(req.user.id, body);
+  }
+
+  @Get('files/download')
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
+  async downloadFile(
+    @Query('key') key: string,
+    @Res() res: any,
+  ) {
+    if (!key) {
+      throw new BadRequestException('Storage key is required.');
+    }
+    const { downloadUrl } = await this.threadsService.getFileDownload(key);
+    return res.redirect(downloadUrl);
   }
 
   @Get(':id')
@@ -91,6 +118,19 @@ export class ThreadsController {
 @Controller('threads/public')
 export class ThreadsPublicController {
   constructor(private readonly threadsService: ThreadsService) {}
+
+  @Get('files/download')
+  @Throttle({ default: { limit: 60, ttl: 60000 } })
+  async downloadFilePublic(
+    @Query('key') key: string,
+    @Res() res: any,
+  ) {
+    if (!key) {
+      throw new BadRequestException('Storage key is required.');
+    }
+    const { downloadUrl } = await this.threadsService.getFileDownload(key);
+    return res.redirect(downloadUrl);
+  }
 
   @Get(':id')
   async getThreadPublic(@Param('id') id: string) {

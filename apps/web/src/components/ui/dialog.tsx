@@ -156,7 +156,7 @@ export function Dialog({
             </div>
             {children && <div data-dialog-body className={cn('overflow-y-auto px-5 pb-5 sm:px-6', side === 'right' && 'flex-1 border-t border-line pt-5')}>{children}</div>}
             {footer && (
-              <div className="flex flex-col-reverse gap-2 border-t border-line bg-surface-muted px-5 py-3.5 sm:flex-row sm:justify-end sm:px-6">
+              <div className="flex flex-col-reverse gap-2 border-t border-line bg-surface-muted px-5 py-3.5 sm:flex-row sm:flex-wrap sm:justify-end sm:px-6">
                 {footer}
               </div>
             )}

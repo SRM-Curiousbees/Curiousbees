@@ -1,42 +1,132 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useStore } from '@/store/useStore';
-import { 
-  FolderOpen, 
-  CheckSquare, 
-  Megaphone, 
-  UploadCloud, 
-  Plus, 
-  Calendar, 
-  User, 
-  ArrowLeft, 
-  Loader2, 
-  FileText, 
-  X, 
-  Check, 
-  Download, 
-  AlertTriangle, 
-  Sparkles, 
-  ChevronRight,
-  MessageSquare,
-  Video,
-  ExternalLink,
-  Activity,
-  Layers,
-  BookOpen,
-  Settings2,
+import {
+  ArrowLeft,
+  Calendar,
+  Check,
+  CheckSquare,
   Clock,
-  Radio,
-  CheckCircle2,
-  CalendarCheck2,
-  CalendarX2,
-  Share2
+  ExternalLink,
+  FileText,
+  FolderOpen,
+  Link2,
+  Megaphone,
+  MessageSquare,
+  Plus,
+  RefreshCw,
+  Settings2,
+  UploadCloud,
+  User,
+  Video,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { MeetingProvider, IntegrationProvider } from '@curiousbees/types';
+import type { IntegrationProvider, MeetingProvider, ResearchMeeting, Workspace } from '@curiousbees/types';
+import { useStore } from '@/store/useStore';
+import { cn } from '@/lib/utils';
+import { handleAvatarError } from '@/lib/avatar';
+import { PageHeader } from '@/components/ui/page-header';
+import { Card, CardBody, CardHeader } from '@/components/ui/card';
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Badge, StatusBadge } from '@/components/ui/badge';
+import { Dialog } from '@/components/ui/dialog';
+import { Field, DetailItem } from '@/components/ui/field';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 import { WorkspaceFileDownloadButton, formatWorkspaceFileSize } from '@/components/workspace/WorkspaceFileDownloadButton';
+
+type TabId = 'overview' | 'tasks' | 'files' | 'meetings' | 'discussions' | 'activity' | 'integrations';
+
+// Older links used tab ids that no longer have their own view.
+const TAB_ALIASES: Record<string, TabId> = {
+  research: 'overview',
+  publications: 'overview',
+  milestones: 'tasks',
+};
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'tasks', label: 'Milestones' },
+  { id: 'files', label: 'Files' },
+  { id: 'meetings', label: 'Meetings' },
+  { id: 'discussions', label: 'Discussion' },
+  { id: 'activity', label: 'Activity' },
+  { id: 'integrations', label: 'Tools' },
+];
+
+// The detail endpoint returns a little more than the shared Workspace type describes.
+type WorkspaceDetail = Workspace & {
+  researchDomain?: string | null;
+  researchTopic?: string | null;
+  researchDomainRef?: { name: string } | null;
+  researchTopicRef?: { name: string } | null;
+  supervisor?: { id: string; name: string | null; email: string } | null;
+};
+
+const MEETING_PROVIDER_LABEL: Record<MeetingProvider, string> = {
+  GOOGLE_MEET: 'Google Meet',
+  ZOOM: 'Zoom',
+  EXTERNAL: 'External link',
+};
+
+const COLLAB_PROVIDER_LABEL: Record<IntegrationProvider, string> = {
+  GOOGLE_WORKSPACE: 'Google Workspace',
+  ZOOM_WORKPLACE: 'Zoom Workplace',
+  EXTERNAL: 'External tools',
+};
+
+const ACCEPTED_FILES = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.png,.jpg,.jpeg,.txt,.csv';
+// A meeting stays "upcoming" for an hour after its start so people can still join late.
+const JOIN_GRACE_MS = 60 * 60 * 1000;
+
+function toDate(value?: Date | string | null) {
+  const d = value ? new Date(value) : null;
+  return d && !isNaN(d.getTime()) ? d : null;
+}
+
+function formatDate(value?: Date | string | null) {
+  return toDate(value)?.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) ?? '';
+}
+
+function formatTime(value?: Date | string | null) {
+  return toDate(value)?.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) ?? '';
+}
+
+function Avatar({ src, className, name }: { src?: string | null; className?: string; name?: string | null }) {
+  return src ? (
+    <img
+      src={src}
+      alt=""
+      referrerPolicy="no-referrer"
+      onError={(e) => handleAvatarError(e, name)}
+      className={cn('size-8 shrink-0 rounded-full border border-line bg-surface-muted object-cover', className)}
+    />
+  ) : (
+    <span className={cn('flex size-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface-muted text-ink-muted', className)}>
+      <User className="size-3.5" aria-hidden />
+    </span>
+  );
+}
+
+function WorkspaceSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading workspace">
+      <Skeleton className="mb-6 h-4 w-28" />
+      <Skeleton className="h-8 w-2/3 max-w-md" />
+      <Skeleton className="mt-3 h-4 w-full max-w-xl" />
+      <div className="mt-8 flex gap-4 border-b border-line pb-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-4 w-16" />
+        ))}
+      </div>
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Skeleton className="h-64 rounded-2xl lg:col-span-2" />
+        <Skeleton className="h-64 rounded-2xl" />
+      </div>
+    </div>
+  );
+}
 
 export default function WorkspacePage() {
   const params = useParams();
@@ -44,15 +134,15 @@ export default function WorkspacePage() {
   const router = useRouter();
   const workspaceId = params.id as string;
 
-  const { 
-    currentUser, 
-    activeWorkspace, 
-    fetchWorkspaceDetails, 
-    addWorkspaceFile, 
+  const {
+    currentUser,
+    activeWorkspace,
+    fetchWorkspaceDetails,
+    addWorkspaceFile,
     uploadWorkspaceFile,
-    addWorkspaceMilestone, 
-    toggleWorkspaceMilestone, 
-    addWorkspaceAnnouncement, 
+    addWorkspaceMilestone,
+    toggleWorkspaceMilestone,
+    addWorkspaceAnnouncement,
     workspaceMeetings,
     fetchWorkspaceMeetings,
     createWorkspaceMeeting,
@@ -61,1329 +151,1230 @@ export default function WorkspacePage() {
     connectWorkspaceChatSpace,
     integrationConnections,
     fetchIntegrationStatus,
-    isLoading,
-    addToast
+    addToast,
   } = useStore();
 
-  // Tab State
-  type TabId = 'overview' | 'research' | 'tasks' | 'publications' | 'files' | 'discussions' | 'meetings' | 'activity' | 'integrations';
-  const initialTab = (searchParams.get('tab') as TabId) || 'overview';
-  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+  // The URL (?tab=) decides the tab, so links from elsewhere open the right view.
+  const tabParam = searchParams.get('tab') || 'overview';
+  const activeTab: TabId = TAB_ALIASES[tabParam] || (TABS.some((t) => t.id === tabParam) ? (tabParam as TabId) : 'overview');
+  const selectTab = (tab: TabId) => router.replace(`/workspace/${workspaceId}?tab=${tab}`, { scroll: false });
 
-  // Local Form States
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+
+  const load = useCallback(async () => {
+    setLoadState('loading');
+    try {
+      await fetchWorkspaceDetails(workspaceId);
+      setLoadState('ready');
+    } catch {
+      setLoadState('error');
+    }
+    fetchWorkspaceMeetings(workspaceId);
+  }, [workspaceId, fetchWorkspaceDetails, fetchWorkspaceMeetings]);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    load();
+    fetchIntegrationStatus();
+  }, [workspaceId, load, fetchIntegrationStatus]);
+
+  // Dialogs
+  const [fileOpen, setFileOpen] = useState(false);
   const [fileName, setFileName] = useState('');
   const [fileUrl, setFileUrl] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isUploadingFile, setIsUploadingFile] = useState(false);
-  const [showFileModal, setShowFileModal] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
+  const [milestoneOpen, setMilestoneOpen] = useState(false);
   const [milestoneTitle, setMilestoneTitle] = useState('');
   const [milestoneDesc, setMilestoneDesc] = useState('');
   const [milestoneDueDate, setMilestoneDueDate] = useState('');
-  const [showMilestoneModal, setShowMilestoneModal] = useState(false);
+  const [savingMilestone, setSavingMilestone] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
-  // Meeting Schedule Modal
-  const [showMeetingModal, setShowMeetingModal] = useState(false);
+  const [updateOpen, setUpdateOpen] = useState(false);
+  const [updateTitle, setUpdateTitle] = useState('');
+  const [updateContent, setUpdateContent] = useState('');
+  const [postingUpdate, setPostingUpdate] = useState(false);
+
+  const [meetingOpen, setMeetingOpen] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState('');
   const [meetingDesc, setMeetingDesc] = useState('');
   const [meetingDate, setMeetingDate] = useState('');
   const [meetingTime, setMeetingTime] = useState('');
-  const [meetingDuration, setMeetingDuration] = useState<number>(30);
+  const [meetingDuration, setMeetingDuration] = useState(30);
   const [meetingProvider, setMeetingProvider] = useState<MeetingProvider>('GOOGLE_MEET');
   const [customMeetingUrl, setCustomMeetingUrl] = useState('');
-  const [schedulingMeeting, setSchedulingMeeting] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState<ResearchMeeting | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+
   const [connectingChat, setConnectingChat] = useState(false);
+  const [savingProvider, setSavingProvider] = useState<IntegrationProvider | null>(null);
 
-  useEffect(() => {
-    if (workspaceId) {
-      fetchWorkspaceDetails(workspaceId).catch(() => {
-        router.push('/workspace');
-      });
-      fetchWorkspaceMeetings(workspaceId);
-      fetchIntegrationStatus();
-    }
-  }, [workspaceId, fetchWorkspaceDetails, fetchWorkspaceMeetings, fetchIntegrationStatus, router]);
+  const meetings = useMemo(() => workspaceMeetings[workspaceId] || [], [workspaceMeetings, workspaceId]);
+  const { upcomingMeetings, pastMeetings } = useMemo(() => {
+    const cutoff = Date.now() - JOIN_GRACE_MS;
+    const isUpcoming = (m: ResearchMeeting) => m.status === 'SCHEDULED' && new Date(m.scheduledAt).getTime() >= cutoff;
+    const byStart = (a: ResearchMeeting, b: ResearchMeeting) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime();
+    return {
+      upcomingMeetings: meetings.filter(isUpcoming).sort(byStart),
+      pastMeetings: meetings.filter((m) => !isUpcoming(m)).sort((a, b) => byStart(b, a)),
+    };
+  }, [meetings]);
 
-  const meetings = workspaceMeetings[workspaceId] || [];
-  const upcomingMeetings = meetings.filter(m => m.status === 'SCHEDULED' && new Date(m.scheduledAt) >= new Date(Date.now() - 3600000));
-  const pastMeetings = meetings.filter(m => m.status !== 'SCHEDULED' || new Date(m.scheduledAt) < new Date(Date.now() - 3600000));
+  const workspace = activeWorkspace && activeWorkspace.id === workspaceId ? (activeWorkspace as WorkspaceDetail) : null;
 
-  if (isLoading && !activeWorkspace) {
+  if (loadState === 'error' && !workspace) {
     return (
-      <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-4">
-        <div className="relative">
-          <div className="w-12 h-12 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-          <Sparkles className="w-5 h-5 text-primary absolute inset-0 m-auto animate-pulse" />
-        </div>
-        <div className="space-y-1 text-center">
-          <p className="text-xs text-primary font-medium capitalize font-mono">Secure Node Handshake</p>
-          <p className="text-xs text-slate-400 font-semibold uppercase">Synchronizing research workspace credentials...</p>
-        </div>
+      <div className="mx-auto max-w-md py-16">
+        <EmptyState
+          icon={FolderOpen}
+          title="This workspace isn't available"
+          description="It may have been removed, or you aren't one of its members. Workspaces are visible only to the people working in them."
+          action={
+            <>
+              <Button variant="secondary" onClick={load}>
+                <RefreshCw aria-hidden />
+                Try again
+              </Button>
+              <Link href="/workspace" className={buttonVariants({ variant: 'primary' })}>
+                All workspaces
+              </Link>
+            </>
+          }
+        />
       </div>
     );
   }
 
-  if (!activeWorkspace) {
-    return (
-      <div className="text-center py-12 cb-card max-w-md mx-auto my-12 p-8 space-y-5 bg-surface/90 backdrop-blur-md">
-        <div className="w-12 h-12 bg-red-50 text-red-600 border border-red-100 rounded-full flex items-center justify-center mx-auto">
-          <AlertTriangle className="w-6 h-6" />
-        </div>
-        <div className="space-y-2">
-          <h3 className="font-display font-bold text-lg text-slate-900">Workspace Node Offline</h3>
-          <p className="text-slate-500 text-xs font-semibold leading-relaxed">
-            The requested research node does not exist or you do not have sufficient credential clearance.
-          </p>
-        </div>
-        <button 
-          onClick={() => router.push('/workspace')} 
-          className="w-full py-2.5 bg-primary text-white rounded-lg text-xs font-medium capitalize hover:bg-primary/95 transition-all shadow cursor-pointer"
-        >
-          Back to Workspaces
-        </button>
-      </div>
-    );
-  }
+  if (!workspace) return <WorkspaceSkeleton />;
 
-  // Find if current user is owner of workspace
-  const userMemberRecord = activeWorkspace.members?.find(m => m.userId === currentUser?.id);
-  const isOwner = userMemberRecord?.role === 'OWNER' || currentUser?.role === 'RESEARCH_SUPERVISOR' || currentUser?.role === 'INSTITUTE_ADMIN';
+  const members = workspace.members || [];
+  const myMembership = members.find((m) => m.userId === currentUser?.id);
+  // The API lets only workspace owners create milestones; any member can complete them.
+  const canAddMilestones = myMembership?.role === 'OWNER';
+  const milestones = [...(workspace.milestones || [])].sort((a, b) => {
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    const ad = toDate(a.dueDate)?.getTime() ?? Infinity;
+    const bd = toDate(b.dueDate)?.getTime() ?? Infinity;
+    return ad - bd;
+  });
+  const completedCount = milestones.filter((m) => m.completed).length;
+  const progress = milestones.length > 0 ? Math.round((completedCount / milestones.length) * 100) : 0;
+  const openMilestones = milestones.filter((m) => !m.completed);
+  const files = workspace.files || [];
+  const announcements = workspace.announcements || [];
+  const provider: IntegrationProvider = workspace.collaborationProvider || 'GOOGLE_WORKSPACE';
+  const googleConnected = integrationConnections?.google?.status === 'CONNECTED';
+  const zoomConnected = integrationConnections?.zoom?.status === 'CONNECTED';
+  const domain = workspace.researchDomainRef?.name || workspace.researchDomain;
+  const topic = workspace.researchTopicRef?.name || workspace.researchTopic;
+  const now = Date.now();
 
-  // Handle file upload
-  const handleUploadFile = async (e: React.FormEvent) => {
+  const isOverdue = (dueDate?: Date | string | null) => {
+    const d = toDate(dueDate);
+    return !!d && d.getTime() < now - 24 * 60 * 60 * 1000;
+  };
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+
+  const resetFileForm = () => {
+    setFileName('');
+    setFileUrl('');
+    setSelectedFile(null);
+  };
+
+  const handleAddFile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFile && !fileUrl) {
-      addToast('Please select a file to upload or enter a resource link.', 'error');
+    if (!selectedFile && !fileUrl.trim()) {
+      addToast('Choose a file to upload or paste a link.', 'error');
       return;
     }
-
-    setIsUploadingFile(true);
+    setUploading(true);
     try {
       if (selectedFile) {
-        // Direct browser upload to the private bucket via a presigned URL, then register it.
-        await uploadWorkspaceFile(workspaceId, selectedFile, fileName || selectedFile.name);
-        addToast(`Successfully uploaded ${fileName || selectedFile.name}.`, 'success');
-      } else if (fileUrl) {
-        await addWorkspaceFile(workspaceId, fileName || 'Research Document Link', fileUrl, 0);
-        addToast(`Linked external resource to workspace.`, 'success');
+        await uploadWorkspaceFile(workspaceId, selectedFile, fileName.trim() || selectedFile.name);
+        addToast(`Uploaded ${fileName.trim() || selectedFile.name}.`, 'success');
+      } else {
+        await addWorkspaceFile(workspaceId, fileName.trim() || fileUrl.trim(), fileUrl.trim());
+        addToast('Link added to the workspace.', 'success');
       }
-
-      setFileName('');
-      setFileUrl('');
-      setSelectedFile(null);
-      setShowFileModal(false);
+      resetFileForm();
+      setFileOpen(false);
     } catch (err: any) {
-      console.error(err);
-      addToast(err?.message || 'File upload failed.', 'error');
+      addToast(err?.message || 'The file could not be added.', 'error');
     } finally {
-      setIsUploadingFile(false);
+      setUploading(false);
     }
   };
 
-  // Handle milestone add
-  const handleCreateMilestone = async (e: React.FormEvent) => {
+  const handleAddMilestone = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!milestoneTitle) return;
-
+    if (!milestoneTitle.trim()) return;
+    setSavingMilestone(true);
     try {
-      await addWorkspaceMilestone(workspaceId, milestoneTitle, milestoneDesc, milestoneDueDate || undefined);
+      await addWorkspaceMilestone(workspaceId, milestoneTitle.trim(), milestoneDesc.trim(), milestoneDueDate || undefined);
+      addToast(`Milestone added: ${milestoneTitle.trim()}`, 'success');
       setMilestoneTitle('');
       setMilestoneDesc('');
       setMilestoneDueDate('');
-      setShowMilestoneModal(false);
-      addToast(`Created milestone: ${milestoneTitle}`, 'success');
-    } catch (err) {
-      console.error(err);
+      setMilestoneOpen(false);
+    } catch (err: any) {
+      addToast(err?.message || 'The milestone could not be added.', 'error');
+    } finally {
+      setSavingMilestone(false);
     }
   };
 
-  // Handle meeting scheduling
+  const handleToggleMilestone = async (id: string, completed: boolean) => {
+    setTogglingId(id);
+    try {
+      await toggleWorkspaceMilestone(workspaceId, id, completed);
+    } catch (err: any) {
+      addToast(err?.message || 'The milestone could not be updated.', 'error');
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const handlePostUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!updateTitle.trim() || !updateContent.trim()) return;
+    setPostingUpdate(true);
+    try {
+      await addWorkspaceAnnouncement(workspaceId, updateTitle.trim(), updateContent.trim());
+      addToast('Update posted to the workspace.', 'success');
+      setUpdateTitle('');
+      setUpdateContent('');
+      setUpdateOpen(false);
+    } catch (err: any) {
+      addToast(err?.message || 'The update could not be posted.', 'error');
+    } finally {
+      setPostingUpdate(false);
+    }
+  };
+
   const handleScheduleMeeting = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!meetingTitle || !meetingDate || !meetingTime) {
-      addToast('Please provide meeting title, date, and time.', 'error');
+    if (!meetingTitle.trim() || !meetingDate || !meetingTime) {
+      addToast('Add a title, date and time for the meeting.', 'error');
       return;
     }
-
+    setScheduling(true);
     try {
-      setSchedulingMeeting(true);
-      const scheduledDateTime = new Date(`${meetingDate}T${meetingTime}`);
-
       await createWorkspaceMeeting(workspaceId, {
-        title: meetingTitle,
-        description: meetingDesc,
+        title: meetingTitle.trim(),
+        description: meetingDesc.trim(),
         provider: meetingProvider,
-        scheduledAt: scheduledDateTime,
+        scheduledAt: new Date(`${meetingDate}T${meetingTime}`),
         duration: Number(meetingDuration),
-        externalMeetingUrl: meetingProvider === 'EXTERNAL' ? customMeetingUrl : undefined,
+        externalMeetingUrl: meetingProvider === 'EXTERNAL' ? customMeetingUrl.trim() : undefined,
       });
-
-      setShowMeetingModal(false);
+      addToast(`Scheduled "${meetingTitle.trim()}" on ${MEETING_PROVIDER_LABEL[meetingProvider]}.`, 'success');
       setMeetingTitle('');
       setMeetingDesc('');
       setMeetingDate('');
       setMeetingTime('');
       setCustomMeetingUrl('');
-      addToast(`Scheduled "${meetingTitle}" via ${meetingProvider === 'GOOGLE_MEET' ? 'Google Meet' : meetingProvider === 'ZOOM' ? 'Zoom' : 'External Link'}.`, 'success');
+      setMeetingOpen(false);
     } catch (err: any) {
-      addToast(err.message || 'Could not schedule research meeting.', 'error');
+      addToast(err?.message || 'The meeting could not be scheduled.', 'error');
     } finally {
-      setSchedulingMeeting(false);
+      setScheduling(false);
     }
   };
 
-  // Handle Google Chat Space connection
-  const handleConnectGoogleChat = async () => {
+  const handleCancelMeeting = async () => {
+    if (!cancelTarget) return;
+    setCancelling(true);
     try {
-      setConnectingChat(true);
-      const res = await connectWorkspaceChatSpace(workspaceId);
-      addToast('Created dedicated Google Chat Space for this collaboration.', 'success');
+      await cancelWorkspaceMeeting(workspaceId, cancelTarget.id);
+      addToast('Meeting cancelled.', 'info');
+      setCancelTarget(null);
     } catch (err: any) {
-      addToast(err.message || 'Please ensure Google Workspace is connected in Settings.', 'error');
+      addToast(err?.message || 'The meeting could not be cancelled.', 'error');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const handleConnectChat = async () => {
+    setConnectingChat(true);
+    try {
+      await connectWorkspaceChatSpace(workspaceId);
+      addToast('Google Chat space created for this workspace.', 'success');
+    } catch (err: any) {
+      addToast(err?.message || 'Connect Google Workspace in Settings, then try again.', 'error');
     } finally {
       setConnectingChat(false);
     }
   };
 
-  // Get initials for member avatars
-  const getInitials = (name: string | null) => {
-    if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const handleSetProvider = async (next: IntegrationProvider) => {
+    if (next === provider || savingProvider) return;
+    setSavingProvider(next);
+    try {
+      await setWorkspaceCollaborationProvider(workspaceId, next);
+      addToast(`This workspace now uses ${COLLAB_PROVIDER_LABEL[next]}.`, 'success');
+    } catch (err: any) {
+      addToast(err?.message || 'The collaboration tool could not be changed.', 'error');
+    } finally {
+      setSavingProvider(null);
+    }
   };
 
-  // Progress metrics calculation
-  const totalMilestones = activeWorkspace.milestones?.length || 0;
-  const completedMilestones = activeWorkspace.milestones?.filter(m => m.completed).length || 0;
-  const progressPercent = totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
+  const openMeetingDialog = () => {
+    setMeetingProvider(provider === 'ZOOM_WORKPLACE' ? 'ZOOM' : 'GOOGLE_MEET');
+    setMeetingOpen(true);
+  };
 
-  const currentProvider = activeWorkspace.collaborationProvider || 'GOOGLE_WORKSPACE';
+  // Activity: built only from records the workspace already has.
+  const activity = [
+    ...files.map((f) => ({
+      id: `f-${f.id}`,
+      at: f.uploadedAt,
+      icon: f.storageKey ? UploadCloud : Link2,
+      text: (
+        <>
+          <span className="font-medium text-ink">{f.uploadedBy?.name || 'A member'}</span> {f.storageKey ? 'uploaded' : 'linked'}{' '}
+          <span className="font-medium text-ink">{f.name}</span>
+        </>
+      ),
+    })),
+    ...(workspace.milestones || []).map((m) => ({
+      id: `m-${m.id}`,
+      at: m.createdAt,
+      icon: CheckSquare,
+      text: (
+        <>
+          Milestone added: <span className="font-medium text-ink">{m.title}</span>
+        </>
+      ),
+    })),
+    ...announcements.map((a) => ({
+      id: `a-${a.id}`,
+      at: a.createdAt,
+      icon: Megaphone,
+      text: (
+        <>
+          <span className="font-medium text-ink">{a.author?.name || 'A member'}</span> posted an update:{' '}
+          <span className="font-medium text-ink">{a.title}</span>
+        </>
+      ),
+    })),
+    ...meetings.map((m) => ({
+      id: `r-${m.id}`,
+      at: m.createdAt,
+      icon: Video,
+      text: (
+        <>
+          <span className="font-medium text-ink">{m.createdBy?.name || 'A member'}</span> scheduled{' '}
+          <span className="font-medium text-ink">{m.title}</span> for {formatDate(m.scheduledAt)}
+          {m.status === 'CANCELLED' && ' (later cancelled)'}
+        </>
+      ),
+    })),
+    {
+      id: 'created',
+      at: workspace.createdAt,
+      icon: FolderOpen,
+      text: <>Workspace created</>,
+    },
+  ].sort((a, b) => (toDate(b.at)?.getTime() ?? 0) - (toDate(a.at)?.getTime() ?? 0));
+
+  const nextMeeting = upcomingMeetings[0];
+
+  // ── Pieces ─────────────────────────────────────────────────────────────────
+
+  const meetingRow = (meeting: ResearchMeeting) => {
+    const start = toDate(meeting.scheduledAt);
+    const mine = meeting.createdById === currentUser?.id;
+    return (
+      <li key={meeting.id} className="flex items-start gap-4 px-5 py-4">
+        <div className="flex w-12 shrink-0 flex-col items-center rounded-xl border border-line bg-surface-muted py-1.5 text-center sm:w-14" aria-hidden>
+          <span className="text-xs font-medium uppercase text-ink-muted">{start?.toLocaleDateString(undefined, { month: 'short' })}</span>
+          <span className="text-xl font-semibold tabular-nums text-ink">{start?.getDate()}</span>
+        </div>
+        <div className="min-w-0 flex-1 sm:flex sm:items-start sm:gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-semibold text-ink">{meeting.title}</h3>
+            <Badge tone={meeting.provider === 'GOOGLE_MEET' ? 'success' : meeting.provider === 'ZOOM' ? 'brand' : 'plum'}>
+              {MEETING_PROVIDER_LABEL[meeting.provider]}
+            </Badge>
+          </div>
+          <p className="mt-1 text-sm text-ink-secondary">
+            <span className="sr-only">{formatDate(meeting.scheduledAt)}, </span>
+            {start?.toLocaleDateString(undefined, { weekday: 'long' })} · {formatTime(meeting.scheduledAt)} · {meeting.duration} min
+            {meeting.createdBy?.name && <> · Hosted by {meeting.createdBy.name}</>}
+          </p>
+          {meeting.description && <p className="mt-1.5 line-clamp-2 text-sm text-ink-muted">{meeting.description}</p>}
+        </div>
+        <div className="mt-3 flex shrink-0 gap-2 sm:mt-0 sm:flex-col sm:items-stretch">
+          {meeting.meetingUrl && (
+            <a href={meeting.meetingUrl} target="_blank" rel="noopener noreferrer" className={buttonVariants({ size: 'sm' })}>
+              Join
+              <ExternalLink aria-hidden />
+            </a>
+          )}
+          {mine && (
+            <Button variant="ghost" size="sm" onClick={() => setCancelTarget(meeting)}>
+              Cancel
+            </Button>
+          )}
+        </div>
+        </div>
+      </li>
+    );
+  };
 
   return (
-    <div className="space-y-6 text-left select-none max-w-7xl mx-auto py-2">
-      
-      {/* 🔙 BACK HEADER */}
-      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-        <button 
-          onClick={() => router.push('/workspace')} 
-          className="flex items-center space-x-2 text-xs font-bold text-slate-500 hover:text-primary transition-colors cursor-pointer group"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-          <span>Back to Workspaces</span>
-        </button>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-medium text-primary capitalize font-mono flex items-center gap-1.5 bg-primary/5 px-2.5 py-1 rounded-md border border-primary/15">
-            <FolderOpen className="w-3.5 h-3.5" />
-            <span>Curious Nexus</span>
-          </span>
-          <span className="text-xs font-mono font-medium text-slate-400 capitalize">
-            ID: {workspaceId.substring(0, 8)}
-          </span>
-        </div>
-      </div>
+    <div className="mx-auto max-w-6xl">
+      <Link
+        href="/workspace"
+        className="mb-4 inline-flex items-center gap-1.5 rounded-md text-sm text-ink-muted transition-colors duration-fast hover:text-ink"
+      >
+        <ArrowLeft className="size-4" aria-hidden />
+        Workspaces
+      </Link>
 
-      {/* 📄 WORKSPACE HERO HEADER */}
-      <div className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-xs">
-        <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="space-y-3 relative z-10 flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 text-xs capitalize font-medium">
-              Active Collaboration
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-slate-100 text-slate-700">
-              {currentProvider === 'GOOGLE_WORKSPACE' ? (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                  <span>Google Workspace</span>
-                </>
-              ) : currentProvider === 'ZOOM_WORKPLACE' ? (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-blue-500" />
-                  <span>Zoom Workplace</span>
-                </>
-              ) : (
-                <>
-                  <span className="w-2 h-2 rounded-full bg-purple-500" />
-                  <span>External Hub</span>
-                </>
-              )}
-            </span>
+      <PageHeader
+        meta={
+          <span className="inline-flex items-center gap-2">
+            <FolderOpen className="size-4" aria-hidden />
+            Research workspace
+          </span>
+        }
+        title={workspace.title}
+        description={workspace.description || undefined}
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => setFileOpen(true)}>
+              <UploadCloud aria-hidden />
+              Add file
+            </Button>
+            <Button onClick={openMeetingDialog}>
+              <Video aria-hidden />
+              Schedule meeting
+            </Button>
+          </>
+        }
+        className="pb-5"
+      />
+
+      {/* Who is here and how far along */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex -space-x-2">
+            {members.slice(0, 5).map((m) => (
+              <Avatar key={m.userId} src={m.user?.image} className="ring-2 ring-surface" />
+            ))}
           </div>
-          
-          <h1 className="font-display text-xl sm:text-2xl font-bold text-slate-900 tracking-tight leading-tight">
-            {activeWorkspace.title}
-          </h1>
-          <p className="text-slate-500 text-xs sm:text-sm max-w-3xl leading-relaxed font-medium">
-            {activeWorkspace.description || 'Shared institutional workspace for research peer collaboration, file management, and milestones tracking.'}
+          <p className="min-w-0 truncate text-sm text-ink-secondary">
+            {members.length === 1 ? '1 member' : `${members.length} members`}
+            {members.length > 0 && <span className="text-ink-muted"> · {members.map((m) => m.user?.name).filter(Boolean).join(', ')}</span>}
           </p>
-
-          {/* Members Ring */}
-          <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-3">
-            <span className="text-xs text-slate-400 capitalize font-medium">
-              Collaborators:
-            </span>
-            <div className="flex flex-wrap items-center gap-2">
-              {activeWorkspace.members?.map((member) => (
-                <div key={member.userId} className="flex items-center space-x-2 bg-slate-50 border border-slate-200/60 px-2.5 py-1 rounded-lg">
-                  <div className="w-6 h-6 rounded-full bg-primary/10 border border-primary/20 overflow-hidden flex items-center justify-center shrink-0">
-                    {member.user?.image ? (
-                      <img src={member.user.image} alt={member.user.name || ''} className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-2xs font-bold text-primary">{getInitials(member.user?.name || '')}</span>
-                    )}
-                  </div>
-                  <div className="text-left leading-none">
-                    <p className="text-xs font-bold text-slate-800">{member.user?.name}</p>
-                    <span className="text-xs font-medium text-slate-400 capitalize mt-0.5 block">
-                      {member.role === 'OWNER' ? 'Principal Investigator' : 'Collaborator'}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
-
-        {/* Quick Launch & Progress widget */}
-        <div className="cb-card p-4 bg-slate-50 border border-slate-200/60 rounded-xl w-full md:w-64 relative z-10 flex flex-col justify-between space-y-4 shrink-0">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-400 capitalize">Research Progress</span>
-              <span className="text-xs font-bold text-primary font-mono">{progressPercent}%</span>
-            </div>
-            <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${progressPercent}%` }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-                className="h-full bg-primary rounded-full"
-              />
-            </div>
-            <p className="text-xs text-slate-400 font-medium capitalize">
-              {completedMilestones} of {totalMilestones} Milestones Complete
-            </p>
+        <div className="flex shrink-0 items-center gap-3 sm:w-64">
+          <div
+            className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-200"
+            role="progressbar"
+            aria-label="Milestones complete"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progress}
+          >
+            <div className="h-full rounded-full bg-brand transition-[width] duration-slow ease-out" style={{ width: `${progress}%` }} />
           </div>
-
-          <div className="pt-2 border-t border-slate-200/60 flex items-center gap-2">
-            <button
-              onClick={() => setActiveTab('discussions')}
-              className="flex-1 py-1.5 px-2.5 bg-surface hover:bg-slate-100 border border-slate-200 rounded-lg text-2xs font-bold text-slate-700 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <MessageSquare className="w-3 h-3 text-blue-600" />
-              <span>Chat</span>
-            </button>
-            <button
-              onClick={() => { setActiveTab('meetings'); setShowMeetingModal(true); }}
-              className="flex-1 py-1.5 px-2.5 bg-primary hover:bg-primary/95 text-white rounded-lg text-2xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Video className="w-3 h-3" />
-              <span>Meet</span>
-            </button>
-          </div>
+          <span className="whitespace-nowrap text-sm tabular-nums text-ink-muted">
+            {milestones.length > 0 ? `${completedCount}/${milestones.length} milestones` : 'No milestones'}
+          </span>
         </div>
       </div>
 
-      {/* 🎛️ 9-TAB NAVIGATION BAR */}
-      <div className="flex items-center gap-1 bg-slate-100/90 border border-slate-200/80 p-1.5 rounded-xl overflow-x-auto no-scrollbar shadow-2xs">
-        {([
-          { id: 'overview', label: 'Overview', icon: Layers },
-          { id: 'research', label: 'Research', icon: BookOpen },
-          { id: 'tasks', label: 'Tasks', icon: CheckSquare },
-          { id: 'publications', label: 'Publications', icon: FileText },
-          { id: 'files', label: 'Files', icon: UploadCloud },
-          { id: 'discussions', label: 'Discussions', icon: MessageSquare },
-          { id: 'meetings', label: 'Meetings', icon: Video },
-          { id: 'activity', label: 'Activity', icon: Activity },
-          { id: 'integrations', label: 'Integrations', icon: Settings2 },
-        ] as const).map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+      <div role="tablist" aria-label="Workspace sections" className="-mx-4 mb-6 flex gap-1 overflow-x-auto border-b border-line px-4 sm:mx-0 sm:px-0">
+        {TABS.map((tab) => {
+          const selected = activeTab === tab.id;
+          const count =
+            tab.id === 'tasks' ? openMilestones.length : tab.id === 'files' ? files.length : tab.id === 'meetings' ? upcomingMeetings.length : undefined;
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 py-2 px-3.5 rounded-lg text-xs font-bold transition-all duration-150 shrink-0 cursor-pointer select-none ${
-                isActive 
-                  ? 'bg-surface text-primary shadow-xs border border-slate-200/80 font-bold' 
-                  : 'text-slate-500 hover:text-slate-900 hover:bg-surface/50'
-              }`}
+              type="button"
+              role="tab"
+              id={`ws-tab-${tab.id}`}
+              aria-selected={selected}
+              aria-controls="ws-panel"
+              onClick={() => selectTab(tab.id)}
+              className={cn(
+                '-mb-px inline-flex h-10 shrink-0 items-center gap-2 border-b-2 px-3 text-sm transition-colors duration-fast',
+                selected ? 'border-brand font-medium text-ink' : 'border-transparent text-ink-muted hover:border-line-strong hover:text-ink',
+              )}
             >
-              <Icon className={`w-3.5 h-3.5 ${isActive ? 'text-primary' : 'text-slate-400'}`} />
-              <span>{tab.label}</span>
-              {tab.id === 'meetings' && upcomingMeetings.length > 0 && (
-                <span className="w-4 h-4 rounded-full bg-primary text-white text-2xs flex items-center justify-center font-mono font-bold">
-                  {upcomingMeetings.length}
-                </span>
+              {tab.label}
+              {count !== undefined && count > 0 && (
+                <span className="rounded-full bg-neutral-100 px-1.5 py-px text-xs tabular-nums text-ink-secondary">{count}</span>
               )}
             </button>
           );
         })}
       </div>
 
-      {/* ⚡ TAB CONTENTS */}
-      <div className="min-h-[400px]">
-        <AnimatePresence mode="wait">
-
-          {/* ── 1. OVERVIEW TAB ── */}
-          {activeTab === 'overview' && (
-            <motion.div
-              key="overview-tab"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="space-y-6"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                {/* Collaboration Hub Card */}
-                <div className="md:col-span-2 cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-primary" />
-                    <span>Research Collaboration Summary</span>
-                  </h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    This Curious Nexus connects approved researchers for institutional joint research, milestone verification, publication co-authoring, and peer syncs.
-                  </p>
-                  
-                  <div className="grid grid-cols-3 gap-3 pt-2">
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center space-y-1">
-                      <span className="text-2xs font-bold text-slate-400 uppercase">Milestones</span>
-                      <p className="text-lg font-bold font-mono text-slate-900">{completedMilestones}/{totalMilestones}</p>
-                    </div>
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center space-y-1">
-                      <span className="text-2xs font-bold text-slate-400 uppercase">Shared Files</span>
-                      <p className="text-lg font-mono font-bold text-slate-900">{activeWorkspace.files?.length || 0}</p>
-                    </div>
-                    <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center space-y-1">
-                      <span className="text-2xs font-bold text-slate-400 uppercase">Meetings</span>
-                      <p className="text-lg font-mono font-bold text-slate-900">{meetings.length}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Primary Communication Channel Card */}
-                <div className="cb-card p-6 bg-gradient-to-br from-slate-50 to-surface border border-slate-200/80 rounded-2xl flex flex-col justify-between space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium capitalize text-slate-400">Collaboration Tool</span>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                    </div>
-                    <h4 className="text-sm font-bold text-slate-900">
-                      {currentProvider === 'GOOGLE_WORKSPACE' ? 'Google Workspace' : currentProvider === 'ZOOM_WORKPLACE' ? 'Zoom Workplace' : 'External'}
-                    </h4>
-                    <p className="text-xs text-slate-500">
-                      {currentProvider === 'GOOGLE_WORKSPACE' 
-                        ? 'Google Chat Space for ongoing research discussions and Google Meet for scheduled calls.' 
-                        : 'Zoom Meetings for high-fidelity video discussions and screen sharing.'}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => setActiveTab('discussions')}
-                    className="w-full py-2 bg-primary hover:bg-primary/95 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                  >
-                    <span>Open Research Discussion</span>
-                    <ExternalLink className="w-3 h-3" />
-                  </button>
-                </div>
-
-              </div>
-            </motion.div>
-          )}
-
-          {/* ── 2. RESEARCH TAB ── */}
-          {activeTab === 'research' && (
-            <motion.div
-              key="research-tab"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl space-y-4 text-xs"
-            >
-              <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-primary" />
-                <span>Research Objectives & Scope</span>
-              </h3>
-              <p className="text-slate-600 leading-relaxed">
-                {activeWorkspace.description || 'This collaboration aims to address computational and theoretical frameworks in the designated research domains.'}
-              </p>
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
-                <span className="font-medium text-slate-700 capitalize text-xs">Institutional Governance</span>
-                <p className="text-slate-500">
-                  All research conducted under this Curious Nexus complies with SRMIST Academic Integrity and Ethics Guidelines.
-                </p>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ── 3. TASKS TAB (MILESTONES) ── */}
-          {activeTab === 'tasks' && (
-            <motion.div
-              key="tasks-tab"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="space-y-4"
-            >
-              <div className="flex justify-between items-center">
-                <h3 className="text-xs font-medium capitalize text-slate-400">Collaboration Milestones</h3>
-                <button 
-                  onClick={() => setShowMilestoneModal(true)} 
-                  className="flex items-center space-x-1.5 px-3 py-2 bg-primary hover:bg-primary/95 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Milestone</span>
-                </button>
-              </div>
-
-              {activeWorkspace.milestones && activeWorkspace.milestones.length > 0 ? (
-                <div className="space-y-3">
-                  {activeWorkspace.milestones.map((milestone) => (
-                    <div 
-                      key={milestone.id} 
-                      className={`cb-card p-4 border rounded-xl flex items-start justify-between gap-4 transition-all bg-surface ${
-                        milestone.completed ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-200/80 hover:border-primary/40'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        <button
-                          onClick={() => toggleWorkspaceMilestone(workspaceId, milestone.id, !milestone.completed)}
-                          className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center transition-colors cursor-pointer ${
-                            milestone.completed 
-                              ? 'bg-success border-emerald-600 text-white' 
-                              : 'border-slate-300 hover:border-primary bg-surface'
-                          }`}
-                        >
-                          {milestone.completed && <Check className="w-3.5 h-3.5" />}
-                        </button>
-                        <div className="space-y-1">
-                          <h4 className={`text-xs font-bold ${milestone.completed ? 'line-through text-slate-400' : 'text-slate-900'}`}>
-                            {milestone.title}
-                          </h4>
-                          {milestone.description && (
-                            <p className="text-xs text-slate-500 leading-relaxed">{milestone.description}</p>
-                          )}
-                          {milestone.dueDate && (
-                            <span className="inline-flex items-center gap-1 text-2xs font-mono font-bold text-slate-400">
-                              <Calendar className="w-3 h-3" />
-                              <span>Due {new Date(milestone.dueDate).toLocaleDateString()}</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <span className={`px-2 py-0.5 rounded text-2xs font-bold uppercase font-mono ${
-                        milestone.completed ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
-                      }`}>
-                        {milestone.completed ? 'Completed' : 'Pending'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 cb-card bg-surface border border-slate-200/80 rounded-xl space-y-3">
-                  <CheckSquare className="w-8 h-8 text-slate-300 mx-auto" />
-                  <p className="text-xs font-bold text-slate-700">No milestones yet</p>
-                  <p className="text-xs text-slate-400">Create research targets and progress deliverables for this collaboration.</p>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {/* ── 4. PUBLICATIONS TAB ── */}
-          {activeTab === 'publications' && (
-            <motion.div
-              key="publications-tab"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl space-y-4"
-            >
-              <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-primary" />
-                <span>Associated Publications & Drafts</span>
-              </h3>
-              <p className="text-xs text-slate-500">
-                Manuscripts, conference pre-prints, and journal submissions linked to this research node.
-              </p>
-              <div className="p-8 border border-dashed border-slate-200 rounded-xl text-center space-y-2">
-                <FileText className="w-8 h-8 text-slate-300 mx-auto" />
-                <p className="text-xs font-bold text-slate-700">No linked publications yet</p>
-                <p className="text-xs text-slate-400">Manuscripts will appear here once submitted or linked from Publications module.</p>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ── 5. FILES TAB ── */}
-          {activeTab === 'files' && (
-            <motion.div
-              key="files-tab"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="space-y-4"
-            >
-              <div className="flex justify-between items-center">
-                <h3 className="text-xs font-medium capitalize text-slate-400">Shared Documents & Artifacts</h3>
-                <button 
-                  onClick={() => setShowFileModal(true)} 
-                  className="flex items-center space-x-1.5 px-3 py-2 bg-primary hover:bg-primary/95 text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
-                >
-                  <UploadCloud className="w-3.5 h-3.5" />
-                  <span>Upload Resource</span>
-                </button>
-              </div>
-
-              {activeWorkspace.files && activeWorkspace.files.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {activeWorkspace.files.map((file) => (
-                    <div 
-                      key={file.id} 
-                      className="cb-card p-4 flex items-start justify-between hover:border-primary/40 transition-all bg-surface border border-slate-200/80 rounded-xl"
-                    >
-                      <div className="flex items-start space-x-3 text-left min-w-0">
-                        <div className="w-9 h-9 rounded-lg border border-blue-100 bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-                          <FileText className="w-5 h-5" />
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="text-xs font-bold text-slate-900 truncate" title={file.name}>
-                            {file.name}
-                          </h4>
-                          <p className="text-xs text-slate-400 font-medium capitalize mt-0.5">
-                            Uploaded by {file.uploadedBy?.name || 'Academic'} | {formatWorkspaceFileSize(file)}
+      <div id="ws-panel" role="tabpanel" aria-labelledby={`ws-tab-${activeTab}`} key={activeTab} className="cb-page-enter">
+        {/* ── Overview ── */}
+        {activeTab === 'overview' && (
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className="min-w-0 space-y-6 lg:col-span-2">
+              <Card>
+                <CardHeader
+                  title="Updates"
+                  description="Notes for everyone in this workspace."
+                  actions={
+                    <Button variant="secondary" size="sm" onClick={() => setUpdateOpen(true)}>
+                      <Plus aria-hidden />
+                      Post update
+                    </Button>
+                  }
+                />
+                {announcements.length > 0 ? (
+                  <ul className="divide-y divide-line">
+                    {announcements.map((a) => (
+                      <li key={a.id} className="flex gap-3 px-5 py-4">
+                        <Avatar src={a.author?.image} />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-ink-muted">
+                            <span className="font-medium text-ink">{a.author?.name || 'A member'}</span> · {formatDate(a.createdAt)}
                           </p>
+                          <h3 className="mt-1 text-sm font-semibold text-ink">{a.title}</h3>
+                          <p className="mt-1 whitespace-pre-line break-words text-sm text-ink-secondary">{a.content}</p>
                         </div>
-                      </div>
-                      <WorkspaceFileDownloadButton
-                        workspaceId={workspaceId}
-                        file={file}
-                        className="px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-primary hover:bg-primary hover:text-white transition-all text-xs font-medium capitalize shrink-0 ml-2 flex items-center gap-1 cursor-pointer"
-                      />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12 cb-card bg-surface border border-slate-200/80 rounded-xl space-y-3">
-                  <UploadCloud className="w-8 h-8 text-slate-300 mx-auto" />
-                  <p className="text-xs font-bold text-slate-700">No resources shared yet</p>
-                  <p className="text-xs text-slate-400">Upload research datasets, code snippets, or draft documents.</p>
-                </div>
-              )}
-            </motion.div>
-          )}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <EmptyState
+                    icon={Megaphone}
+                    title="No updates yet"
+                    description="Post an update to share progress, decisions or next steps with the other members."
+                    className="py-10"
+                  />
+                )}
+              </Card>
 
-          {/* ── 6. DISCUSSIONS TAB (GOOGLE CHAT / ZOOM CHAT) ── */}
-          {activeTab === 'discussions' && (
-            <motion.div
-              key="discussions-tab"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="space-y-6"
-            >
-              {currentProvider === 'GOOGLE_WORKSPACE' ? (
-                /* Google Chat Space Integration Card */
-                <div className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl shadow-xs space-y-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-200/60 flex items-center justify-center p-2.5 shadow-2xs">
-                        <MessageSquare className="w-6 h-6 text-blue-600" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-display font-bold text-base text-slate-900">Google Chat Research Space</h3>
-                          <span className="text-2xs font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span>Connected</span>
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500 font-medium mt-0.5">
-                          Dedicated external space for "{activeWorkspace.title}"
-                        </p>
-                      </div>
-                    </div>
+              <Card>
+                <CardHeader
+                  title="Open milestones"
+                  description={milestones.length > 0 ? `${completedCount} of ${milestones.length} complete` : undefined}
+                  actions={
+                    milestones.length > 0 && (
+                      <Button variant="ghost" size="sm" onClick={() => selectTab('tasks')}>
+                        View all
+                      </Button>
+                    )
+                  }
+                />
+                {openMilestones.length > 0 ? (
+                  <ul className="divide-y divide-line">
+                    {openMilestones.slice(0, 4).map((m) => (
+                      <li key={m.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                        <span className="min-w-0 truncate text-sm text-ink">{m.title}</span>
+                        {m.dueDate &&
+                          (isOverdue(m.dueDate) ? (
+                            <StatusBadge status="OVERDUE" />
+                          ) : (
+                            <span className="shrink-0 text-sm tabular-nums text-ink-muted">Due {formatDate(m.dueDate)}</span>
+                          ))}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="px-5 py-6 text-sm text-ink-muted">
+                    {milestones.length > 0
+                      ? 'Every milestone is complete.'
+                      : canAddMilestones
+                        ? 'Add milestones to track what this workspace is working towards.'
+                        : 'The workspace owner has not added milestones yet.'}
+                  </p>
+                )}
+              </Card>
+            </div>
 
-                    {activeWorkspace.googleChatSpaceUrl ? (
-                      <a
-                        href={activeWorkspace.googleChatSpaceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-4 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
-                      >
-                        <span>Open Research Discussion</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    ) : (
-                      <button
-                        onClick={handleConnectGoogleChat}
-                        disabled={connectingChat}
-                        className="px-4 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
-                      >
-                        {connectingChat ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            <span>Provisioning Space...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Connect Google Chat Space</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5">
-                      <span className="font-medium text-slate-400 capitalize text-xs">Space Name</span>
-                      <p className="font-bold text-slate-800">CuriousBees · {activeWorkspace.title}</p>
-                    </div>
-                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-1.5">
-                      <span className="font-medium text-slate-400 capitalize text-xs">Space Membership</span>
-                      <p className="text-slate-600">{activeWorkspace.members?.length || 2} Approved Collaborators</p>
-                    </div>
-                  </div>
-
-                  <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100 text-xs text-slate-600 flex items-start gap-3">
-                    <Sparkles className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-                    <p>
-                      All ongoing peer communication, file attachments, and direct messages take place securely inside your institutional Google Chat space. CuriousBees stores zero message transcripts.
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                /* Zoom Workplace / External Channel Card */
-                <div className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl shadow-xs space-y-6">
-                  <div className="flex items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center p-2.5">
-                      <Video className="w-6 h-6 text-blue-500" />
-                    </div>
+            <div className="min-w-0 space-y-6">
+              <Card>
+                <CardHeader title="Next meeting" />
+                <CardBody>
+                  {nextMeeting ? (
                     <div>
-                      <h3 className="font-display font-bold text-base text-slate-900">Zoom Workplace Collaboration</h3>
-                      <p className="text-xs text-slate-500 font-medium mt-0.5">
-                        Selected platform for video conferencing and research meetings.
+                      <p className="text-sm font-semibold text-ink">{nextMeeting.title}</p>
+                      <p className="mt-1 text-sm text-ink-secondary">
+                        {formatDate(nextMeeting.scheduledAt)} · {formatTime(nextMeeting.scheduledAt)}
+                      </p>
+                      <p className="text-sm text-ink-muted">
+                        {MEETING_PROVIDER_LABEL[nextMeeting.provider]} · {nextMeeting.duration} min
+                      </p>
+                      {nextMeeting.meetingUrl && (
+                        <a
+                          href={nextMeeting.meetingUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={cn(buttonVariants({ size: 'sm' }), 'mt-4 w-full')}
+                        >
+                          Join meeting
+                          <ExternalLink aria-hidden />
+                        </a>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-ink-muted">Nothing scheduled.</p>
+                      <Button variant="secondary" size="sm" className="mt-3 w-full" onClick={openMeetingDialog}>
+                        Schedule meeting
+                      </Button>
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader title="About" />
+                <CardBody>
+                  <dl className="grid grid-cols-1 gap-4">
+                    {domain && <DetailItem label="Research domain">{domain}</DetailItem>}
+                    {topic && <DetailItem label="Topic">{topic}</DetailItem>}
+                    {workspace.supervisor?.name && <DetailItem label="Supervisor">{workspace.supervisor.name}</DetailItem>}
+                    <DetailItem label="Collaboration tool">{COLLAB_PROVIDER_LABEL[provider]}</DetailItem>
+                    <DetailItem label="Created">{formatDate(workspace.createdAt)}</DetailItem>
+                  </dl>
+                </CardBody>
+              </Card>
+
+              <Card>
+                <CardHeader title="Members" />
+                <ul className="divide-y divide-line">
+                  {members.map((m) => (
+                    <li key={m.userId} className="flex items-center gap-3 px-5 py-3">
+                      <Avatar src={m.user?.image} />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-ink">
+                          {m.user?.name || m.user?.email || 'Member'}
+                          {m.userId === currentUser?.id && <span className="font-normal text-ink-muted"> (you)</span>}
+                        </p>
+                        {m.user?.department && <p className="truncate text-xs text-ink-muted">{m.user.department}</p>}
+                      </div>
+                      <Badge tone={m.role === 'OWNER' ? 'brand' : 'neutral'}>{m.role === 'OWNER' ? 'Owner' : 'Member'}</Badge>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* ── Milestones ── */}
+        {activeTab === 'tasks' && (
+          <Card>
+            <CardHeader
+              title="Milestones"
+              description={
+                canAddMilestones
+                  ? 'Targets for this workspace. Any member can mark one complete.'
+                  : 'The workspace owner sets milestones. Any member can mark one complete.'
+              }
+              actions={
+                canAddMilestones && (
+                  <Button size="sm" onClick={() => setMilestoneOpen(true)}>
+                    <Plus aria-hidden />
+                    Add milestone
+                  </Button>
+                )
+              }
+            />
+            {milestones.length > 0 ? (
+              <ul className="divide-y divide-line">
+                {milestones.map((m) => {
+                  const overdue = !m.completed && isOverdue(m.dueDate);
+                  return (
+                    <li key={m.id} className="flex items-start gap-3 px-5 py-4">
+                      <button
+                        type="button"
+                        role="checkbox"
+                        aria-checked={m.completed}
+                        aria-label={`Mark "${m.title}" ${m.completed ? 'not complete' : 'complete'}`}
+                        disabled={togglingId === m.id}
+                        onClick={() => handleToggleMilestone(m.id, !m.completed)}
+                        className={cn(
+                          'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border transition-colors duration-fast disabled:opacity-50',
+                          m.completed ? 'border-success-600 bg-success text-white' : 'border-line-strong bg-surface hover:border-brand-500',
+                        )}
+                      >
+                        {m.completed && <Check className="size-3.5" aria-hidden />}
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <p className={cn('text-sm font-medium', m.completed ? 'text-ink-muted line-through' : 'text-ink')}>{m.title}</p>
+                        {m.description && <p className="mt-0.5 text-sm text-ink-muted">{m.description}</p>}
+                        {m.dueDate && (
+                          <p className="mt-1 inline-flex items-center gap-1 text-xs text-ink-muted">
+                            <Calendar className="size-3.5" aria-hidden />
+                            Due {formatDate(m.dueDate)}
+                          </p>
+                        )}
+                      </div>
+                      {m.completed ? <StatusBadge status="COMPLETED" /> : overdue ? <StatusBadge status="OVERDUE" /> : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <EmptyState
+                icon={CheckSquare}
+                title="No milestones yet"
+                description={
+                  canAddMilestones
+                    ? 'Break the research into deliverables with due dates so everyone can see progress.'
+                    : 'Milestones added by the workspace owner will appear here.'
+                }
+                action={
+                  canAddMilestones && (
+                    <Button onClick={() => setMilestoneOpen(true)}>
+                      <Plus aria-hidden />
+                      Add milestone
+                    </Button>
+                  )
+                }
+              />
+            )}
+          </Card>
+        )}
+
+        {/* ── Files ── */}
+        {activeTab === 'files' && (
+          <Card>
+            <CardHeader
+              title="Files"
+              description="Uploads are stored privately and open only for workspace members."
+              actions={
+                <Button size="sm" onClick={() => setFileOpen(true)}>
+                  <Plus aria-hidden />
+                  Add file
+                </Button>
+              }
+            />
+            {files.length > 0 ? (
+              <ul className="divide-y divide-line">
+                {files.map((file) => (
+                  <li key={file.id} className="flex items-center gap-3 px-5 py-3.5">
+                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-muted text-ink-muted">
+                      {file.storageKey ? <FileText className="size-4" aria-hidden /> : <Link2 className="size-4" aria-hidden />}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-ink" title={file.name}>
+                        {file.name}
+                      </p>
+                      <p className="truncate text-xs text-ink-muted">
+                        {[file.uploadedBy?.name, formatDate(file.uploadedAt), formatWorkspaceFileSize(file)].filter(Boolean).join(' · ')}
                       </p>
                     </div>
-                  </div>
-                  <button
-                    onClick={() => { setActiveTab('meetings'); setShowMeetingModal(true); }}
-                    className="px-4 py-2.5 bg-brand hover:bg-brand-strong text-white rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer"
-                  >
-                    <Video className="w-3.5 h-3.5" />
-                    <span>Schedule Zoom Discussion</span>
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {/* ── 7. MEETINGS TAB (GOOGLE MEET & ZOOM) ── */}
-          {activeTab === 'meetings' && (
-            <motion.div
-              key="meetings-tab"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="space-y-6"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-base font-display font-bold text-slate-900">Research Meetings</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Schedule and join video conferencing syncs for this research collaboration.
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => setShowMeetingModal(true)}
-                  className="px-4 py-2.5 bg-primary hover:bg-primary/95 text-white rounded-xl text-xs font-medium capitalize flex items-center gap-2 shadow-xs transition-all cursor-pointer self-start sm:self-auto"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Schedule Meeting</span>
-                </button>
-              </div>
-
-              {/* Upcoming Meetings Section */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs font-medium text-slate-400 capitalize">
-                  <CalendarCheck2 className="w-3.5 h-3.5 text-primary" />
-                  <span>Upcoming Meetings ({upcomingMeetings.length})</span>
-                </div>
-
-                {upcomingMeetings.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {upcomingMeetings.map((meeting) => {
-                      const meetDate = new Date(meeting.scheduledAt);
-                      const isGoogle = meeting.provider === 'GOOGLE_MEET';
-                      const isZoom = meeting.provider === 'ZOOM';
-
-                      return (
-                        <div 
-                          key={meeting.id}
-                          className="cb-card p-5 bg-surface border border-slate-200/80 rounded-2xl shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between space-y-4"
-                        >
-                          <div className="space-y-2.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-2xs font-bold uppercase ${
-                                isGoogle 
-                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
-                                  : isZoom 
-                                  ? 'bg-blue-50 text-blue-500 border border-blue-200' 
-                                  : 'bg-purple-50 text-purple-700 border border-purple-200'
-                              }`}>
-                                <Video className="w-3 h-3" />
-                                <span>{isGoogle ? 'Google Meet' : isZoom ? 'Zoom Workplace' : 'External'}</span>
-                              </span>
-
-                              <span className="text-2xs font-mono font-bold text-slate-500">
-                                {meeting.duration} mins
-                              </span>
-                            </div>
-
-                            <h4 className="font-display font-bold text-sm text-slate-900 leading-snug">
-                              {meeting.title}
-                            </h4>
-
-                            {meeting.description && (
-                              <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                                {meeting.description}
-                              </p>
-                            )}
-
-                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-                              <div className="flex items-center gap-1.5">
-                                <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                                <span className="font-semibold">
-                                  {meetDate.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
-                                </span>
-                                <span>·</span>
-                                <span className="font-mono font-bold text-slate-900">
-                                  {meetDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              </div>
-                              <span className="text-2xs text-slate-400 font-medium">
-                                Host: {meeting.createdBy?.name?.split(' ')[0] || 'Peer'}
-                              </span>
-                            </div>
-                          </div>
-
-                          <div className="pt-2 flex items-center gap-2">
-                            <a
-                              href={meeting.meetingUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex-1 py-2 bg-primary hover:bg-primary/95 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs"
-                            >
-                              <span>Join Meeting</span>
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                            {meeting.createdById === currentUser?.id && (
-                              <button
-                                onClick={() => {
-                                  if (confirm('Cancel this scheduled meeting?')) {
-                                    cancelWorkspaceMeeting(workspaceId, meeting.id);
-                                  }
-                                }}
-                                className="px-3 py-2 text-xs font-bold text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                              >
-                                Cancel
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="p-8 cb-card bg-surface border border-slate-200/80 rounded-2xl text-center space-y-3">
-                    <Video className="w-8 h-8 text-slate-300 mx-auto" />
-                    <p className="text-xs font-bold text-slate-700">No upcoming meetings scheduled</p>
-                    <p className="text-xs text-slate-400">Click "Schedule Meeting" to coordinate your next research review.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Past Meetings Section */}
-              {pastMeetings.length > 0 && (
-                <div className="space-y-3 pt-4 border-t border-slate-200/80">
-                  <span className="text-xs font-medium text-slate-400 capitalize">
-                    Past Meetings & Archives
-                  </span>
-                  <div className="space-y-2">
-                    {pastMeetings.map((meeting) => (
-                      <div 
-                        key={meeting.id}
-                        className="p-3.5 bg-slate-50 rounded-xl border border-slate-200/60 flex items-center justify-between text-xs"
-                      >
-                        <div className="space-y-0.5">
-                          <h5 className="font-bold text-slate-800">{meeting.title}</h5>
-                          <p className="text-2xs text-slate-400 font-mono">
-                            {new Date(meeting.scheduledAt).toLocaleDateString()} · {meeting.duration} mins · {meeting.provider}
-                          </p>
-                        </div>
-                        <span className="text-xs font-medium capitalize text-slate-400 bg-slate-200/60 px-2 py-0.5 rounded">
-                          {meeting.status}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {/* ── 8. ACTIVITY TAB ── */}
-          {activeTab === 'activity' && (
-            <motion.div
-              key="activity-tab"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl space-y-4"
-            >
-              <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                <Activity className="w-4 h-4 text-primary" />
-                <span>Collaboration Audit & Activity Log</span>
-              </h3>
-              <div className="space-y-3 pt-2 text-xs">
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <p className="font-bold text-slate-800">Curious Nexus Workspace Synchronized</p>
-                    <p className="text-slate-500 text-2xs">Secure node established between research scholars and supervisors.</p>
-                  </div>
-                  <span className="text-2xs font-mono text-slate-400 font-bold">Node Ready</span>
-                </div>
-                {meetings.map((m) => (
-                  <div key={m.id} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <p className="font-bold text-slate-800">Meeting Scheduled: {m.title}</p>
-                      <p className="text-slate-500 text-2xs">Scheduled via {m.provider} for {new Date(m.scheduledAt).toLocaleString()}.</p>
-                    </div>
-                    <span className="text-2xs font-mono text-slate-400 font-bold">{m.status}</span>
-                  </div>
+                    <WorkspaceFileDownloadButton
+                      workspaceId={workspaceId}
+                      file={file}
+                      label={file.storageKey ? 'Download' : 'Open'}
+                      className={buttonVariants({ variant: 'secondary', size: 'sm' })}
+                    />
+                  </li>
                 ))}
-              </div>
-            </motion.div>
-          )}
+              </ul>
+            ) : (
+              <EmptyState
+                icon={UploadCloud}
+                title="No files yet"
+                description="Upload papers, datasets or drafts (up to 50 MB), or link to something stored elsewhere."
+                action={
+                  <Button onClick={() => setFileOpen(true)}>
+                    <Plus aria-hidden />
+                    Add file
+                  </Button>
+                }
+              />
+            )}
+          </Card>
+        )}
 
-          {/* ── 9. INTEGRATIONS TAB ── */}
-          {activeTab === 'integrations' && (
-            <motion.div
-              key="integrations-tab"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              className="space-y-6"
-            >
-              <div className="cb-card p-6 bg-surface border border-slate-200/80 rounded-2xl shadow-xs space-y-6">
-                <div>
-                  <h3 className="text-base font-display font-bold text-slate-900">Workspace Collaboration Platform</h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Select the primary communication infrastructure for this research collaboration.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Google Workspace Option */}
-                  <div 
-                    onClick={() => setWorkspaceCollaborationProvider(workspaceId, 'GOOGLE_WORKSPACE')}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
-                      currentProvider === 'GOOGLE_WORKSPACE' 
-                        ? 'border-primary bg-primary/5 shadow-xs ring-1 ring-primary/20' 
-                        : 'border-slate-200 bg-surface hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <h4 className="font-bold text-sm text-slate-900">Google Workspace</h4>
-                        <p className="text-xs text-slate-500 font-medium">Google Chat Spaces & Google Meet</p>
-                      </div>
-                      <input 
-                        type="radio" 
-                        name="collabProvider" 
-                        checked={currentProvider === 'GOOGLE_WORKSPACE'} 
-                        onChange={() => setWorkspaceCollaborationProvider(workspaceId, 'GOOGLE_WORKSPACE')}
-                        className="mt-1"
-                      />
-                    </div>
-                    <span className="text-2xs font-bold uppercase text-primary font-mono">Primary SRM Provider</span>
-                  </div>
-
-                  {/* Zoom Workplace Option */}
-                  <div 
-                    onClick={() => setWorkspaceCollaborationProvider(workspaceId, 'ZOOM_WORKPLACE')}
-                    className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
-                      currentProvider === 'ZOOM_WORKPLACE' 
-                        ? 'border-blue-500 bg-blue-500/5 shadow-xs ring-1 ring-blue-500/20' 
-                        : 'border-slate-200 bg-surface hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <h4 className="font-bold text-sm text-slate-900">Zoom Workplace</h4>
-                        <p className="text-xs text-slate-500 font-medium">Zoom Meetings & Video Conferencing</p>
-                      </div>
-                      <input 
-                        type="radio" 
-                        name="collabProvider" 
-                        checked={currentProvider === 'ZOOM_WORKPLACE'} 
-                        onChange={() => setWorkspaceCollaborationProvider(workspaceId, 'ZOOM_WORKPLACE')}
-                        className="mt-1"
-                      />
-                    </div>
-                    <span className="text-2xs font-bold uppercase text-blue-500 font-mono">Secondary Provider</span>
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Need to link or re-authorize external accounts?</span>
-                  <button
-                    onClick={() => router.push('/settings/integrations')}
-                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
-                  >
-                    <span>Manage External Connections</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
-        </AnimatePresence>
-      </div>
-
-      {/* ── 🗓️ SCHEDULE MEETING MODAL ── */}
-      {showMeetingModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="cb-card bg-surface max-w-lg w-full p-6 rounded-2xl shadow-xl space-y-5 relative">
-            <button 
-              onClick={() => setShowMeetingModal(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div>
-              <h3 className="text-lg font-bold font-display text-slate-900">Schedule Research Meeting</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Coordinate a video conference sync for this collaboration.
-              </p>
-            </div>
-
-            <form onSubmit={handleScheduleMeeting} className="space-y-4 text-xs">
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Meeting Title</label>
-                <input 
-                  type="text" 
-                  value={meetingTitle} 
-                  onChange={(e) => setMeetingTitle(e.target.value)}
-                  placeholder="e.g. Research Milestone Sync #03" 
-                  required
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-hidden"
+        {/* ── Meetings ── */}
+        {activeTab === 'meetings' && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader
+                title="Upcoming"
+                description="Meetings stay joinable for an hour after they start."
+                actions={
+                  <Button size="sm" onClick={openMeetingDialog}>
+                    <Plus aria-hidden />
+                    Schedule
+                  </Button>
+                }
+              />
+              {upcomingMeetings.length > 0 ? (
+                <ul className="divide-y divide-line">{upcomingMeetings.map(meetingRow)}</ul>
+              ) : (
+                <EmptyState
+                  icon={Video}
+                  title="No upcoming meetings"
+                  description="Schedule a Google Meet or Zoom call, or add a link to any other video tool."
+                  action={<Button onClick={openMeetingDialog}>Schedule meeting</Button>}
                 />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Description (Optional)</label>
-                <textarea 
-                  value={meetingDesc} 
-                  onChange={(e) => setMeetingDesc(e.target.value)}
-                  placeholder="Agenda points or discussion topics..."
-                  rows={2}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-hidden"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-700">Date</label>
-                  <input 
-                    type="date" 
-                    value={meetingDate} 
-                    onChange={(e) => setMeetingDate(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-hidden"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="font-bold text-slate-700">Time</label>
-                  <input 
-                    type="time" 
-                    value={meetingTime} 
-                    onChange={(e) => setMeetingTime(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-hidden"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Duration</label>
-                <select
-                  value={meetingDuration}
-                  onChange={(e) => setMeetingDuration(Number(e.target.value))}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-hidden"
-                >
-                  <option value={15}>15 Minutes</option>
-                  <option value={30}>30 Minutes</option>
-                  <option value={45}>45 Minutes</option>
-                  <option value={60}>60 Minutes (1 Hour)</option>
-                </select>
-              </div>
-
-              {/* Provider Selection */}
-              <div className="space-y-2 pt-1">
-                <label className="font-bold text-slate-700">Meeting Provider</label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setMeetingProvider('GOOGLE_MEET')}
-                    className={`py-2 px-2.5 rounded-lg border text-center transition-all cursor-pointer ${
-                      meetingProvider === 'GOOGLE_MEET'
-                        ? 'border-emerald-600 bg-emerald-50 text-emerald-800 font-bold'
-                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    Google Meet
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMeetingProvider('ZOOM')}
-                    className={`py-2 px-2.5 rounded-lg border text-center transition-all cursor-pointer ${
-                      meetingProvider === 'ZOOM'
-                        ? 'border-blue-500 bg-blue-500/10 text-blue-500 font-bold'
-                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    Zoom Workplace
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMeetingProvider('EXTERNAL')}
-                    className={`py-2 px-2.5 rounded-lg border text-center transition-all cursor-pointer ${
-                      meetingProvider === 'EXTERNAL'
-                        ? 'border-purple-600 bg-purple-50 text-purple-800 font-bold'
-                        : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    External Link
-                  </button>
-                </div>
-              </div>
-
-              {meetingProvider === 'EXTERNAL' && (
-                <div className="space-y-1.5 pt-1">
-                  <label className="font-bold text-slate-700">Custom Conference URL</label>
-                  <input 
-                    type="url" 
-                    value={customMeetingUrl} 
-                    onChange={(e) => setCustomMeetingUrl(e.target.value)}
-                    placeholder="https://teams.microsoft.com/... or https://..." 
-                    required
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary outline-hidden"
-                  />
-                </div>
               )}
+            </Card>
 
-              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowMeetingModal(false)}
-                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg font-bold transition-colors cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={schedulingMeeting}
-                  className="px-5 py-2 bg-primary hover:bg-primary/95 text-white rounded-lg font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs"
-                >
-                  {schedulingMeeting ? (
+            {pastMeetings.length > 0 && (
+              <Card>
+                <CardHeader title="Past and cancelled" />
+                <ul className="divide-y divide-line">
+                  {pastMeetings.map((m) => (
+                    <li key={m.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-ink">{m.title}</p>
+                        <p className="text-xs text-ink-muted">
+                          {formatDate(m.scheduledAt)} · {m.duration} min · {MEETING_PROVIDER_LABEL[m.provider]}
+                        </p>
+                      </div>
+                      {m.status === 'SCHEDULED' ? <Badge>Ended</Badge> : <StatusBadge status={m.status} />}
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+          </div>
+        )}
+
+        {/* ── Discussion ── */}
+        {activeTab === 'discussions' && (
+          <Card className="max-w-3xl">
+            {provider === 'GOOGLE_WORKSPACE' ? (
+              <>
+                <CardHeader
+                  title="Google Chat space"
+                  description="Ongoing conversation for this workspace happens in Google Chat. CuriousBees doesn't store the messages."
+                  actions={workspace.googleChatSpaceUrl ? <Badge tone="success">Connected</Badge> : <Badge>Not set up</Badge>}
+                />
+                <CardBody className="space-y-4">
+                  {workspace.googleChatSpaceUrl ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Scheduling...</span>
+                      <p className="text-sm text-ink-secondary">
+                        Every member of this workspace was invited to the space when it was created.
+                      </p>
+                      <a href={workspace.googleChatSpaceUrl} target="_blank" rel="noopener noreferrer" className={buttonVariants()}>
+                        <MessageSquare aria-hidden />
+                        Open in Google Chat
+                        <ExternalLink aria-hidden />
+                      </a>
                     </>
                   ) : (
-                    <span>Create Research Meeting</span>
+                    <>
+                      <p className="text-sm text-ink-secondary">
+                        Create a dedicated space and invite all {members.length} members. It's created with your Google account.
+                      </p>
+                      {integrationConnections && !googleConnected && (
+                        <p className="rounded-lg border border-warning-200 bg-warning-50 px-3 py-2 text-sm text-warning-800">
+                          Connect your Google Workspace account first.{' '}
+                          <Link href="/settings?tab=integrations" className="font-medium underline underline-offset-2">
+                            Go to connected apps
+                          </Link>
+                        </p>
+                      )}
+                      <Button onClick={handleConnectChat} loading={connectingChat} disabled={!!integrationConnections && !googleConnected}>
+                        <Plus aria-hidden />
+                        Create chat space
+                      </Button>
+                    </>
                   )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                </CardBody>
+              </>
+            ) : (
+              <>
+                <CardHeader title={COLLAB_PROVIDER_LABEL[provider]} description="This workspace talks things through in scheduled calls." />
+                <CardBody className="space-y-4">
+                  <p className="text-sm text-ink-secondary">
+                    {provider === 'ZOOM_WORKPLACE'
+                      ? 'Zoom has no chat space here. Schedule a Zoom meeting when the group needs to talk.'
+                      : 'Schedule a meeting with a link to the tool your group uses.'}{' '}
+                    To use a Google Chat space instead, switch the collaboration tool to Google Workspace.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button onClick={openMeetingDialog}>
+                      <Video aria-hidden />
+                      Schedule meeting
+                    </Button>
+                    <Button variant="secondary" onClick={() => selectTab('integrations')}>
+                      Change tool
+                    </Button>
+                  </div>
+                </CardBody>
+              </>
+            )}
+          </Card>
+        )}
 
-      {/* ── 📁 FILE UPLOAD MODAL ── */}
-      {showFileModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="cb-card bg-surface max-w-md w-full p-6 rounded-2xl shadow-xl space-y-4 relative">
-            <button 
+        {/* ── Activity ── */}
+        {activeTab === 'activity' && (
+          <Card className="max-w-3xl">
+            <CardHeader title="Activity" description="Files, milestones, updates and meetings in this workspace, newest first." />
+            <ol className="px-5 py-4">
+              {activity.map((item, i) => {
+                const Icon = item.icon;
+                return (
+                  <li key={item.id} className="relative flex gap-3 pb-5 last:pb-0">
+                    {i < activity.length - 1 && <span className="absolute left-4 top-9 h-[calc(100%-2.25rem)] w-px bg-line" aria-hidden />}
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface-muted text-ink-muted">
+                      <Icon className="size-4" aria-hidden />
+                    </span>
+                    <div className="min-w-0 pt-1">
+                      <p className="break-words text-sm text-ink-secondary">{item.text}</p>
+                      <p className="mt-0.5 flex items-center gap-1 text-xs text-ink-muted">
+                        <Clock className="size-3" aria-hidden />
+                        {formatDate(item.at)} {formatTime(item.at) && `· ${formatTime(item.at)}`}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </Card>
+        )}
+
+        {/* ── Tools ── */}
+        {activeTab === 'integrations' && (
+          <Card className="max-w-3xl">
+            <CardHeader
+              title="Collaboration tool"
+              description="Which service this workspace uses for its chat space and meetings. Any member can change it."
+            />
+            <CardBody>
+              <div role="radiogroup" aria-label="Collaboration tool" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {(
+                  [
+                    { id: 'GOOGLE_WORKSPACE', detail: 'Google Chat space and Google Meet', connected: googleConnected, account: integrationConnections?.google },
+                    { id: 'ZOOM_WORKPLACE', detail: 'Zoom meetings', connected: zoomConnected, account: integrationConnections?.zoom },
+                  ] as const
+                ).map((option) => {
+                  const selected = provider === option.id;
+                  return (
+                    <button
+                      key={option.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      disabled={!!savingProvider}
+                      onClick={() => handleSetProvider(option.id)}
+                      className={cn(
+                        'flex items-start gap-3 rounded-xl border p-4 text-left transition-colors duration-fast disabled:cursor-wait',
+                        selected ? 'border-brand-500 bg-brand-50 ring-1 ring-brand-500' : 'border-line bg-surface hover:border-line-strong',
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border',
+                          selected ? 'border-brand-600' : 'border-line-strong',
+                        )}
+                        aria-hidden
+                      >
+                        {selected && <span className="size-2 rounded-full bg-brand" />}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-medium text-ink">{COLLAB_PROVIDER_LABEL[option.id]}</span>
+                        <span className="block text-sm text-ink-muted">{option.detail}</span>
+                        <span className="mt-2 block text-xs text-ink-muted">
+                          {savingProvider === option.id
+                            ? 'Saving…'
+                            : option.connected
+                              ? `Your account: ${option.account?.externalAccountEmail || 'connected'}`
+                              : 'Your account is not connected'}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-5 flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-ink-muted">Meetings and chat spaces are created with the account of the person who sets them up.</p>
+                <Link href="/settings?tab=integrations" className={cn(buttonVariants({ variant: 'secondary', size: 'sm' }), 'shrink-0')}>
+                  <Settings2 aria-hidden />
+                  Connected apps
+                </Link>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+      </div>
+
+      {/* ── Dialogs ── */}
+      <Dialog
+        open={fileOpen}
+        onClose={() => {
+          setFileOpen(false);
+          resetFileForm();
+        }}
+        dismissible={!uploading}
+        title="Add a file"
+        description="Upload a file, or link to one stored elsewhere."
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              disabled={uploading}
               onClick={() => {
-                if (!isUploadingFile) {
-                  setShowFileModal(false);
-                  setSelectedFile(null);
+                setFileOpen(false);
+                resetFileForm();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" form="ws-file-form" loading={uploading} disabled={!selectedFile && !fileUrl.trim()}>
+              {selectedFile ? 'Upload' : 'Add link'}
+            </Button>
+          </>
+        }
+      >
+        <form id="ws-file-form" onSubmit={handleAddFile} className="space-y-4">
+          <div>
+            <input
+              type="file"
+              id="ws-file-input"
+              className="peer sr-only"
+              accept={ACCEPTED_FILES}
+              onChange={(e) => {
+                const file = e.target.files?.[0] || null;
+                setSelectedFile(file);
+                if (file) {
+                  setFileUrl('');
+                  if (!fileName) setFileName(file.name);
                 }
               }}
-              disabled={isUploadingFile}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 cursor-pointer disabled:opacity-50"
+            />
+            <label
+              htmlFor="ws-file-input"
+              className="flex cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 border-dashed border-line-strong bg-surface-muted px-4 py-6 text-center transition-colors duration-fast hover:border-brand-400 peer-focus-visible:border-brand-500 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-500/30"
             >
-              <X className="w-5 h-5" />
-            </button>
-            <div>
-              <h3 className="text-base font-bold text-slate-900">Upload Research Document</h3>
-              <p className="text-slate-500 text-xs">Direct encrypted S3 upload for papers, datasets, or presentations.</p>
-            </div>
-            <form onSubmit={handleUploadFile} className="space-y-3 text-xs">
-              {/* File Selector */}
-              <div className="space-y-1.5">
-                <label className="font-bold text-slate-700">Select File (Max 50MB)</label>
-                <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 text-center hover:border-primary/50 transition-colors bg-slate-50/50">
-                  <input
-                    type="file"
-                    id="research-file-input"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        setSelectedFile(file);
-                        if (!fileName) setFileName(file.name);
-                      }
-                    }}
-                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.png,.jpg,.jpeg,.txt,.csv"
-                  />
-                  <label htmlFor="research-file-input" className="cursor-pointer flex flex-col items-center gap-1.5">
-                    <UploadCloud className="w-8 h-8 text-primary" />
-                    {selectedFile ? (
-                      <div className="text-left w-full mt-1 px-2 py-1.5 bg-surface border border-slate-200 rounded-lg flex items-center justify-between">
-                        <span className="font-semibold text-slate-800 truncate max-w-[240px]">{selectedFile.name}</span>
-                        <span className="text-2xs text-slate-500 font-mono">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</span>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="font-bold text-slate-800 hover:text-primary">Click to browse file</span>
-                        <span className="text-2xs text-slate-400">PDF, Word, PPT, Excel, ZIP, Data up to 50MB</span>
-                      </>
+              <UploadCloud className="size-6 text-brand" aria-hidden />
+              {selectedFile ? (
+                <>
+                  <span className="max-w-full truncate text-sm font-medium text-ink">{selectedFile.name}</span>
+                  <span className="text-xs text-ink-muted">
+                    {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB · choose a different file
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm font-medium text-ink">Choose a file</span>
+                  <span className="text-xs text-ink-muted">PDF, Office documents, images, CSV, text or ZIP, up to 50 MB</span>
+                </>
+              )}
+            </label>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs text-ink-muted" aria-hidden>
+            <span className="h-px flex-1 bg-line" />
+            or
+            <span className="h-px flex-1 bg-line" />
+          </div>
+
+          <Field label="Link" htmlFor="ws-file-url" hint="A shared drive, repository or paper URL.">
+            <input
+              id="ws-file-url"
+              type="url"
+              value={fileUrl}
+              disabled={!!selectedFile}
+              onChange={(e) => setFileUrl(e.target.value)}
+              placeholder="https://"
+              className="cb-input"
+            />
+          </Field>
+
+          <Field label="Name" htmlFor="ws-file-name" hint="Optional. Shown to members instead of the file name.">
+            <input id="ws-file-name" type="text" value={fileName} onChange={(e) => setFileName(e.target.value)} className="cb-input" />
+          </Field>
+        </form>
+      </Dialog>
+
+      <Dialog
+        open={milestoneOpen}
+        onClose={() => setMilestoneOpen(false)}
+        dismissible={!savingMilestone}
+        title="Add a milestone"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setMilestoneOpen(false)} disabled={savingMilestone}>
+              Cancel
+            </Button>
+            <Button type="submit" form="ws-milestone-form" loading={savingMilestone} disabled={!milestoneTitle.trim()}>
+              Add milestone
+            </Button>
+          </>
+        }
+      >
+        <form id="ws-milestone-form" onSubmit={handleAddMilestone} className="space-y-4">
+          <Field label="Title" htmlFor="ws-ms-title" required>
+            <input id="ws-ms-title" type="text" required value={milestoneTitle} onChange={(e) => setMilestoneTitle(e.target.value)} className="cb-input" />
+          </Field>
+          <Field label="What counts as done" htmlFor="ws-ms-desc">
+            <textarea id="ws-ms-desc" rows={3} value={milestoneDesc} onChange={(e) => setMilestoneDesc(e.target.value)} className="cb-input resize-y" />
+          </Field>
+          <Field label="Due date" htmlFor="ws-ms-due">
+            <input id="ws-ms-due" type="date" value={milestoneDueDate} onChange={(e) => setMilestoneDueDate(e.target.value)} className="cb-input" />
+          </Field>
+        </form>
+      </Dialog>
+
+      <Dialog
+        open={updateOpen}
+        onClose={() => setUpdateOpen(false)}
+        dismissible={!postingUpdate}
+        title="Post an update"
+        description="Every member of this workspace will see it on the overview."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setUpdateOpen(false)} disabled={postingUpdate}>
+              Cancel
+            </Button>
+            <Button type="submit" form="ws-update-form" loading={postingUpdate} disabled={!updateTitle.trim() || !updateContent.trim()}>
+              Post update
+            </Button>
+          </>
+        }
+      >
+        <form id="ws-update-form" onSubmit={handlePostUpdate} className="space-y-4">
+          <Field label="Headline" htmlFor="ws-up-title" required>
+            <input id="ws-up-title" type="text" required value={updateTitle} onChange={(e) => setUpdateTitle(e.target.value)} className="cb-input" />
+          </Field>
+          <Field label="Details" htmlFor="ws-up-content" required>
+            <textarea
+              id="ws-up-content"
+              rows={5}
+              required
+              value={updateContent}
+              onChange={(e) => setUpdateContent(e.target.value)}
+              className="cb-input resize-y"
+            />
+          </Field>
+        </form>
+      </Dialog>
+
+      <Dialog
+        open={meetingOpen}
+        onClose={() => setMeetingOpen(false)}
+        dismissible={!scheduling}
+        size="lg"
+        title="Schedule a meeting"
+        description="Members are invited through the meeting service you choose."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setMeetingOpen(false)} disabled={scheduling}>
+              Cancel
+            </Button>
+            <Button type="submit" form="ws-meeting-form" loading={scheduling}>
+              Schedule
+            </Button>
+          </>
+        }
+      >
+        <form id="ws-meeting-form" onSubmit={handleScheduleMeeting} className="space-y-4">
+          <Field label="Title" htmlFor="ws-mt-title" required>
+            <input id="ws-mt-title" type="text" required value={meetingTitle} onChange={(e) => setMeetingTitle(e.target.value)} className="cb-input" />
+          </Field>
+          <Field label="Agenda" htmlFor="ws-mt-desc">
+            <textarea id="ws-mt-desc" rows={2} value={meetingDesc} onChange={(e) => setMeetingDesc(e.target.value)} className="cb-input resize-y" />
+          </Field>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Field label="Date" htmlFor="ws-mt-date" required>
+              <input id="ws-mt-date" type="date" required value={meetingDate} onChange={(e) => setMeetingDate(e.target.value)} className="cb-input" />
+            </Field>
+            <Field label="Start time" htmlFor="ws-mt-time" required>
+              <input id="ws-mt-time" type="time" required value={meetingTime} onChange={(e) => setMeetingTime(e.target.value)} className="cb-input" />
+            </Field>
+            <Field label="Length" htmlFor="ws-mt-duration">
+              <select id="ws-mt-duration" value={meetingDuration} onChange={(e) => setMeetingDuration(Number(e.target.value))} className="cb-input">
+                <option value={15}>15 minutes</option>
+                <option value={30}>30 minutes</option>
+                <option value={45}>45 minutes</option>
+                <option value={60}>1 hour</option>
+              </select>
+            </Field>
+          </div>
+
+          <fieldset>
+            <legend className="mb-1.5 block text-sm font-medium text-ink">Meeting service</legend>
+            <div role="radiogroup" className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {(['GOOGLE_MEET', 'ZOOM', 'EXTERNAL'] as const).map((p) => {
+                const selected = meetingProvider === p;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setMeetingProvider(p)}
+                    className={cn(
+                      'h-10 rounded-lg border px-3 text-sm transition-colors duration-fast',
+                      selected ? 'border-brand-500 bg-brand-50 font-medium text-brand-800 ring-1 ring-brand-500' : 'border-line text-ink-secondary hover:border-line-strong',
                     )}
-                  </label>
-                </div>
-              </div>
+                  >
+                    {MEETING_PROVIDER_LABEL[p]}
+                  </button>
+                );
+              })}
+            </div>
+            {integrationConnections && meetingProvider === 'GOOGLE_MEET' && !googleConnected && (
+              <p className="mt-2 text-sm text-warning-800">
+                Google Meet needs your Google Workspace account.{' '}
+                <Link href="/settings?tab=integrations" className="font-medium underline underline-offset-2">
+                  Connect it
+                </Link>
+              </p>
+            )}
+            {integrationConnections && meetingProvider === 'ZOOM' && !zoomConnected && (
+              <p className="mt-2 text-sm text-warning-800">
+                Zoom needs your Zoom account.{' '}
+                <Link href="/settings?tab=integrations" className="font-medium underline underline-offset-2">
+                  Connect it
+                </Link>
+              </p>
+            )}
+          </fieldset>
 
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Display Name (Optional)</label>
-                <input 
-                  type="text" 
-                  value={fileName} 
-                  onChange={(e) => setFileName(e.target.value)}
-                  placeholder="e.g. SRM-Research-Report-2026.pdf" 
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-hidden focus:border-primary"
-                />
-              </div>
+          {meetingProvider === 'EXTERNAL' && (
+            <Field label="Meeting link" htmlFor="ws-mt-url" required hint="Microsoft Teams, Jitsi or any other video call link.">
+              <input
+                id="ws-mt-url"
+                type="url"
+                required
+                value={customMeetingUrl}
+                onChange={(e) => setCustomMeetingUrl(e.target.value)}
+                placeholder="https://"
+                className="cb-input"
+              />
+            </Field>
+          )}
+        </form>
+      </Dialog>
 
-              <div className="relative flex py-1 items-center">
-                <div className="flex-grow border-t border-slate-200"></div>
-                <span className="flex-shrink mx-2 text-2xs font-bold text-slate-400 uppercase">OR External Link</span>
-                <div className="flex-grow border-t border-slate-200"></div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">External Resource URL</label>
-                <input 
-                  type="url" 
-                  value={fileUrl} 
-                  onChange={(e) => setFileUrl(e.target.value)}
-                  placeholder="https://drive.google.com/... or https://arxiv.org/..." 
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-hidden focus:border-primary"
-                />
-              </div>
-
-              <div className="pt-3 flex justify-end gap-2">
-                <button
-                  type="button"
-                  disabled={isUploadingFile}
-                  onClick={() => {
-                    setShowFileModal(false);
-                    setSelectedFile(null);
-                  }}
-                  className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-bold disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUploadingFile || (!selectedFile && !fileUrl)}
-                  className="px-4 py-1.5 bg-primary hover:bg-primary/95 text-white rounded-lg font-bold shadow-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                >
-                  {isUploadingFile && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  {isUploadingFile ? 'Uploading to S3...' : 'Upload Resource'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── 🎯 MILESTONE MODAL ── */}
-      {showMilestoneModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="cb-card bg-surface max-w-md w-full p-6 rounded-2xl shadow-xl space-y-4 relative">
-            <button 
-              onClick={() => setShowMilestoneModal(false)}
-              className="absolute top-5 right-5 text-slate-400 hover:text-slate-600 cursor-pointer"
-            >
-              <X className="w-5 h-5" />
-            </button>
-            <h3 className="text-base font-bold text-slate-900">Add Collaboration Milestone</h3>
-            <form onSubmit={handleCreateMilestone} className="space-y-3 text-xs">
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Milestone Title</label>
-                <input 
-                  type="text" 
-                  value={milestoneTitle} 
-                  onChange={(e) => setMilestoneTitle(e.target.value)}
-                  placeholder="e.g. Complete Baseline Benchmarking" 
-                  required
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-hidden focus:border-primary"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Description</label>
-                <textarea 
-                  value={milestoneDesc} 
-                  onChange={(e) => setMilestoneDesc(e.target.value)}
-                  placeholder="Deliverable criteria..."
-                  rows={2}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-hidden focus:border-primary"
-                />
-              </div>
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Target Due Date</label>
-                <input 
-                  type="date" 
-                  value={milestoneDueDate} 
-                  onChange={(e) => setMilestoneDueDate(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-xs outline-hidden focus:border-primary"
-                />
-              </div>
-              <div className="pt-3 flex justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowMilestoneModal(false)}
-                  className="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-lg font-bold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-1.5 bg-primary hover:bg-primary/95 text-white rounded-lg font-bold shadow-xs"
-                >
-                  Add Milestone
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
+      <Dialog
+        open={!!cancelTarget}
+        onClose={() => setCancelTarget(null)}
+        dismissible={!cancelling}
+        size="sm"
+        title="Cancel this meeting?"
+        description={cancelTarget ? `"${cancelTarget.title}" on ${formatDate(cancelTarget.scheduledAt)} will be marked as cancelled for every member.` : undefined}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setCancelTarget(null)} disabled={cancelling}>
+              Keep meeting
+            </Button>
+            <Button variant="danger" onClick={handleCancelMeeting} loading={cancelling}>
+              Cancel meeting
+            </Button>
+          </>
+        }
+      />
     </div>
   );
 }

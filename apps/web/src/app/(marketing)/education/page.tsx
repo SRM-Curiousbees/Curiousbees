@@ -1,67 +1,50 @@
-'use client';
+import type { Metadata } from 'next';
+import { MarketingPage, PointGrid } from '@/components/marketing/MarketingPage';
 
-import React from 'react';
-import MarketingNavbar from '@/components/marketing/MarketingNavbar';
-import MarketingFooter from '@/components/marketing/MarketingFooter';
-import CTASection from '@/components/marketing/CTASection';
-import { BookOpen, GraduationCap, PenTool, Lightbulb } from 'lucide-react';
+export const metadata: Metadata = {
+  title: 'For supervisors',
+  description: 'Review supervision requests, follow your scholars’ progress and work together in private research workspaces.',
+};
 
-export default function EducationPage() {
+export default function SupervisorsPage() {
   return (
-    <div className="bg-surface text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-primary/20">
-      <MarketingNavbar />
-      
-      <main className="flex-grow w-full pt-32 pb-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center max-w-3xl mx-auto mb-20">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium capitalize mb-4">
-              <GraduationCap className="w-4 h-4" />
-              Academic Growth
-            </span>
-            <h1 className="font-display text-4xl md:text-6xl font-semibold tracking-tight mb-6 text-slate-900">
-              Master the methodology of research.
-            </h1>
-            <p className="text-lg text-slate-500 leading-relaxed">
-              Gain access to structured learning pathways, methodology templates, and continuous mentorship to elevate the quality of your academic output.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-24">
-            <div className="bg-surface border border-slate-200 rounded-3xl p-8 hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 rounded-2xl bg-success text-white flex items-center justify-center mb-6">
-                <BookOpen className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Structured Methodology</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">
-                Access a library of university-approved templates for literature reviews, quantitative analyses, and qualitative studies. Ensure your methodology is rigorous from day one.
-              </p>
-            </div>
-            
-            <div className="bg-surface border border-slate-200 rounded-3xl p-8 hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 rounded-2xl bg-warning text-white flex items-center justify-center mb-6">
-                <Lightbulb className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Knowledge Sharing</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">
-                Learn from the successes and challenges of your peers. Participate in interdepartmental forums and read open drafts to understand successful proposal patterns.
-              </p>
-            </div>
-            
-            <div className="bg-surface border border-slate-200 rounded-3xl p-8 hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 rounded-2xl bg-plum text-white flex items-center justify-center mb-6">
-                <PenTool className="w-6 h-6" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-3">Collaborative Drafting</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">
-                Utilize integrated collaboration tools to co-author papers. Receive inline feedback from supervisors and ensure academic integrity before external submission.
-              </p>
-            </div>
-          </div>
-          
-        </div>
-        <CTASection />
-      </main>
-      <MarketingFooter />
-    </div>
+    <MarketingPage
+      label="For research supervisors"
+      title={
+        <>
+          Supervise with the <em className="font-normal italic">whole picture</em> in view.
+        </>
+      }
+      intro="Requests, progress reports and shared work for every scholar you supervise, in one panel instead of scattered inboxes."
+    >
+      <PointGrid
+        points={[
+          {
+            title: 'Decide on requests',
+            body: 'Read each scholar’s proposal and message, then accept or decline with a reason. Your scholar capacity is respected automatically.',
+          },
+          {
+            title: 'Review progress reports',
+            body: 'Mark each report on track, ask for more information, or flag it as delayed, with written feedback the scholar sees.',
+          },
+          {
+            title: 'Follow every scholar',
+            body: 'See each scholar’s research stage, milestones and reports from the Supervision Panel.',
+          },
+          {
+            title: 'Work in shared workspaces',
+            body: 'Private files (up to 50 MB each), milestones you set, updates and meetings on Google Meet, Zoom or any video link.',
+          },
+          {
+            title: 'Post opportunities',
+            body: 'Scholars in your department send join requests. Accepting one creates a shared workspace for you both.',
+          },
+          {
+            title: 'Keep your profile current',
+            body: 'Your publications, research areas and profile help scholars find the right supervisor.',
+          },
+        ]}
+      />
+    </MarketingPage>
   );
 }

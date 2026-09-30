@@ -12,57 +12,33 @@ export class AdminSettingsService {
     private auditHelper: AuditHelperService,
   ) {}
 
+  /**
+   * The configuration the platform is actually running with. These values come from
+   * server environment variables, so they are reported read-only; `stored` holds any
+   * governance settings saved through updateSetting (not currently read elsewhere).
+   */
   async getSettings() {
-    const settings = await this.prisma.systemSetting.findMany();
-    const map: Record<string, any> = {
-      general: {
-        institutionName: 'SRM Institute of Science and Technology',
-        institutionCode: 'SRMIST',
-        domain: 'srmist.edu.in',
-        portalTitle: 'CuriousBees Research Portal',
-      },
+    const stored = await this.prisma.systemSetting.findMany({ orderBy: { key: 'asc' } });
+    const configured = (...names: string[]) => names.some((n) => Boolean(process.env[n]?.trim()));
+
+    return {
       authentication: {
-        googleOAuthEnabled: true,
-        allowedDomains: ['srmist.edu.in', 'gmail.com'],
-        sessionTimeoutMinutes: 1440,
-        enforceInstitutionalEmail: false,
+        method: 'Google sign-in for accounts created by administrators',
+        allowedDomains: getAllowedEmailDomains(),
+        source: 'ALLOWED_EMAIL_DOMAINS',
       },
       email: {
         provider: 'Brevo',
-        senderName: 'CuriousBees Research Governance',
-        senderEmail: 'noreply@curiousbees.srmist.edu.in',
-        status: 'CONNECTED',
-      },
-      notifications: {
-        scholarRequestsInstant: true,
-        dailyDigestEnabled: true,
-        pushNotificationsEnabled: true,
-      },
-      security: {
-        auditRetentionDays: 365,
-        maxFailedLoginsBeforeLockout: 5,
-        mfaEnforced: false,
+        configured: configured('BREVO_API_KEY'),
+        senderEmail: process.env.MAIL_FROM_EMAIL || process.env.BREVO_SENDER_EMAIL || null,
+        senderName: process.env.MAIL_FROM_NAME || process.env.BREVO_SENDER_NAME || 'CuriousBees',
       },
       integrations: {
-        googleWorkspaceEnabled: true,
-        zoomWorkplaceEnabled: true,
-        externalLinksEnabled: true,
+        googleWorkspace: configured('GOOGLE_WORKSPACE_CLIENT_ID', 'GOOGLE_CLIENT_ID'),
+        zoomWorkplace: configured('ZOOM_WORKPLACE_CLIENT_ID', 'ZOOM_CLIENT_ID'),
       },
+      stored: stored.map((s) => ({ key: s.key, category: s.category, value: s.value, updatedAt: s.updatedAt })),
     };
-
-    settings.forEach((s) => {
-      map[s.key] = s.value;
-    });
-
-    // Sign-in domains are enforced from server configuration, not from this table.
-    map.authentication = {
-      ...(map.authentication || {}),
-      allowedDomains: getAllowedEmailDomains(),
-      allowedDomainsSource: 'ALLOWED_EMAIL_DOMAINS (server configuration)',
-    };
-    map.email = { ...(map.email || {}), senderEmail: process.env.MAIL_FROM_EMAIL || null };
-
-    return map;
   }
 
   async updateSetting(actor: any, key: string, value: any, category: string = 'GENERAL') {
@@ -102,49 +78,50 @@ export class AdminSettingsService {
     return updated;
   }
 
+  /**
+   * Email delivery as recorded by the platform. Supervision emails log their outcome
+   * (…_EMAIL_SENT / …_EMAIL_FAILED) in the audit log; nothing else is tracked, and
+   * Brevo's own delivery/bounce data is not fetched.
+   */
   async getEmailDeliveryStats() {
-    const [totalNotifications, totalTokens] = await Promise.all([
+    const sentWhere = { action: { endsWith: '_EMAIL_SENT' } };
+    const failedWhere = { action: { endsWith: '_EMAIL_FAILED' } };
+    const [sent, failed, recent, inAppNotifications, activePushDevices] = await Promise.all([
+      this.prisma.auditLog.count({ where: sentWhere }),
+      this.prisma.auditLog.count({ where: failedWhere }),
+      this.prisma.auditLog.findMany({
+        where: { OR: [sentWhere, failedWhere] },
+        orderBy: { createdAt: 'desc' },
+        take: 25,
+      }),
       this.prisma.notification.count(),
       this.prisma.notificationToken.count(),
     ]);
 
-    // Simulated authoritative Brevo health status based on environment config
-    const brevoApiKeyConfigured = Boolean(process.env.BREVO_API_KEY || process.env.SENDINBLUE_API_KEY);
+    const recentLogs = recent.map((log) => {
+      let details: any = {};
+      try {
+        details = log.details ? JSON.parse(log.details) : {};
+      } catch {
+        details = {};
+      }
+      return {
+        id: log.id,
+        recipient: details.supervisorEmail || details.scholarEmail || details.recipient || null,
+        template: log.action.replace(/_EMAIL_(SENT|FAILED)$/, ''),
+        status: log.action.endsWith('_EMAIL_SENT') ? 'SENT' : 'FAILED',
+        error: details.error || null,
+        timestamp: log.createdAt,
+      };
+    });
 
     return {
       provider: 'Brevo',
-      status: brevoApiKeyConfigured ? 'HEALTHY' : 'SIMULATED',
-      senderEmail: 'noreply@curiousbees.srmist.edu.in',
-      stats: {
-        emailsSent: Math.max(totalNotifications, 142),
-        emailsDelivered: Math.max(totalNotifications - 2, 140),
-        emailsFailed: 2,
-        bounced: 0,
-        activePushDevices: totalTokens,
-      },
-      recentLogs: [
-        {
-          id: 'log-1',
-          recipient: 'supervisor@srmist.edu.in',
-          template: 'SUPERVISOR_REQUEST_NOTIFICATION',
-          status: 'DELIVERED',
-          timestamp: new Date(Date.now() - 1000 * 60 * 15),
-        },
-        {
-          id: 'log-2',
-          recipient: 'scholar@srmist.edu.in',
-          template: 'SUPERVISION_ACCEPTED_CONFIRMATION',
-          status: 'DELIVERED',
-          timestamp: new Date(Date.now() - 1000 * 60 * 45),
-        },
-        {
-          id: 'log-3',
-          recipient: 'all-scholars@srmist.edu.in',
-          template: 'INSTITUTIONAL_ANNOUNCEMENT',
-          status: 'DELIVERED',
-          timestamp: new Date(Date.now() - 1000 * 60 * 120),
-        },
-      ],
+      configured: Boolean(process.env.BREVO_API_KEY),
+      senderEmail: process.env.MAIL_FROM_EMAIL || process.env.BREVO_SENDER_EMAIL || null,
+      trackedEmails: 'Supervision request, acceptance and decline emails',
+      stats: { emailsSent: sent, emailsFailed: failed, inAppNotifications, activePushDevices },
+      recentLogs,
     };
   }
 }

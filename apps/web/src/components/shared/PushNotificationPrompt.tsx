@@ -95,12 +95,13 @@ export function PushNotificationPrompt() {
     <AnimatePresence>
       {showPrompt && (
         <motion.div
-          role="dialog"
+          // A non-modal card: it sits below dialogs so it never covers their actions.
+          role="region"
           aria-labelledby="push-prompt-title"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 16 }}
-          className="fixed bottom-20 left-4 right-4 z-toast rounded-2xl border border-line bg-surface p-4 shadow-xl sm:bottom-6 sm:left-auto sm:right-6 sm:w-[360px]"
+          className="fixed bottom-20 left-4 right-4 z-dropdown rounded-2xl border border-line bg-surface p-4 shadow-xl sm:bottom-6 sm:left-auto sm:right-6 sm:w-[360px]"
         >
           <div className="flex gap-3">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-line bg-surface-muted text-ink-secondary">

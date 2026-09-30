@@ -186,7 +186,9 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
           type="button"
           onClick={() => setIsOpen(!isOpen)}
           aria-labelledby="venue-label"
-          aria-invalid={!!error}
+          aria-haspopup="listbox"
+          aria-expanded={isOpen}
+          aria-describedby={error ? 'venue-error' : undefined}
           className={`w-full px-3.5 py-2.5 bg-surface border ${
             error ? 'border-danger-500' : 'border-line-strong'
           } rounded-xl text-xs font-medium text-slate-800 focus:outline-none focus:border-brand focus:ring-1 focus:ring-brand transition-all flex items-center justify-between cursor-pointer min-h-[44px]`}
@@ -334,7 +336,7 @@ export function SRMVenueSelector({ value, onChange, error }: SRMVenueSelectorPro
       )}
 
       {error && (
-        <p role="alert" className="text-sm text-danger-700">{error}</p>
+        <p id="venue-error" role="alert" className="text-sm text-danger-700">{error}</p>
       )}
     </div>
   );

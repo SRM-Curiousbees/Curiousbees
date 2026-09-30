@@ -1,12 +1,12 @@
 import type { LucideIcon } from 'lucide-react';
 import {
+  GitMerge,
   BarChart3,
   BookMarked,
   BookOpen,
   Briefcase,
   Building,
   Calendar,
-  FileCheck2,
   FileText,
   FolderGit2,
   GraduationCap,
@@ -22,7 +22,6 @@ import {
   ShieldAlert,
   UserCheck,
   Users,
-  Bell,
 } from 'lucide-react';
 import type { UserRole } from '@curiousbees/types';
 
@@ -30,6 +29,10 @@ export interface NavItem {
   name: string;
   href: string;
   icon: LucideIcon;
+  /** Match only this exact path, not the pages below it. */
+  exact?: boolean;
+  /** Other path prefixes that belong to this item (e.g. detail pages that live elsewhere). */
+  alsoMatches?: string[];
 }
 
 export interface NavSection {
@@ -55,23 +58,21 @@ const ADMIN_NAV: NavSection[] = [
     items: [
       { name: 'Faculties & Depts', href: '/admin/faculties-departments', icon: Building },
       { name: 'Campuses', href: '/admin/campuses', icon: MapPin },
-      { name: 'Directory', href: '/admin/directory', icon: Users },
     ],
   },
   {
     title: 'Research governance',
     items: [
       { name: 'Research Activity', href: '/admin/research-activity', icon: BarChart3 },
+      { name: 'Supervision Requests', href: '/admin/scholar-requests', icon: GitMerge },
       { name: 'Workspaces', href: '/admin/research-workspaces', icon: FolderGit2 },
       { name: 'Publications', href: '/admin/publications', icon: BookOpen },
-      { name: 'Compliance', href: '/admin/compliance', icon: FileCheck2 },
     ],
   },
   {
     title: 'Moderation',
     items: [
       { name: 'Posts & Discussions', href: '/admin/posts', icon: MessageSquare },
-      { name: 'Publication Review', href: '/admin/publication-moderation', icon: BookMarked },
       { name: 'Reports & Queue', href: '/admin/moderation', icon: ShieldAlert },
     ],
   },
@@ -79,7 +80,6 @@ const ADMIN_NAV: NavSection[] = [
     title: 'Communication',
     items: [
       { name: 'Announcements', href: '/admin/announcements', icon: FileText },
-      { name: 'Notification Center', href: '/admin/notifications', icon: Bell },
       { name: 'Email Delivery', href: '/admin/email-delivery', icon: Mail },
     ],
   },
@@ -88,7 +88,6 @@ const ADMIN_NAV: NavSection[] = [
     items: [
       { name: 'Institutional Analytics', href: '/admin/analytics', icon: BarChart3 },
       { name: 'Audit Center', href: '/admin/audit', icon: History },
-      { name: 'Security Events', href: '/admin/security', icon: Lock },
       { name: 'System Settings', href: '/admin/settings', icon: Settings },
     ],
   },
@@ -97,8 +96,9 @@ const ADMIN_NAV: NavSection[] = [
 const SUPERVISOR_NAV: NavSection[] = [
   {
     items: [
+      { name: 'Overview', href: '/supervisor', icon: LayoutDashboard, exact: true },
       { name: 'Research Feed', href: '/feed', icon: MessageSquare },
-      { name: 'Supervision Panel', href: '/my-scholars', icon: UserCheck },
+      { name: 'Supervision Panel', href: '/my-scholars', icon: UserCheck, alsoMatches: ['/supervisor/requests', '/supervisor/approval-requests'] },
       { name: 'Research Workspaces', href: '/workspace', icon: FolderGit2 },
       { name: 'Publications', href: '/publications', icon: BookOpen },
     ],
@@ -149,12 +149,19 @@ export const ROLE_LABEL: Record<string, string> = {
 };
 
 /** True when `href` (optionally with ?tab=) matches the current location. */
-export function isNavItemActive(href: string, pathname: string, tab: string | null): boolean {
+export function isNavItemActive(
+  href: string,
+  pathname: string,
+  tab: string | null,
+  options: Pick<NavItem, 'exact' | 'alsoMatches'> = {},
+): boolean {
   const [path, query] = href.split('?');
   if (query) {
     return pathname === path && new URLSearchParams(query).get('tab') === tab;
   }
-  return pathname === path || pathname.startsWith(path + '/');
+  const under = (prefix: string) => pathname === prefix || pathname.startsWith(prefix + '/');
+  if (options.alsoMatches?.some(under)) return true;
+  return options.exact ? pathname === path : under(path);
 }
 
 /** Section + item for the current location, used for the top-bar context line. */
@@ -165,7 +172,7 @@ export function findNavContext(
 ): { section?: string; item?: NavItem } {
   for (const section of getNavSections(role)) {
     for (const item of section.items) {
-      if (isNavItemActive(item.href, pathname, tab)) return { section: section.title, item };
+      if (isNavItemActive(item.href, pathname, tab, item)) return { section: section.title, item };
     }
   }
   return {};

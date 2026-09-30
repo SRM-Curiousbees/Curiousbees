@@ -1,7 +1,11 @@
 'use client';
+import { thesisAbstract, thesisTitle } from '@/lib/research-profile';
 
 import React, { useState, useEffect } from 'react';
-import { X, Save, Loader2, Globe, AlertCircle } from 'lucide-react';
+import { Link2 } from 'lucide-react';
+import { Dialog } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Field } from '@/components/ui/field';
 import { useStore } from '@/store/useStore';
 import { apiFetch } from '@/lib/api-client';
 import { STAGES } from './ResearchLifecycle';
@@ -24,7 +28,6 @@ export function EditResearcherProfileDrawer({
   const { updateProfile, updateResearchProfile } = useStore();
 
   const isAdmin = user?.role === 'INSTITUTE_ADMIN';
-  const [activeTab, setActiveTab] = useState<'PROFILE' | 'LINKS'>('PROFILE');
 
   // Form State
   const [name, setName] = useState('');
@@ -92,9 +95,9 @@ export function EditResearcherProfileDrawer({
       }
 
       if (user.researchProfile) {
-        setResearchTitle(user.researchProfile.title || '');
+        setResearchTitle(thesisTitle(user.researchProfile) || '');
         setResearchArea(user.researchProfile.researchArea || '');
-        setAbstract(user.researchProfile.abstract || '');
+        setAbstract(thesisAbstract(user.researchProfile) || '');
         setCurrentStage(user.researchProfile.currentStage || 'PROPOSAL');
         setStatus(user.researchProfile.status || 'ACTIVE');
       }
@@ -124,8 +127,6 @@ export function EditResearcherProfileDrawer({
     }
   }, [departments, selectedDepartmentId, department, selectedFacultyId]);
 
-  if (!isOpen) return null;
-
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -149,7 +150,7 @@ export function EditResearcherProfileDrawer({
       if (!isAdmin && researchTitle.trim()) {
         await updateResearchProfile({
           title: researchTitle.trim(),
-          researchArea: researchArea.trim() || 'Computer Science',
+          researchArea: researchArea.trim(),
           abstract: abstract.trim(),
           currentStage,
           status,
@@ -166,251 +167,132 @@ export function EditResearcherProfileDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-surface rounded-2xl border border-slate-200 shadow-2xl max-w-xl w-full overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div>
-            <h3 className="text-lg font-semibold text-slate-900">Edit Profile</h3>
-            <p className="text-xs text-slate-500 font-medium">
-              Update your public profile details and research focus.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Section Tabs */}
-        <div className="flex border-b border-slate-200 bg-slate-50/30 px-6 gap-2 pt-2">
-          <button
-            onClick={() => setActiveTab('PROFILE')}
-            className={`px-4 py-2.5 text-xs font-extrabold border-b-2 transition-colors cursor-pointer ${
-              activeTab === 'PROFILE'
-                ? 'border-brand text-brand'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            Profile Information
-          </button>
-          <button
-            onClick={() => setActiveTab('LINKS')}
-            className={`px-4 py-2.5 text-xs font-extrabold border-b-2 transition-colors cursor-pointer ${
-              activeTab === 'LINKS'
-                ? 'border-brand text-brand'
-                : 'border-transparent text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            External Links
-          </button>
-        </div>
-
-        {/* Content Body */}
-        <div className="p-6 overflow-y-auto space-y-5 flex-1">
-          {errorMsg && (
-            <div className="p-3 rounded-xl bg-red-50 text-red-900 border border-red-200 text-xs font-bold flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
-              <span>{errorMsg}</span>
-            </div>
-          )}
-
-          {activeTab === 'PROFILE' && (
-            <form id="edit-profile-form" onSubmit={handleSave} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Institutional Campus</label>
-                  <div className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600">
-                    Kattankulathur Campus (KTR)
-                  </div>
-                </div>
-              </div>
-
-              {/* Canonical Hierarchy: Faculty -> Department */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Faculty</label>
-                  <select
-                    value={selectedFacultyId}
-                    onChange={(e) => {
-                      setSelectedFacultyId(e.target.value);
-                      setSelectedDepartmentId('');
-                    }}
-                    disabled={isLoadingOrg}
-                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer disabled:bg-slate-50 disabled:text-slate-400"
-                  >
-                    <option value="">Select Faculty...</option>
-                    {faculties.map((f) => (
-                      <option key={f.id} value={f.id}>{f.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Academic Department</label>
-                  <select
-                    value={selectedDepartmentId}
-                    onChange={(e) => setSelectedDepartmentId(e.target.value)}
-                    disabled={isLoadingOrg || !selectedFacultyId}
-                    className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer disabled:bg-slate-50 disabled:text-slate-400"
-                  >
-                    <option value="">Select Department...</option>
-                    {departments
-                      .filter((d) => !selectedFacultyId || d.facultyId === selectedFacultyId)
-                      .map((d) => (
-                        <option key={d.id} value={d.id}>{d.name}</option>
-                      ))}
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {isAdmin ? 'Administrative Bio / Overview' : 'Research Bio / Summary'}
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder={isAdmin ? 'Describe your institutional role and oversight areas...' : 'Describe your research focus, methodology, or academic statement...'}
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  className="w-full text-xs font-semibold p-3 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  {isAdmin ? 'Key Focus Areas (Comma-Separated)' : 'Research Interests (Comma-Separated)'}
-                </label>
-                <input
-                  type="text"
-                  placeholder="Artificial Intelligence, Research Policy, Analytics"
-                  value={interestsText}
-                  onChange={(e) => setInterestsText(e.target.value)}
-                  className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
-                />
-              </div>
-
-              {!isAdmin && (
-                <div className="pt-3 border-t border-slate-100 space-y-3">
-                  <h4 className="text-xs font-medium capitalize text-brand">
-                    Current Research Project
-                  </h4>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Research Project Title</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. AI-Based Research Collaboration Framework"
-                      value={researchTitle}
-                      onChange={(e) => setResearchTitle(e.target.value)}
-                      className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Research Area</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Artificial Intelligence"
-                        value={researchArea}
-                        onChange={(e) => setResearchArea(e.target.value)}
-                        className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">Current Research Stage</label>
-                      <select
-                        value={currentStage}
-                        onChange={(e) => setCurrentStage(e.target.value)}
-                        className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
-                      >
-                        {STAGES.map((stg) => (
-                          <option key={stg.id} value={stg.id}>
-                            {stg.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">Research Abstract</label>
-                    <textarea
-                      rows={3}
-                      placeholder="Short summary of current project methodology and goals..."
-                      value={abstract}
-                      onChange={(e) => setAbstract(e.target.value)}
-                      className="w-full text-xs font-semibold p-3 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
-                    />
-                  </div>
-                </div>
-              )}
-            </form>
-          )}
-
-          {activeTab === 'LINKS' && (
-            <div className="text-center py-8 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-3">
-              <Globe className="w-8 h-8 text-brand mx-auto" />
-              <div className="space-y-1">
-                <h4 className="text-sm font-semibold text-slate-900">Manage External Research Profiles</h4>
-                <p className="text-xs text-slate-500">
-                  Configure ORCID, Google Scholar, ResearchGate, GitHub, and LinkedIn profile URLs.
-                </p>
-              </div>
-              <button
-                onClick={onOpenLinksEditor}
-                className="px-5 py-2.5 bg-brand hover:bg-brand-strong text-white font-semibold text-xs rounded-xl shadow-2xs transition-all inline-flex items-center gap-2 cursor-pointer"
-              >
-                <Globe className="w-4 h-4" />
-                <span>Open Links Manager</span>
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
-          >
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      dismissible={!isSubmitting}
+      side="right"
+      title="Edit profile"
+      description="What other researchers see on your profile."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose} disabled={isSubmitting}>
             Cancel
-          </button>
+          </Button>
+          <Button type="submit" form="edit-profile-form" loading={isSubmitting}>
+            Save changes
+          </Button>
+        </>
+      }
+    >
+      <form id="edit-profile-form" onSubmit={handleSave} className="space-y-5">
+        {errorMsg && (
+          <p role="alert" className="rounded-lg border border-danger-200 bg-danger-50 px-3 py-2 text-sm text-danger-700">
+            {errorMsg}
+          </p>
+        )}
 
-          {activeTab === 'PROFILE' && (
-            <button
-              type="submit"
-              form="edit-profile-form"
-              disabled={isSubmitting}
-              className="px-6 py-2.5 bg-brand hover:bg-brand-strong text-white text-xs font-semibold rounded-xl shadow-2xs transition-all flex items-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
+        <Field label="Full name" htmlFor="ep-name">
+          <input id="ep-name" type="text" value={name} onChange={(e) => setName(e.target.value)} className="cb-input" />
+        </Field>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Faculty" htmlFor="ep-faculty">
+            <select
+              id="ep-faculty"
+              value={selectedFacultyId}
+              onChange={(e) => {
+                setSelectedFacultyId(e.target.value);
+                setSelectedDepartmentId('');
+              }}
+              disabled={isLoadingOrg}
+              className="cb-input"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  <span>Save Changes</span>
-                </>
-              )}
-            </button>
-          )}
+              <option value="">Choose a faculty</option>
+              {faculties.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.name}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Department" htmlFor="ep-dept">
+            <select
+              id="ep-dept"
+              value={selectedDepartmentId}
+              onChange={(e) => setSelectedDepartmentId(e.target.value)}
+              disabled={isLoadingOrg || !selectedFacultyId}
+              className="cb-input"
+            >
+              <option value="">{selectedFacultyId ? 'Choose a department' : 'Choose a faculty first'}</option>
+              {departments
+                .filter((d) => !selectedFacultyId || d.facultyId === selectedFacultyId)
+                .map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                  </option>
+                ))}
+            </select>
+          </Field>
         </div>
-      </div>
-    </div>
+
+        <Field label="Bio" htmlFor="ep-bio" hint={isAdmin ? 'Your role and areas of responsibility.' : 'Your research focus in a few sentences.'}>
+          <textarea id="ep-bio" rows={4} value={bio} onChange={(e) => setBio(e.target.value)} className="cb-input resize-y" />
+        </Field>
+
+        <Field label={isAdmin ? 'Focus areas' : 'Research interests'} htmlFor="ep-interests" hint="Separate with commas. Researchers with shared interests are suggested to each other.">
+          <input
+            id="ep-interests"
+            type="text"
+            placeholder="e.g. Federated learning, Medical imaging"
+            value={interestsText}
+            onChange={(e) => setInterestsText(e.target.value)}
+            className="cb-input"
+          />
+        </Field>
+
+        {!isAdmin && (
+          <fieldset className="space-y-4 border-t border-line pt-5">
+            <legend className="-mt-8 bg-surface pr-2 text-sm font-semibold text-ink">Current research</legend>
+            <Field label="Research title" htmlFor="ep-rtitle" hint="Leave empty if you have no current project.">
+              <input id="ep-rtitle" type="text" value={researchTitle} onChange={(e) => setResearchTitle(e.target.value)} className="cb-input" />
+            </Field>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Research area" htmlFor="ep-rarea" required={!!researchTitle.trim()}>
+                <input
+                  id="ep-rarea"
+                  type="text"
+                  value={researchArea}
+                  required={!!researchTitle.trim()}
+                  onChange={(e) => setResearchArea(e.target.value)}
+                  placeholder="e.g. Computer vision"
+                  className="cb-input"
+                />
+              </Field>
+              <Field label="Stage" htmlFor="ep-stage">
+                <select id="ep-stage" value={currentStage} onChange={(e) => setCurrentStage(e.target.value)} className="cb-input">
+                  {STAGES.map((stg) => (
+                    <option key={stg.id} value={stg.id}>
+                      {stg.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            <Field label="Abstract" htmlFor="ep-abstract">
+              <textarea id="ep-abstract" rows={4} value={abstract} onChange={(e) => setAbstract(e.target.value)} className="cb-input resize-y" />
+            </Field>
+          </fieldset>
+        )}
+
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface-muted px-4 py-3">
+          <p className="text-sm text-ink-secondary">ORCID, Google Scholar, ResearchGate and other links</p>
+          <Button variant="secondary" size="sm" onClick={onOpenLinksEditor}>
+            <Link2 aria-hidden />
+            Manage links
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 }

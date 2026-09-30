@@ -16,6 +16,10 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 // Next.js sets NEXT_PHASE while running `next build` (not for dev, lint or start).
 const isProductionBuild = process.env.NEXT_PHASE === 'phase-production-build';
 
+if (!process.env.NEXT_PUBLIC_SITE_URL && process.env.VERCEL_URL) {
+  process.env.NEXT_PUBLIC_SITE_URL = `https://${process.env.VERCEL_URL}`;
+}
+
 const envSchema = z.object({
   NEXT_PUBLIC_API_URL: z.string().url('NEXT_PUBLIC_API_URL must be a valid URL'),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url('NEXT_PUBLIC_SUPABASE_URL must be a valid URL'),
@@ -71,6 +75,34 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // The legacy client-side PIN console was retired; administration lives in /admin.
+      { source: '/sys-admin-login', destination: '/admin/dashboard', permanent: false },
+      { source: '/sys-admin', destination: '/admin/dashboard', permanent: false },
+      { source: '/sys-admin/:path*', destination: '/admin/dashboard', permanent: false },
+      // /scholar/* were aliases of the main portal pages; keep old links working.
+      { source: '/scholar/workspaces/:id', destination: '/workspace/:id', permanent: true },
+      { source: '/scholar/workspaces', destination: '/workspace', permanent: true },
+      { source: '/scholar/chat', destination: '/nexus', permanent: true },
+      { source: '/scholar/my-research', destination: '/my-research', permanent: true },
+      { source: '/scholar/profile', destination: '/profile', permanent: true },
+      { source: '/scholar/settings', destination: '/settings', permanent: true },
+      { source: '/scholar/events', destination: '/events', permanent: true },
+      { source: '/scholar/opportunities', destination: '/opportunities', permanent: true },
+      { source: '/scholar/connections', destination: '/researchers', permanent: true },
+      { source: '/scholar/help', destination: '/help', permanent: true },
+      // Admin aliases that rendered another admin page under a second name.
+      { source: '/admin/directory', destination: '/admin/users', permanent: true },
+      { source: '/admin/compliance', destination: '/admin/research-activity', permanent: true },
+      { source: '/admin/publication-moderation', destination: '/admin/publications', permanent: true },
+      { source: '/admin/notifications', destination: '/admin/email-delivery', permanent: true },
+      { source: '/admin/security', destination: '/admin/audit', permanent: true },
+      { source: '/admin/supervisors', destination: '/admin/users?tab=SUPERVISORS', permanent: true },
+      // The old features page described capabilities that don't exist; the landing page covers the real ones.
+      { source: '/features', destination: '/#platform', permanent: true },
+      // Connected apps live in a Settings tab; the separate page duplicated it.
+      { source: '/settings/integrations', destination: '/settings?tab=integrations', permanent: true },
+      // The standalone composer was replaced by the one at the top of the feed.
+      { source: '/feed/create', destination: '/feed?compose=1', permanent: true },
       {
         source: '/sign-in',
         destination: '/login',

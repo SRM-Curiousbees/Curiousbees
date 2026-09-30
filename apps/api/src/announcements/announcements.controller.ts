@@ -6,7 +6,9 @@ import { SupabaseAuthGuard } from '../auth/supabase.guard';
 export class AnnouncementsController {
   constructor(private readonly announcementsService: AnnouncementsService) {}
 
+  // Institutional notices are for signed-in members only.
   @Get()
+  @UseGuards(SupabaseAuthGuard)
   async getPublishedAnnouncements() {
     return this.announcementsService.getPublishedAnnouncements();
   }

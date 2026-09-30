@@ -252,12 +252,14 @@ module.exports = {
         DEFAULT: 'var(--ease-out)',
         out: 'var(--ease-out)',
         'in-out': 'var(--ease-in-out)',
+        expressive: 'var(--ease-expressive)',
       },
       transitionDuration: {
         DEFAULT: 'var(--duration-base)',
         fast: 'var(--duration-fast)',
         base: 'var(--duration-base)',
         slow: 'var(--duration-slow)',
+        scene: 'var(--duration-scene)',
       },
 
       keyframes: {

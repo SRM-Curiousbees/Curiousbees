@@ -5,6 +5,7 @@ import { getDashboardRoute } from '@/lib/auth/route-protection';
 import { ROLE_COOKIE_NAME } from '@curiousbees/constants';
 import { ROOT_ADMIN_EMAIL, isRootAdmin } from '@/lib/auth/email-domains';
 import { apiFetch, getAuthHeaders, readApiError, API_URL, resetAuthPromise } from '@/lib/api-client';
+import { TOAST_DURATION_MS } from '@/lib/toast';
 
 const assertNotTargetRoot = (targetIdOrEmail: string, state: any, action: string) => {
   const isMatch = isRootAdmin(targetIdOrEmail) ||
@@ -39,7 +40,7 @@ function deriveNotificationHref(type?: string, title: string = ''): string {
   if (type === 'RESEARCH_PAPER') return '/feed?type=PUBLICATION';
   if (type === 'OPPORTUNITY') return '/opportunities';
   if (type === 'COLLABORATION') return '/feed?type=COLLABORATION_REQUEST';
-  if (type === 'ADVISORY' || type === 'SUPERVISION') return '/scholar/my-research';
+  if (type === 'ADVISORY' || type === 'SUPERVISION') return '/my-research';
   if (type === 'EVENT') return '/events';
   return '/notifications';
 }
@@ -161,7 +162,7 @@ interface AppState {
   fetchOpportunities: () => Promise<Opportunity[]>;
   createOpportunity: (titleOrPayload: string | any, description?: string, department?: string, researchDomain?: string, extraData?: any) => Promise<Opportunity>;
   fetchProfile: () => Promise<any>;
-  updateProfile: (data: { name?: string; department?: string; departmentId?: string; bio?: string; role?: UserRole; interests?: string[] }) => Promise<User>;
+  updateProfile: (data: { name?: string; department?: string; departmentId?: string; bio?: string; role?: UserRole; interests?: string[]; image?: string | null }) => Promise<User>;
   fetchEvents: (showIndicator?: boolean) => Promise<Event[]>;
 
   createEvent: (title: string, date: string, time: string, venue: string, description?: string, eventType?: string, registrationLink?: string) => Promise<Event>;
@@ -201,7 +202,7 @@ interface AppState {
     scholarIds?: string[];
   }) => Promise<Workspace>;
   fetchWorkspaceDetails: (workspaceId: string) => Promise<Workspace>;
-  addWorkspaceFile: (workspaceId: string, name: string, url: string, size: number) => Promise<WorkspaceFile>;
+  addWorkspaceFile: (workspaceId: string, name: string, url: string, size?: number) => Promise<WorkspaceFile>;
   uploadWorkspaceFile: (workspaceId: string, file: File, displayName?: string) => Promise<WorkspaceFile>;
   getWorkspaceFileDownloadUrl: (workspaceId: string, fileId: string) => Promise<string>;
   addWorkspaceMilestone: (workspaceId: string, title: string, description?: string, dueDate?: string) => Promise<WorkspaceMilestone>;
@@ -842,15 +843,17 @@ export const useStore = create<AppState>((set, get) => ({
             if (t.id === threadId) {
               return {
                 ...t,
-                comments: [...(t.comments || []), newComment]
-              };
+                comments: [...(t.comments || []), newComment],
+                // _count includes replies; keep it in step so the post's comment count updates.
+                _count: { ...(t as any)._count, comments: ((t as any)._count?.comments ?? (t.comments?.length || 0)) + 1 }
+              } as any;
             }
             return t;
           })
         }));
         return newComment;
       }
-      throw new Error('Failed to publish comment.');
+      throw new Error((await readApiError(res)) || 'Failed to publish comment.');
     } finally {
       set({ isLoading: false });
     }
@@ -884,15 +887,21 @@ export const useStore = create<AppState>((set, get) => ({
     if (res.ok) {
       set(state => {
         const traverse = (comments: any[]): any[] => comments.filter(c => c.id !== commentId).map(c => ({ ...c, replies: c.replies ? traverse(c.replies) : [] }));
+        const countAll = (comments: any[] = []): number => comments.reduce((n, c) => n + 1 + countAll(c.replies), 0);
         return {
-          threads: state.threads.map(t => ({
-            ...t,
-            comments: t.comments ? traverse(t.comments) : []
-          }))
+          threads: state.threads.map(t => {
+            if (!t.comments) return { ...t, comments: [] };
+            const next = traverse(t.comments);
+            const removed = countAll(t.comments) - countAll(next);
+            if (!removed) return { ...t, comments: next };
+            // Replies are deleted with their parent, so count everything that went.
+            const current = (t as any)._count?.comments;
+            return { ...t, comments: next, _count: { ...(t as any)._count, comments: Math.max(0, (current ?? 0) - removed) } } as any;
+          })
         };
       });
     } else {
-      throw new Error('Failed to delete comment.');
+      throw new Error((await readApiError(res)) || 'Failed to delete comment.');
     }
   },
 
@@ -1006,7 +1015,7 @@ export const useStore = create<AppState>((set, get) => ({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ reason, description })
     });
-    if (!res.ok) throw new Error('Failed to report thread');
+    if (!res.ok) throw new Error((await readApiError(res)) || 'Failed to report thread');
   },
 
   requestThreadCollaboration: async (threadId, message) => {
@@ -1023,7 +1032,7 @@ export const useStore = create<AppState>((set, get) => ({
     if (res.ok) {
       set(state => ({ threads: state.threads.filter(t => t.id !== threadId) }));
     } else {
-      throw new Error('Failed to delete thread');
+      throw new Error((await readApiError(res)) || 'Failed to delete thread');
     }
   },
 
@@ -1040,7 +1049,7 @@ export const useStore = create<AppState>((set, get) => ({
       }));
       return updatedThread;
     }
-    throw new Error('Failed to update thread');
+    throw new Error((await readApiError(res)) || 'Failed to update thread');
   },
 
   getSavedThreads: async () => {
@@ -1584,7 +1593,7 @@ export const useStore = create<AppState>((set, get) => ({
         }));
         return data;
       }
-      throw new Error('Failed to submit collaboration request.');
+      throw new Error((await readApiError(res)) || 'Failed to submit collaboration request.');
     } finally {
       set({ isLoading: false });
     }
@@ -1669,7 +1678,7 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
-  addWorkspaceFile: async (workspaceId: string, name: string, url: string, size: number) => {
+  addWorkspaceFile: async (workspaceId: string, name: string, url: string, size?: number) => {
     set({ isLoading: true });
     try {
       const res = await apiFetch(`/api/workspaces/${workspaceId}/files`, {
@@ -2221,7 +2230,9 @@ export const useStore = create<AppState>((set, get) => ({
     try {
       const res = await apiFetch('/api/admin/users');
       if (res.ok) {
-        const data = await res.json();
+        // The endpoint is paginated ({ items, pagination }); keep the store an array either way.
+        const body = await res.json();
+        const data = Array.isArray(body) ? body : Array.isArray(body?.items) ? body.items : [];
         set({ adminUsers: data });
         return data;
       }
@@ -3151,7 +3162,7 @@ export const useStore = create<AppState>((set, get) => ({
         set((state) => ({ reports: [report, ...state.reports] }));
         return report;
       }
-      throw new Error('Failed to submit report.');
+      throw new Error((await readApiError(res)) || 'Failed to submit report.');
     } finally {
       set({ isLoading: false });
     }
@@ -3404,10 +3415,9 @@ export const useStore = create<AppState>((set, get) => ({
       toasts: [...state.toasts, { id, message, type }],
     }));
 
-    // Auto dismiss after 4 seconds
     setTimeout(() => {
       get().removeToast(id);
-    }, 4000);
+    }, TOAST_DURATION_MS[type] ?? 4000);
   },
 
   removeToast: (id: string) => {

@@ -24,7 +24,6 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase, getStoragePublicUrl } from '@/lib/supabase';
 
 // Feed sub-components
 import CompactComposer from '@/components/feed/CompactComposer';
@@ -39,9 +38,9 @@ import EditPostModal from '@/components/feed/EditPostModal';
 import ReportPostModal from '@/components/feed/ReportPostModal';
 import ConfirmDeleteModal from '@/components/feed/ConfirmDeleteModal';
 import ShareModal from '@/components/feed/ShareModal';
-import TimelinesModal from '@/components/feed/TimelinesModal';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { toFeedPost } from '@/lib/feed-post';
 
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 
@@ -67,7 +66,7 @@ interface Thread {
   rawType?: string;
   isPaper?: boolean;
   paperInfo?: {
-    journal: string;
+    journal?: string;
     publisher?: string;
   };
   interestedCount?: number;
@@ -165,38 +164,7 @@ function ScholarFeedContent() {
 
   // ─── THREAD TRANSFORM ────────────────────────────────────────────────────
 
-  const getCombinedThreads = (): Thread[] => {
-    return threads.map(t => {
-      return {
-        id: t.id,
-        title: t.title,
-        content: t.content,
-        createdAt: t.createdAt,
-        author: t.author ? {
-          id: (t.author as any).id,
-          name: t.author.name,
-          image: t.author.image,
-          role: t.author.role,
-          department: t.author.department,
-          faculty: (t.author as any).faculty
-        } : undefined,
-        authorId: (t as any).authorId,
-        tags: t.tags,
-        commentsCount: t.comments?.length || (t as any)._count?.comments || 0,
-        likesCount: (t as any)._count?.likes || 0,
-        collaboratorsCount: (t as any)._count?.shares || 0,
-        badge: (t as any).type ? (t as any).type.replace('_', ' ') : undefined,
-        rawType: (t as any).type,
-        isPaper: t.isPaper,
-        paperInfo: t.isPaper ? { journal: t.paperJournal || 'NATURE QUANTUM' } : undefined,
-        interestedCount: 0,
-        attachments: (t as any).attachments,
-        saves: (t as any).saves,
-        likes: (t as any).likes,
-        comments: t.comments
-      };
-    });
-  };
+  const getCombinedThreads = (): Thread[] => threads.map((t) => toFeedPost(t) as Thread);
 
   const filteredThreads = useMemo(() => {
     const combined = getCombinedThreads();
@@ -341,6 +309,18 @@ function ScholarFeedContent() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setTimeout(() => document.getElementById('feed-composer')?.focus(), 250);
   };
+
+  // `/feed?compose=1` (and the old /feed/create page) opens the feed ready to write.
+  const wantsCompose = searchParams.get('compose') === '1';
+  useEffect(() => {
+    if (!wantsCompose) return;
+    focusComposer();
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('compose');
+    const qs = params.toString();
+    router.replace(qs ? `/feed?${qs}` : '/feed', { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantsCompose]);
 
   const TABS = [
     { id: 'foryou', label: 'For you' },

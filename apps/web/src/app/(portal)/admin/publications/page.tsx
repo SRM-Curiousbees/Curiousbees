@@ -76,20 +76,12 @@ export default function AdminPublicationsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto py-2 select-none">
+    <div className="mx-auto max-w-6xl space-y-6">
       {/* Header */}
-      <div className="border-b border-slate-200/80 pb-4">
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-emerald-50 text-emerald-700 border border-emerald-200">
-            Research Governance
-          </span>
-        </div>
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
-          Publications Governance & Review
-        </h1>
-        <p className="text-xs text-slate-500 font-semibold mt-0.5">
-          Institutional oversight of authored publications, DOIs, policy compliance, and visibility.
-        </p>
+      <div className="pb-2">
+        <p className="mb-1.5 text-sm font-medium text-ink-muted">Research Governance</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Publications</h1>
+          <p className="mt-1.5 max-w-prose text-base text-ink-secondary">Publications researchers have added. Hide entries that shouldn’t be listed, or restore them.</p>
       </div>
 
       {/* Filter bar */}

@@ -1,169 +1,238 @@
 'use client';
 
-/**
- * Institutional Governance Analytics & Metric Telemetry
- */
-
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { BarChart3 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { BarChart3, TrendingUp, Users, BookOpen, MessageSquare, ShieldAlert, Loader2, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { PageHeader } from '@/components/ui/page-header';
+import { Card, CardHeader } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { SwitchRow } from '@/components/ui/switch';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 
+const RANGES = [
+  { id: '7D', label: '7 days' },
+  { id: '30D', label: '30 days' },
+  { id: '6M', label: '6 months' },
+  { id: '1Y', label: '1 year' },
+] as const;
+
+function bucketLabel(date: string, bucket: string) {
+  const d = new Date(`${date}T00:00:00Z`);
+  if (isNaN(d.getTime())) return date;
+  if (bucket === 'month') return d.toLocaleDateString(undefined, { month: 'short', year: '2-digit', timeZone: 'UTC' });
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', timeZone: 'UTC' });
+}
+
+/** Platform size and activity, from counts the API computes. */
 export default function AdminAnalyticsPage() {
-  const { fetchAdminAnalytics } = useStore();
-  const [range, setRange] = useState('30D');
+  const fetchAdminAnalytics = useStore((s) => s.fetchAdminAnalytics);
+  const [range, setRange] = useState<(typeof RANGES)[number]['id']>('30D');
   const [data, setData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  const loadData = async (r = range) => {
-    setLoading(true);
-    try {
-      const res = await fetchAdminAnalytics(r);
-      setData(res);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [state, setState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [hideEmpty, setHideEmpty] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    loadData(range);
-  }, [range]);
+    let active = true;
+    setState('loading');
+    fetchAdminAnalytics(range)
+      .then((res: any) => {
+        if (!active) return;
+        if (res) {
+          setData(res);
+          setState('ready');
+        } else setState('error');
+      })
+      .catch(() => active && setState('error'));
+    return () => {
+      active = false;
+    };
+  }, [range, reloadKey, fetchAdminAnalytics]);
 
-  if (loading || !data) {
-    return (
-      <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-2 text-slate-400">
-        <Loader2 className="w-6 h-6 animate-spin text-brand" />
-        <p className="text-xs font-bold">Aggregating institutional analytics...</p>
-      </div>
-    );
-  }
+  const timeline: { date: string; users: number; posts: number }[] = data?.timeline || [];
+  const bucket: string = data?.timelineBucket || 'day';
+  const maxValue = Math.max(1, ...timeline.map((t) => t.users + t.posts));
+  const labelEvery = Math.max(1, Math.ceil(timeline.length / 6));
+  const periodTotals = timeline.reduce((acc, t) => ({ users: acc.users + t.users, posts: acc.posts + t.posts }), { users: 0, posts: 0 });
+
+  const departments = useMemo(() => {
+    const list = [...(data?.departmentActivity || [])].sort((a: any, b: any) => b.userCount - a.userCount || a.name.localeCompare(b.name));
+    return hideEmpty ? list.filter((d: any) => d.userCount > 0) : list;
+  }, [data, hideEmpty]);
+
+  const s = data?.summary;
+  const figures = s
+    ? [
+        { label: 'People', value: s.totalUsers, detail: `${s.totalScholars} scholars · ${s.totalSupervisors} supervisors · ${s.totalAdmins} admins` },
+        { label: 'Feed posts', value: s.totalPosts },
+        { label: 'Publications', value: s.totalPublications },
+        { label: 'Workspaces', value: s.totalWorkspaces },
+      ]
+    : [];
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto py-2 select-none">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-purple-50 text-purple-700 border border-purple-200">
-              Institutional Intelligence
-            </span>
+    <div className="mx-auto max-w-6xl">
+      <PageHeader
+        meta="Insight & audit"
+        title="Institutional analytics"
+        description="How many people use CuriousBees, what they share, and where they sit in the institution."
+        actions={
+          <div role="radiogroup" aria-label="Time range" className="inline-flex rounded-lg border border-line bg-surface-muted p-0.5">
+            {RANGES.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                role="radio"
+                aria-checked={range === r.id}
+                onClick={() => setRange(r.id)}
+                className={cn(
+                  'h-8 rounded-md px-3 text-sm transition-colors duration-fast',
+                  range === r.id ? 'bg-surface font-medium text-ink shadow-xs' : 'text-ink-muted hover:text-ink',
+                )}
+              >
+                {r.label}
+              </button>
+            ))}
           </div>
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
-            Institutional Analytics
-          </h1>
-          <p className="text-xs text-slate-500 font-semibold mt-0.5">
-            Real platform growth metrics, doctoral adoption rates, and departmental research output.
-          </p>
+        }
+      />
+
+      {state === 'loading' && !data ? (
+        <div className="space-y-6" aria-busy="true" aria-label="Loading analytics">
+          <Skeleton className="h-24 rounded-2xl" />
+          <Skeleton className="h-72 rounded-2xl" />
         </div>
-
-        {/* Range Selector */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-          {['7D', '30D', '6M', '1Y'].map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer',
-                range === r
-                  ? 'bg-surface text-brand shadow-2xs'
-                  : 'text-slate-500 hover:text-slate-900'
-              )}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Summary KPI Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-surface border border-slate-200/80 rounded-2xl p-4.5 shadow-2xs">
-          <span className="text-2xs font-bold text-slate-400 block uppercase">Total Users</span>
-          <p className="text-2xl font-semibold text-slate-900 mt-1">{data.summary.totalUsers}</p>
-          <p className="text-2xs text-emerald-600 font-bold mt-1">
-            {data.distribution.scholars} Scholars • {data.distribution.supervisors} Supervisors
-          </p>
-        </div>
-
-        <div className="bg-surface border border-slate-200/80 rounded-2xl p-4.5 shadow-2xs">
-          <span className="text-2xs font-bold text-slate-400 block uppercase">Publications Catalog</span>
-          <p className="text-2xl font-semibold text-emerald-600 mt-1">{data.summary.totalPublications}</p>
-          <p className="text-2xs text-slate-400 mt-1">Verified scholarly works</p>
-        </div>
-
-        <div className="bg-surface border border-slate-200/80 rounded-2xl p-4.5 shadow-2xs">
-          <span className="text-2xs font-bold text-slate-400 block uppercase">Research Workspaces</span>
-          <p className="text-2xl font-semibold text-cyan-600 mt-1">{data.summary.totalWorkspaces}</p>
-          <p className="text-2xs text-slate-400 mt-1">Active lab projects</p>
-        </div>
-
-        <div className="bg-surface border border-slate-200/80 rounded-2xl p-4.5 shadow-2xs">
-          <span className="text-2xs font-bold text-slate-400 block uppercase">Feed Discussions</span>
-          <p className="text-2xl font-semibold text-blue-600 mt-1">{data.summary.totalPosts}</p>
-          <p className="text-2xs text-slate-400 mt-1">Academic interactions</p>
-        </div>
-      </div>
-
-      {/* Activity Timeline Bar Chart Visual */}
-      <div className="bg-surface border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-4">
-        <h3 className="text-sm font-semibold text-slate-900">
-          User Registrations & Post Volume ({range})
-        </h3>
-
-        <div className="h-48 flex items-end gap-1.5 pt-6 pb-2 px-2 overflow-x-auto">
-          {data.timeline?.map((item: any) => {
-            const maxVal = Math.max(...data.timeline.map((t: any) => t.users + t.posts), 5);
-            const total = item.users + item.posts;
-            const heightPercent = Math.max((total / maxVal) * 100, 6);
-
-            return (
-              <div key={item.date} className="flex-1 min-w-[14px] flex flex-col items-center gap-1 group">
-                <div
-                  style={{ height: `${heightPercent}%` }}
-                  className="w-full bg-gradient-to-t from-brand to-blue-400 rounded-t-md transition-all group-hover:brightness-125"
-                  title={`${item.date}: ${item.users} users, ${item.posts} posts`}
-                />
-                <span className="text-2xs text-slate-400 rotate-45 origin-left truncate hidden sm:block">
-                  {item.date.slice(5)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Department Breakdown Table */}
-      <div className="bg-surface border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-4">
-        <h3 className="text-sm font-semibold text-slate-900">
-          Departmental Distribution & Engagement
-        </h3>
-        <div className="relative overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b border-slate-200/80 bg-slate-50/70 text-xs font-medium capitalize text-slate-500">
-                <th className="py-3 px-4">Department</th>
-                <th className="py-3 px-4">Code</th>
-                <th className="py-3 px-4">Supervisors</th>
-                <th className="py-3 px-4">Scholars</th>
-                <th className="py-3 px-4">Total Users</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {data.departmentActivity?.map((dept: any) => (
-                <tr key={dept.code} className="hover:bg-slate-50/60">
-                  <td className="py-3 px-4 font-bold text-slate-800">{dept.name}</td>
-                  <td className="py-3 px-4 font-mono text-2xs text-slate-500">{dept.code}</td>
-                  <td className="py-3 px-4 text-teal-600 font-bold">{dept.supervisorCount}</td>
-                  <td className="py-3 px-4 text-blue-600 font-bold">{dept.scholarCount}</td>
-                  <td className="py-3 px-4 font-bold text-slate-900">{dept.userCount}</td>
-                </tr>
+      ) : state === 'error' || !data ? (
+        <Card>
+          <EmptyState
+            icon={BarChart3}
+            title="Analytics could not be loaded"
+            action={
+              <Button variant="secondary" onClick={() => setReloadKey((k) => k + 1)}>
+                Try again
+              </Button>
+            }
+          />
+        </Card>
+      ) : (
+        <div className={cn('space-y-6 transition-opacity duration-base', state === 'loading' && 'opacity-60')}>
+          <Card>
+            <dl className="grid grid-cols-2 lg:grid-cols-4">
+              {figures.map((f, i) => (
+                <div key={f.label} className={cn('px-5 py-4', i > 0 && 'lg:border-l lg:border-line', i % 2 === 1 && 'border-l border-line', i >= 2 && 'border-t border-line lg:border-t-0')}>
+                  <dt className="text-sm text-ink-muted">{f.label}</dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums text-ink">{f.value}</dd>
+                  {f.detail && <dd className="mt-0.5 text-xs text-ink-muted">{f.detail}</dd>}
+                </div>
               ))}
-            </tbody>
-          </table>
+            </dl>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title="New people and posts"
+              description={`${periodTotals.users} people joined and ${periodTotals.posts} posts were shared in the last ${RANGES.find((r) => r.id === range)?.label}, per ${bucket}.`}
+              actions={
+                <div className="hidden items-center gap-4 text-xs text-ink-muted sm:flex" aria-hidden>
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2.5 rounded-sm bg-brand" /> People
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-2.5 rounded-sm bg-sea" /> Posts
+                  </span>
+                </div>
+              }
+            />
+            <div className="px-5 pb-4 pt-6">
+              <div className="flex h-44 items-end gap-1" aria-hidden>
+                {timeline.map((t) => (
+                  <div key={t.date} className="flex h-full min-w-0 flex-1 flex-col justify-end" title={`${bucketLabel(t.date, bucket)}: ${t.users} people, ${t.posts} posts`}>
+                    {t.posts > 0 && <div className="w-full rounded-t-sm bg-sea" style={{ height: `${(t.posts / maxValue) * 100}%` }} />}
+                    {t.users > 0 && <div className={cn('w-full bg-brand', t.posts === 0 && 'rounded-t-sm')} style={{ height: `${(t.users / maxValue) * 100}%` }} />}
+                    {t.users + t.posts === 0 && <div className="h-px w-full bg-line" />}
+                  </div>
+                ))}
+              </div>
+              {/* One label per group of bars, so each has room. */}
+              <div className="mt-2 flex text-2xs text-ink-muted" aria-hidden>
+                {Array.from({ length: Math.ceil(timeline.length / labelEvery) }, (_, g) => {
+                  const group = timeline.slice(g * labelEvery, (g + 1) * labelEvery);
+                  return (
+                    <span key={group[0].date} className="min-w-0 truncate whitespace-nowrap" style={{ flex: group.length }}>
+                      {bucketLabel(group[0].date, bucket)}
+                    </span>
+                  );
+                })}
+              </div>
+              <table className="sr-only">
+                <caption>New people and posts per {bucket}</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Period starting</th>
+                    <th scope="col">People</th>
+                    <th scope="col">Posts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timeline.map((t) => (
+                    <tr key={t.date}>
+                      <td>{bucketLabel(t.date, bucket)}</td>
+                      <td>{t.users}</td>
+                      <td>{t.posts}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+
+          <Card className="overflow-hidden">
+            <CardHeader title="People by department" description="Accounts, supervisors and scholars assigned to each department." />
+            <div className="border-b border-line px-5">
+              <SwitchRow checked={hideEmpty} onChange={setHideEmpty} label="Hide departments with no accounts" />
+            </div>
+            {departments.length === 0 ? (
+              <EmptyState icon={BarChart3} title="No departments have accounts yet" />
+            ) : (
+              <div className="relative overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <caption className="sr-only">People by department</caption>
+                  <thead>
+                    <tr className="border-b border-line bg-surface-muted text-xs text-ink-secondary">
+                      <th scope="col" className="px-4 py-2.5 font-medium">Department</th>
+                      <th scope="col" className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Supervisors</th>
+                      <th scope="col" className="hidden px-4 py-2.5 text-right font-medium sm:table-cell">Scholars</th>
+                      <th scope="col" className="px-4 py-2.5 text-right font-medium">Accounts</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line">
+                    {departments.map((d: any) => (
+                      <tr key={d.id || d.code}>
+                        <td className="max-w-[20rem] px-4 py-3">
+                          <p className="truncate font-medium text-ink">{d.name}</p>
+                          <p className="truncate text-xs text-ink-muted">
+                            {d.code}
+                            {d.facultyName ? ` · ${d.facultyName}` : ''}
+                          </p>
+                          <p className="mt-0.5 text-xs text-ink-muted sm:hidden">
+                            {d.supervisorCount} {d.supervisorCount === 1 ? 'supervisor' : 'supervisors'} · {d.scholarCount}{' '}
+                            {d.scholarCount === 1 ? 'scholar' : 'scholars'}
+                          </p>
+                        </td>
+                        <td className="hidden px-4 py-3 text-right tabular-nums text-ink-secondary sm:table-cell">{d.supervisorCount}</td>
+                        <td className="hidden px-4 py-3 text-right tabular-nums text-ink-secondary sm:table-cell">{d.scholarCount}</td>
+                        <td className="px-4 py-3 text-right font-medium tabular-nums text-ink">{d.userCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -1,62 +1,77 @@
-'use client';
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import { MarketingPage, Prose } from '@/components/marketing/MarketingPage';
 
-import React from 'react';
-import MarketingNavbar from '@/components/marketing/MarketingNavbar';
-import MarketingFooter from '@/components/marketing/MarketingFooter';
+export const metadata: Metadata = {
+  title: 'Privacy policy',
+  description: 'What CuriousBees collects, how it is used, and who can see it.',
+};
+
+// Update this date whenever the policy text changes.
+const LAST_UPDATED = '30 September 2026';
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="bg-surface text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-primary/20">
-      <MarketingNavbar />
-      
-      <main className="flex-grow w-full pt-32 pb-16">
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="mb-16">
-            <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-tight mb-4 text-slate-900">
-              Privacy Policy
-            </h1>
-            <p className="text-slate-500">Effective Date: {new Date().toLocaleDateString()}</p>
-          </div>
+    <MarketingPage label="Legal" title="Privacy policy" intro="What CuriousBees collects, why, and who can see it." cta={false}>
+      <Prose updated={LAST_UPDATED}>
+        <p>
+          CuriousBees (“we”, “the platform”) is the research collaboration platform of SRM Institute of Science and Technology (SRMIST). This policy explains how
+          information is handled on it.
+        </p>
 
-          <div className="prose prose-slate prose-lg max-w-none">
-            <p className="lead text-xl text-slate-600 mb-8">
-              CuriousBees ("we," "our," or "the Platform") is committed to protecting the privacy and security of our users' personal and academic data. This Privacy Policy outlines how we collect, use, and safeguard information within the SRM Institute of Science and Technology research ecosystem.
-            </p>
+        <h2>1. What we collect</h2>
+        <ul>
+          <li>
+            <strong>Account details</strong> from SRMIST and from Google sign-in: your name, email address and profile picture, and the role, faculty and department
+            your institution assigned.
+          </li>
+          <li>
+            <strong>What you add</strong>: your profile and research areas, research record and milestones, progress reports, publications, posts, comments,
+            messages, workspace files and meetings.
+          </li>
+          <li>
+            <strong>Connected apps</strong>: if you connect Google Workspace or Zoom, the tokens needed to create meetings and chat spaces for you. You can disconnect
+            them in Settings at any time.
+          </li>
+          <li>
+            <strong>Security records</strong>: a log of sensitive actions, such as approvals, role changes and moderation, which can include the IP address they
+            came from.
+          </li>
+        </ul>
 
-            <h2 className="font-display text-2xl font-bold text-slate-900 mt-12 mb-4">1. Data Collection</h2>
-            <p>We collect information to provide a secure and efficient collaboration environment. This includes:</p>
-            <ul>
-              <li><strong>Authentication Data:</strong> University email addresses, names, and profile pictures retrieved via Google OAuth.</li>
-              <li><strong>Academic Data:</strong> Department affiliations, roles (e.g., Scholar, Supervisor), and publication records voluntarily submitted.</li>
-              <li><strong>Research Artifacts:</strong> Drafts, comments, and project data uploaded to secure workspaces.</li>
-            </ul>
+        <h2>2. How it is used</h2>
+        <ul>
+          <li>To sign you in and give you access that matches your role.</li>
+          <li>To run supervision, workspaces, the research feed, opportunities and notifications.</li>
+          <li>To show you relevant posts, people and opportunities based on your research areas and who and what you follow.</li>
+          <li>To give institute administrators aggregate figures, such as the number of users, posts and workspaces.</li>
+        </ul>
 
-            <h2 className="font-display text-2xl font-bold text-slate-900 mt-12 mb-4">2. How We Use Your Data</h2>
-            <p>Your data is used strictly for academic and administrative purposes:</p>
-            <ul>
-              <li>To facilitate secure login and role-based access control.</li>
-              <li>To connect you with relevant researchers via Semantic Discovery.</li>
-              <li>To generate institutional analytics (aggregated and anonymized) for university administration.</li>
-            </ul>
+        <h2>3. Who can see it</h2>
+        <ul>
+          <li>Profiles, posts and opportunities are visible only to signed-in members of SRMIST. They are not public on the web.</li>
+          <li>
+            Workspace files, updates and meetings are visible only to that workspace’s members. Uploaded files open through links that expire after a few minutes.
+          </li>
+          <li>
+            Institute administrators manage accounts and moderate posts and publications. For oversight they can see a workspace’s title, members and activity
+            counts, but not its files, updates or messages.
+          </li>
+          <li>We do not sell your data.</li>
+          <li>Data is encrypted in transit (HTTPS) and at rest in the platform’s database and file storage.</li>
+        </ul>
 
-            <h2 className="font-display text-2xl font-bold text-slate-900 mt-12 mb-4">3. Data Sharing & Security</h2>
-            <p>Research data is highly sensitive. We implement strict security measures:</p>
-            <ul>
-              <li>We do <strong>not</strong> sell your data to third parties.</li>
-              <li>Project data is restricted to authorized workspace members and institutional oversight committees.</li>
-              <li>All data is encrypted in transit and at rest using enterprise-grade standards.</li>
-            </ul>
+        <h2>4. Your rights and retention</h2>
+        <p>
+          You can ask to see, correct or delete your personal data, subject to SRMIST’s retention rules for academic records. Research records are kept in line with
+          SRMIST’s archival requirements.
+        </p>
 
-            <h2 className="font-display text-2xl font-bold text-slate-900 mt-12 mb-4">4. User Rights & Data Retention</h2>
-            <p>As a user, you have the right to request access to, correction of, or deletion of your personal data, subject to university data retention policies for academic records. Research artifacts are retained in accordance with SRMIST archival requirements.</p>
-
-            <h2 className="font-display text-2xl font-bold text-slate-900 mt-12 mb-4">5. Contact Us</h2>
-            <p>For any privacy-related inquiries or to exercise your rights, please contact the university data protection officer or reach out to us via our <a href="/contact" className="text-primary hover:underline">Contact page</a>.</p>
-          </div>
-          
-        </div>
-      </main>
-      <MarketingFooter />
-    </div>
+        <h2>5. Contact</h2>
+        <p>
+          For privacy questions, or to exercise your rights, contact SRMIST’s data protection officer or use the <Link href="/contact">contact page</Link>.
+        </p>
+      </Prose>
+    </MarketingPage>
   );
 }

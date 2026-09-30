@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Download, Loader2 } from 'lucide-react';
+import { Download, ExternalLink, Loader2 } from 'lucide-react';
 import type { WorkspaceFile } from '@curiousbees/types';
 import { useStore } from '@/store/useStore';
 
@@ -50,7 +50,13 @@ export function WorkspaceFileDownloadButton({
 
   return (
     <button type="button" onClick={handleClick} disabled={busy} className={className}>
-      {busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+      {busy ? (
+        <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden />
+      ) : file.storageKey ? (
+        <Download className="w-3.5 h-3.5" aria-hidden />
+      ) : (
+        <ExternalLink className="w-3.5 h-3.5" aria-hidden />
+      )}
       <span>{label}</span>
     </button>
   );

@@ -34,16 +34,17 @@ export class MyResearchService {
       profile = await this.prisma.researchProfile.create({
         data: {
           scholarId,
-          title: 'Scholar Thesis Research Project',
-          researchArea: user?.department || 'Academic Research',
-          abstract: 'Primary doctoral thesis research project and scholarly milestone tracking.',
+          // Left blank for the scholar to fill in; the UI prompts for it.
+          title: '',
+          researchArea: user?.department || '',
+          abstract: null,
           status: ResearchStatus.ACTIVE,
           currentStage: ResearchStage.PROPOSAL,
           activities: {
             create: {
               actorId: scholarId,
               type: 'PROFILE_CREATED',
-              description: 'Research Profile and Command Center initialized.',
+              description: 'Research profile created.',
             },
           },
         },
@@ -309,7 +310,8 @@ export class MyResearchService {
         id: `file-${file.id}`,
         name: file.name,
         url: file.url,
-        size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+        // Linked files have no stored size.
+        size: file.storageKey && file.size ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : 'Link',
         updatedDate: file.uploadedAt,
         type: file.name.toLowerCase().endsWith('.pdf') ? 'PDF' : 'DOCUMENT',
         source: 'Workspace',

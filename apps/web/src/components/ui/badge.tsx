@@ -40,6 +40,8 @@ const STATUS: Record<string, { tone: Tone; label: string }> = {
   REVIEW_REQUIRED: { tone: 'warning', label: 'Needs review' },
   NEEDS_INFO: { tone: 'warning', label: 'Needs info' },
   DRAFT: { tone: 'neutral', label: 'Draft' },
+  SUBMITTED: { tone: 'brand', label: 'Submitted' },
+  UNDER_REVIEW: { tone: 'warning', label: 'Under review' },
   ARCHIVED: { tone: 'neutral', label: 'Archived' },
   UPCOMING: { tone: 'brand', label: 'Upcoming' },
   IN_PROGRESS: { tone: 'brand', label: 'In progress' },

@@ -79,20 +79,12 @@ export default function AdminPostsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto py-2 select-none">
+    <div className="mx-auto max-w-6xl space-y-6">
       {/* Header */}
-      <div className="border-b border-slate-200/80 pb-4">
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-blue-50 text-blue-700 border border-blue-200">
-            Content Governance
-          </span>
-        </div>
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
-          Posts & Discussions Governance
-        </h1>
-        <p className="text-xs text-slate-500 font-semibold mt-0.5">
-          Inspect, hide, restore, or moderate research feed posts and discussions across the institution.
-        </p>
+      <div className="pb-2">
+        <p className="mb-1.5 text-sm font-medium text-ink-muted">Content Governance</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Posts and discussions</h1>
+          <p className="mt-1.5 max-w-prose text-base text-ink-secondary">Review feed posts across the institution. Hide posts that break the rules, or restore them.</p>
       </div>
 
       {/* Filter bar */}

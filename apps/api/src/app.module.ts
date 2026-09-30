@@ -33,6 +33,7 @@ import { ResearchDomainsModule } from './research-domains/research-domains.modul
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { FilesModule } from './files/files.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { FilesModule } from './files/files.module';
     IntegrationsModule,
     ResearchDomainsModule,
     FilesModule,
+    SearchModule,
   ],
   controllers: [AppController],
   providers: [

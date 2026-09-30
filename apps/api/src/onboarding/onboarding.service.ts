@@ -192,6 +192,11 @@ export class OnboardingService {
       throw new BadRequestException('User has already completed onboarding and has a supervisor assigned.');
     }
 
+    // Accounts are created by administrators; a department they assigned can't be changed here.
+    if (user.departmentId && data.departmentId !== user.departmentId) {
+      throw new BadRequestException('Your department was set by your institute administrator. Ask them if it needs to change.');
+    }
+
     // Verify faculty and department relationally
     const dept = await this.prisma.department.findUnique({
       where: { id: data.departmentId },

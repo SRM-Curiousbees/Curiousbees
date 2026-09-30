@@ -30,7 +30,7 @@ import {
   Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getProfileImageUrl } from '@/lib/avatar';
+import { getProfileImageUrl, handleAvatarError } from '@/lib/avatar';
 import { PageHeader } from '@/components/ui/page-header';
 import { Button, IconButton } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -532,6 +532,8 @@ function AdminUsersContent() {
                           <img
                             src={getProfileImageUrl(user)}
                             alt=""
+                            referrerPolicy="no-referrer"
+                            onError={(e) => handleAvatarError(e, displayName)}
                             className="size-9 shrink-0 rounded-full border border-line bg-surface-muted object-cover"
                           />
                           <div className="min-w-0">
@@ -691,6 +693,8 @@ function AdminUsersContent() {
               <img
                 src={getProfileImageUrl(drawerUser)}
                 alt=""
+                referrerPolicy="no-referrer"
+                onError={(e) => handleAvatarError(e, drawerUser.name)}
                 className="size-12 shrink-0 rounded-full border border-line bg-surface-muted object-cover"
               />
               <div className="min-w-0 flex-1">

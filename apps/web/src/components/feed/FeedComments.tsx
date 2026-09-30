@@ -4,7 +4,11 @@ import { useState, useRef, useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { Send, Loader2, MoreHorizontal, Edit2, Trash2, Heart, Reply, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getProfileImageUrl } from '@/lib/avatar';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { getProfileImageUrl, handleAvatarError } from '@/lib/avatar';
+import { Dialog } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface FeedCommentsProps {
   threadId: string;
@@ -92,10 +96,7 @@ function CommentItem({
 
   const authorName = comment.author?.name || 'Scholar';
   const avatarUrl = getProfileImageUrl(comment.author);
-  const roleLabel = comment.author?.role === 'RESEARCH_SUPERVISOR' ? 'Supervisor' : 'Scholar';
-  const roleBadgeStyle = comment.author?.role === 'RESEARCH_SUPERVISOR'
-    ? 'bg-amber-50 text-amber-700 border-amber-200'
-    : 'bg-blue-50 text-brand border-blue-200';
+  const roleLabel = comment.author?.role === 'RESEARCH_SUPERVISOR' ? 'Supervisor' : comment.author?.role === 'RESEARCH_SCHOLAR' ? 'Scholar' : '';
 
   return (
     <motion.div
@@ -106,27 +107,29 @@ function CommentItem({
     >
       {/* Thread line connector for nested replies */}
       {depth > 0 && (
-        <div className="absolute left-0 top-0 bottom-0 w-px bg-gradient-to-b from-slate-200 via-slate-200/60 to-transparent" />
+        <div className="absolute bottom-0 left-0 top-0 w-px bg-line" aria-hidden />
       )}
 
       <div className="flex items-start gap-2.5 py-2.5 group">
-        {/* Avatar */}
         <img
           src={avatarUrl}
-          alt={authorName}
-          className="w-7 h-7 rounded-full object-cover border border-slate-200 shrink-0 mt-0.5"
+          alt=""
+          referrerPolicy="no-referrer"
+          onError={(e) => handleAvatarError(e, authorName)}
+          className="mt-0.5 size-8 shrink-0 rounded-full border border-line object-cover"
         />
 
         <div className="flex-1 min-w-0">
           {/* Header: name, role, time */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-2xs font-semibold text-slate-900">{authorName}</span>
-            <span className={`inline-flex px-1.5 py-0.5 rounded-full text-2xs font-bold uppercase border leading-none ${roleBadgeStyle}`}>
-              {roleLabel}
+            <span className="text-sm font-medium text-ink">{authorName}</span>
+            {roleLabel && <span className="text-xs text-ink-muted">{roleLabel}</span>}
+            <span className="text-xs text-ink-muted" aria-hidden>
+              ·
             </span>
-            <span className="text-2xs font-semibold text-slate-400">
+            <time dateTime={new Date(comment.createdAt || Date.now()).toISOString()} className="text-xs text-ink-muted">
               {formatRelativeTime(comment.createdAt)}
-            </span>
+            </time>
           </div>
 
           {/* Content / Edit Mode */}
@@ -136,29 +139,30 @@ function CommentItem({
                 type="text"
                 value={editingContent}
                 onChange={(e) => setEditingContent(e.target.value)}
-                className="w-full bg-surface border border-slate-200 text-slate-900 rounded-xl px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand/40 transition-all"
+                aria-label="Edit comment"
+                className="cb-input"
                 autoFocus
                 onKeyDown={(e) => e.key === 'Enter' && handleEditSubmit()}
               />
               <div className="flex items-center gap-2 justify-end">
                 <button
+                  type="button"
                   onClick={() => setIsEditing(false)}
-                  className="text-2xs font-bold text-slate-500 hover:text-slate-700 px-2 py-1 rounded-md hover:bg-slate-100 transition-colors"
+                  className="h-8 rounded-lg px-3 text-sm text-ink-secondary transition-colors hover:bg-neutral-100 hover:text-ink"
                 >
                   Cancel
                 </button>
                 <button
+                  type="button"
                   onClick={handleEditSubmit}
-                  className="text-2xs font-bold text-white bg-brand hover:bg-brand-strong px-3 py-1 rounded-lg transition-colors"
+                  className="h-8 rounded-lg bg-brand px-3 text-sm font-medium text-white transition-colors hover:bg-brand-strong"
                 >
                   Save
                 </button>
               </div>
             </div>
           ) : (
-            <p className="text-slate-700 text-xs leading-relaxed font-medium mt-0.5">
-              {comment.content}
-            </p>
+            <p className="mt-0.5 whitespace-pre-wrap break-words text-sm leading-relaxed text-ink-secondary">{comment.content}</p>
           )}
 
           {/* Action bar: Like, Reply, Menu */}
@@ -166,22 +170,27 @@ function CommentItem({
             <div className="flex items-center gap-3 mt-1.5">
               {/* Like */}
               <button
+                type="button"
                 onClick={() => onLike(comment.id)}
-                className={`flex items-center gap-1 text-2xs font-bold transition-colors ${
-                  isLiked ? 'text-rose-500' : 'text-slate-400 hover:text-rose-500'
+                aria-pressed={!!isLiked}
+                aria-label={isLiked ? 'Unlike comment' : 'Like comment'}
+                className={`flex items-center gap-1 text-xs transition-colors ${
+                  isLiked ? 'text-danger-600' : 'text-ink-muted hover:text-danger-600'
                 }`}
               >
-                <Heart className={`w-3 h-3 ${isLiked ? 'fill-current' : ''}`} />
-                {likeCount > 0 && <span>{likeCount}</span>}
+                <Heart className={`size-3.5 ${isLiked ? 'fill-current' : ''}`} aria-hidden />
+                {likeCount > 0 && <span className="tabular-nums">{likeCount}</span>}
               </button>
 
               {/* Reply (only if below max nesting depth) */}
               {depth < maxDepth && (
                 <button
+                  type="button"
                   onClick={() => setShowReplyInput(!showReplyInput)}
-                  className="flex items-center gap-1 text-2xs font-bold text-slate-400 hover:text-brand transition-colors"
+                  aria-expanded={showReplyInput}
+                  className="flex items-center gap-1 text-xs text-ink-muted transition-colors hover:text-ink"
                 >
-                  <Reply className="w-3 h-3" />
+                  <Reply className="size-3.5" aria-hidden />
                   <span>Reply</span>
                 </button>
               )}
@@ -190,20 +199,22 @@ function CommentItem({
               {isOwner && (
                 <>
                   <button
+                    type="button"
                     onClick={() => {
                       setIsEditing(true);
                       setEditingContent(comment.content);
                     }}
-                    className="flex items-center gap-1 text-2xs font-bold text-slate-400 hover:text-slate-600 transition-colors ml-1"
+                    className="flex items-center gap-1 text-xs text-ink-muted transition-colors hover:text-ink"
                   >
-                    <Edit2 className="w-3 h-3" />
+                    <Edit2 className="size-3.5" aria-hidden />
                     <span>Edit</span>
                   </button>
                   <button
+                    type="button"
                     onClick={() => onDelete(comment.id)}
-                    className="flex items-center gap-1 text-2xs font-bold text-slate-400 hover:text-red-500 transition-colors ml-1"
+                    className="flex items-center gap-1 text-xs text-ink-muted transition-colors hover:text-danger-700"
                   >
-                    <Trash2 className="w-3 h-3" />
+                    <Trash2 className="size-3.5" aria-hidden />
                     <span>Delete</span>
                   </button>
                 </>
@@ -221,32 +232,30 @@ function CommentItem({
                 onSubmit={handleReplySubmit}
                 className="mt-2 flex items-center gap-2 overflow-hidden"
               >
-                <div className="w-6 h-6 rounded-full overflow-hidden shrink-0">
-                  <img
-                    src={getProfileImageUrl(currentUser)}
-                    alt="You"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
+                <img
+                  src={getProfileImageUrl(currentUser)}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                  onError={(e) => handleAvatarError(e, currentUser?.name)}
+                  className="size-6 shrink-0 rounded-full object-cover"
+                />
                 <div className="flex-1 relative">
                   <input
                     ref={replyInputRef}
                     type="text"
                     value={replyContent}
                     onChange={(e) => setReplyContent(e.target.value)}
-                    placeholder={`Reply to ${authorName}...`}
-                    className="w-full pl-3 pr-9 py-1.5 rounded-full border border-slate-200 focus:border-brand focus:ring-1 focus:ring-brand/20 outline-none text-2xs font-medium transition-all bg-slate-50/80 text-slate-900"
+                    placeholder={`Reply to ${authorName}…`}
+                    aria-label={`Reply to ${authorName}`}
+                    className="h-9 w-full rounded-full border border-line bg-surface-muted pl-3.5 pr-10 text-sm text-ink outline-none transition-colors placeholder:text-ink-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
                   />
                   <button
                     type="submit"
                     disabled={isSubmittingReply || !replyContent.trim()}
-                    className="absolute right-1 top-1 bottom-1 p-1 rounded-full bg-brand hover:bg-brand-strong disabled:opacity-40 text-white transition-all cursor-pointer"
+                    aria-label="Send reply"
+                    className="absolute bottom-1 right-1 top-1 flex aspect-square items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-strong disabled:opacity-40"
                   >
-                    {isSubmittingReply ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Send className="w-3 h-3" />
-                    )}
+                    {isSubmittingReply ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : <Send className="size-3.5" aria-hidden />}
                   </button>
                 </div>
               </motion.form>
@@ -257,10 +266,12 @@ function CommentItem({
           {replies.length > 0 && (
             <div className="mt-1">
               <button
+                type="button"
                 onClick={() => setShowReplies(!showReplies)}
-                className="flex items-center gap-1 text-2xs font-bold text-brand hover:text-brand-950 transition-colors mb-1"
+                aria-expanded={showReplies}
+                className="mb-1 flex items-center gap-1 text-xs font-medium text-brand transition-colors hover:text-brand-strong"
               >
-                {showReplies ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                {showReplies ? <ChevronUp className="size-3.5" aria-hidden /> : <ChevronDown className="size-3.5" aria-hidden />}
                 <span>{replies.length} {replies.length === 1 ? 'reply' : 'replies'}</span>
               </button>
 
@@ -298,9 +309,11 @@ function CommentItem({
 
 // ─── MAIN FEED COMMENTS COMPONENT ───────────────────────────────────────────
 export default function FeedComments({ threadId }: FeedCommentsProps) {
-  const { threads, addComment, updateComment, deleteComment, toggleCommentLike, currentUser } = useStore();
+  const { threads, addComment, updateComment, deleteComment, toggleCommentLike, currentUser, addToast } = useStore();
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const thread = threads.find((t) => t.id === threadId);
   const allComments = thread?.comments || [];
@@ -328,6 +341,13 @@ export default function FeedComments({ threadId }: FeedCommentsProps) {
 
   const commentTree = buildTree(allComments);
 
+  // The feed embeds only the latest few comments; link to the post for the rest.
+  const countAll = (list: any[] = []): number => list.reduce((n, c) => n + 1 + countAll(c.replies), 0);
+  const totalComments: number = (thread as any)?._count?.comments ?? 0;
+  const pathname = usePathname();
+  const onPostPage = pathname === `/feed/${threadId}`;
+  const hiddenCount = onPostPage ? 0 : Math.max(0, totalComments - countAll(commentTree));
+
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
@@ -337,38 +357,51 @@ export default function FeedComments({ threadId }: FeedCommentsProps) {
       await addComment(threadId, content);
       setContent('');
     } catch (e: any) {
-      console.error('Error adding comment:', e);
+      addToast(e?.message || 'The comment could not be posted.', 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleReplySubmit = async (replyContent: string, parentId: string) => {
-    await addComment(threadId, replyContent, parentId);
+    try {
+      await addComment(threadId, replyContent, parentId);
+    } catch (e: any) {
+      addToast(e?.message || 'The reply could not be posted.', 'error');
+      throw e;
+    }
   };
 
   const handleEdit = async (commentId: string, newContent: string) => {
     try {
       await updateComment(commentId, newContent);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      addToast(e?.message || 'The comment could not be updated.', 'error');
     }
   };
 
   const handleDelete = async (commentId: string) => {
-    if (!confirm('Delete this comment?')) return;
+    setDeletingId(commentId);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingId) return;
+    setIsDeleting(true);
     try {
-      await deleteComment(commentId);
-    } catch (e) {
-      console.error(e);
+      await deleteComment(deletingId);
+      setDeletingId(null);
+    } catch (e: any) {
+      addToast(e?.message || 'The comment could not be deleted.', 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const handleLike = async (commentId: string) => {
     try {
       await toggleCommentLike(commentId);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      addToast(e?.message || 'The like could not be saved.', 'error');
     }
   };
 
@@ -383,18 +416,14 @@ export default function FeedComments({ threadId }: FeedCommentsProps) {
       <div className="max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
         {commentTree.length === 0 ? (
           <div className="flex flex-col items-center py-6 text-center">
-            <div className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center mb-2">
-              <MessageSquare className="w-5 h-5 text-slate-300" />
+            <div className="mb-2 flex size-10 items-center justify-center rounded-xl border border-line bg-surface-muted text-ink-muted">
+              <MessageSquare className="size-5" aria-hidden />
             </div>
-            <p className="text-xs font-bold text-slate-400">
-              Be the first to comment
-            </p>
-            <p className="text-2xs font-medium text-slate-300 mt-0.5">
-              Share your thoughts on this research
-            </p>
+            <p className="text-sm font-medium text-ink">No comments yet</p>
+            <p className="mt-0.5 text-sm text-ink-muted">Share your thoughts on this research.</p>
           </div>
         ) : (
-          <div className="divide-y divide-slate-100/60">
+          <div className="divide-y divide-line">
             {commentTree.map((comment: any) => (
               <CommentItem
                 key={comment.id}
@@ -411,36 +440,59 @@ export default function FeedComments({ threadId }: FeedCommentsProps) {
         )}
       </div>
 
+      {hiddenCount > 0 && (
+        <Link href={`/feed/${threadId}`} className="mt-2 inline-block text-sm font-medium text-brand underline-offset-2 hover:underline">
+          View all {totalComments} comments
+        </Link>
+      )}
+
       {/* Comment Input */}
-      <form onSubmit={handleCommentSubmit} className="flex gap-2 mt-3 pt-3 border-t border-slate-100">
-        <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-slate-200 shadow-sm flex items-center justify-center">
-          <img
-            src={getProfileImageUrl(currentUser)}
-            className="w-full h-full object-cover"
-            alt={currentUser?.name || 'User'}
-          />
-        </div>
+      <form onSubmit={handleCommentSubmit} className="mt-3 flex gap-2 border-t border-line pt-3">
+        <img
+          src={getProfileImageUrl(currentUser)}
+          alt=""
+          referrerPolicy="no-referrer"
+          onError={(e) => handleAvatarError(e, currentUser?.name)}
+          className="size-8 shrink-0 rounded-full border border-line object-cover"
+        />
         <div className="flex-1 relative">
           <input
             type="text"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Write a comment..."
-            className="w-full pl-3 pr-10 py-1.5 rounded-full border border-slate-200 focus:border-brand focus:ring-1 focus:ring-brand/20 outline-none text-xs font-semibold transition-all bg-slate-50 text-slate-900 placeholder:text-slate-400"
+            placeholder="Write a comment…"
+            aria-label="Write a comment"
+            className="h-9 w-full rounded-full border border-line bg-surface-muted pl-3.5 pr-10 text-sm text-ink outline-none transition-colors placeholder:text-ink-muted focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20"
           />
           <button
             type="submit"
             disabled={isSubmitting || !content.trim()}
-            className="absolute right-1 top-1 bottom-1 p-1.5 rounded-full bg-brand hover:bg-brand-strong disabled:opacity-40 text-white transition-all shadow-sm cursor-pointer"
+            aria-label="Post comment"
+            className="absolute bottom-1 right-1 top-1 flex aspect-square items-center justify-center rounded-full bg-brand text-white transition-colors hover:bg-brand-strong disabled:opacity-40"
           >
-            {isSubmitting ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <Send className="w-3 h-3" />
-            )}
+            {isSubmitting ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : <Send className="size-3.5" aria-hidden />}
           </button>
         </div>
       </form>
+
+      <Dialog
+        open={!!deletingId}
+        onClose={() => setDeletingId(null)}
+        dismissible={!isDeleting}
+        size="sm"
+        title="Delete this comment?"
+        description="Replies to it are deleted too. This can't be undone."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDeletingId(null)} disabled={isDeleting}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={confirmDelete} loading={isDeleting}>
+              Delete comment
+            </Button>
+          </>
+        }
+      />
     </motion.div>
   );
 }

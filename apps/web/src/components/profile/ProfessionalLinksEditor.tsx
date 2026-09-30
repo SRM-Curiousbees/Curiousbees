@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { X, Plus, Trash2, Globe, Check, Loader2 } from 'lucide-react';
+import { ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { Dialog } from '@/components/ui/dialog';
+import { Button, IconButton } from '@/components/ui/button';
+import { Field } from '@/components/ui/field';
 import { useStore } from '@/store/useStore';
 import { ResearcherExternalLink } from '@curiousbees/types';
 
@@ -41,8 +44,6 @@ export function ProfessionalLinksEditor({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  if (!isOpen) return null;
-
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim()) {
@@ -73,143 +74,86 @@ export function ProfessionalLinksEditor({
     }
   };
 
+  const labelFor = (value: string) => PLATFORM_OPTIONS.find((o) => o.value === value?.toUpperCase())?.label ?? 'Link';
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-      <div className="bg-surface rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Header */}
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center gap-2">
-            <Globe className="w-5 h-5 text-brand" />
-            <h3 className="text-base font-semibold text-slate-900">Edit Professional & Research Links</h3>
-          </div>
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content Body */}
-        <div className="p-6 overflow-y-auto space-y-6 flex-1">
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      dismissible={!isSubmitting}
+      title="Profile links"
+      description="Shown on your profile so others can find your work elsewhere."
+      size="lg"
+      footer={
+        <Button variant="secondary" onClick={onClose}>
+          Done
+        </Button>
+      }
+    >
+      <div className="space-y-6">
+        <form onSubmit={handleAdd} className="space-y-4 rounded-xl border border-line bg-surface-muted p-4">
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-red-50 text-red-900 border border-red-200 text-xs font-bold">
+            <p role="alert" className="rounded-lg border border-danger-200 bg-danger-50 px-3 py-2 text-sm text-danger-700">
               {errorMsg}
-            </div>
+            </p>
           )}
-
-          {/* Form to add a new link */}
-          <form onSubmit={handleAdd} className="space-y-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <h4 className="text-xs font-medium capitalize text-brand">Add / Update External Link</h4>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Platform</label>
-                <select
-                  value={platform}
-                  onChange={(e) => setPlatform(e.target.value)}
-                  className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
-                >
-                  {PLATFORM_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Display Label (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. ORCID Profile"
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                  className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Full URL</label>
-              <input
-                type="url"
-                required
-                placeholder="https://orcid.org/0000-0002-1825-0097"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className="w-full text-xs font-semibold p-2.5 rounded-xl border border-slate-200 bg-surface focus:outline-none focus:ring-2 focus:ring-brand"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-2.5 bg-brand hover:bg-brand-strong text-white font-semibold text-xs rounded-xl shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4" />
-                  <span>Save Link</span>
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Configured Links List */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-medium capitalize text-slate-500">Configured Links ({links.length})</h4>
-
-            {links.length === 0 ? (
-              <p className="text-xs font-medium text-slate-400 italic">No external links saved yet.</p>
-            ) : (
-              <div className="space-y-2">
-                {links.map((link) => (
-                  <div
-                    key={link.id}
-                    className="p-3 rounded-xl border border-slate-200 bg-surface flex items-center justify-between gap-3 shadow-2xs"
-                  >
-                    <div className="min-w-0">
-                      <span className="text-xs font-semibold text-brand block">{link.platform}</span>
-                      <a
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-slate-600 font-medium hover:underline truncate block"
-                      >
-                        {link.url}
-                      </a>
-                    </div>
-
-                    <button
-                      onClick={() => handleDelete(link.id)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer shrink-0"
-                      title="Remove Link"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Platform" htmlFor="link-platform">
+              <select id="link-platform" value={platform} onChange={(e) => setPlatform(e.target.value)} className="cb-input">
+                {PLATFORM_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
                 ))}
-              </div>
-            )}
+              </select>
+            </Field>
+            <Field label="Label" htmlFor="link-label" hint="Optional">
+              <input id="link-label" type="text" value={label} onChange={(e) => setLabel(e.target.value)} className="cb-input" />
+            </Field>
           </div>
-        </div>
+          <Field label="URL" htmlFor="link-url" required>
+            <input
+              id="link-url"
+              type="url"
+              required
+              placeholder="https://orcid.org/0000-0000-0000-0000"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="cb-input"
+            />
+          </Field>
+          <Button type="submit" size="sm" loading={isSubmitting}>
+            <Plus aria-hidden />
+            Add link
+          </Button>
+        </form>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
-          >
-            Done
-          </button>
-        </div>
+        <section aria-labelledby="links-list">
+          <h3 id="links-list" className="text-sm font-semibold text-ink">
+            Your links <span className="font-normal text-ink-muted">{links.length}</span>
+          </h3>
+          {links.length === 0 ? (
+            <p className="mt-2 text-sm text-ink-muted">No links yet.</p>
+          ) : (
+            <ul className="mt-2 divide-y divide-line rounded-xl border border-line">
+              {links.map((link) => (
+                <li key={link.id} className="flex items-center gap-3 px-3.5 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-ink">{link.label || labelFor(link.platform)}</p>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="inline-flex max-w-full items-center gap-1 truncate text-xs text-ink-muted hover:text-brand">
+                      <span className="truncate">{link.url}</span>
+                      <ExternalLink className="size-3 shrink-0" aria-hidden />
+                    </a>
+                  </div>
+                  <IconButton label={`Remove ${link.label || labelFor(link.platform)}`} size="sm" onClick={() => handleDelete(link.id)} className="text-ink-muted hover:text-danger-700">
+                    <Trash2 />
+                  </IconButton>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
-    </div>
+    </Dialog>
   );
 }

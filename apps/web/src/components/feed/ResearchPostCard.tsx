@@ -15,13 +15,15 @@ import {
   Trash2,
   Flag,
 } from 'lucide-react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
 import FeedComments from './FeedComments';
-import { getProfileImageUrl } from '@/lib/avatar';
+import { getProfileImageUrl, handleAvatarError } from '@/lib/avatar';
 import { cn } from '@/lib/utils';
 import { ROLE_LABEL } from '@/lib/navigation';
 import { Badge, type Tone } from '@/components/ui/badge';
+import { CollabRequestDialog } from '@/components/collaboration/CollabRequestDialog';
 
 interface ResearchPostCardProps {
   post: any;
@@ -31,6 +33,8 @@ interface ResearchPostCardProps {
   onDeleteClick?: (post: any) => void;
   onEditClick?: (post: any) => void;
   isFeedView?: boolean;
+  /** Open the comments on first render (the single-post page). */
+  defaultShowComments?: boolean;
 }
 
 export default function ResearchPostCard({
@@ -40,7 +44,8 @@ export default function ResearchPostCard({
   onReportClick,
   onDeleteClick,
   onEditClick,
-  isFeedView = true
+  isFeedView = true,
+  defaultShowComments = false,
 }: ResearchPostCardProps) {
   const { 
     currentUser, 
@@ -53,7 +58,6 @@ export default function ResearchPostCard({
     toggleFollowTopic,
     collabStatuses,
     fetchCollabStatus,
-    sendCollabRequest
   } = useStore();
 
   const isLiked = (post.likes && post.likes.length > 0) || false;
@@ -75,16 +79,17 @@ export default function ResearchPostCard({
   const collabRequestId = collabStatuses[authorId]?.requestId;
   const collabId = collabStatuses[authorId]?.collaborationId;
 
-  const [isCollaborating, setIsCollaborating] = useState(false);
   const isFollowingAuthor = authorId ? !!followedUserIds[authorId] : false;
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(defaultShowComments);
+  const [collabDialogOpen, setCollabDialogOpen] = useState(false);
+  const [collabMessage, setCollabMessage] = useState('');
   const [showMenu, setShowMenu] = useState(false);
   const isCompact = typeof window !== 'undefined' && localStorage.getItem('cb_pref_compact_cards') === 'true';
   const autoExpandPref = typeof window !== 'undefined' && localStorage.getItem('cb_pref_auto_abstracts') === 'true';
   const [isExpanded, setIsExpanded] = useState(autoExpandPref);
 
-  const authorName = post.author?.name || 'Academic Researcher';
-  const authorDept = post.author?.department || 'Research Division';
+  const authorName = post.author?.name || 'Researcher';
+  const authorDept: string | undefined = post.author?.department || undefined;
   const authorRole = post.author?.role || 'RESEARCH_SCHOLAR';
   const avatarUrl = getProfileImageUrl(post.author);
 
@@ -143,28 +148,14 @@ export default function ResearchPostCard({
       return;
     }
 
-    // Determine default message based on context
+    // Start from a message about this post; the sender can rewrite it.
     let defaultMsg = `I would like to collaborate with you on your research.`;
     if (post.title) defaultMsg = `I am interested in collaborating on "${post.title}".`;
     else if (post.isPaper) defaultMsg = `I found your recent publication very insightful and would love to explore a collaboration.`;
-
-    const customMessage = window.prompt(
-      `Send a collaboration request to ${authorName}`, 
-      defaultMsg
-    );
-    
-    if (customMessage === null) return;
-
-    setIsCollaborating(true);
-    try {
-      await sendCollabRequest(authorId, post.id, customMessage);
-      addToast(`Collaboration request sent to ${authorName}`, 'success');
-    } catch (err: any) {
-      addToast(err.message || 'Collaboration request failed', 'error');
-    } finally {
-      setIsCollaborating(false);
-    }
+    setCollabMessage(defaultMsg);
+    setCollabDialogOpen(true);
   };
+
 
   const POST_TYPES: Record<string, { label: string; tone: Tone }> = {
     PUBLICATION: { label: 'Publication', tone: 'plum' },
@@ -193,7 +184,13 @@ export default function ResearchPostCard({
     <article className={cn('rounded-2xl border border-line bg-surface shadow-xs', isCompact ? 'p-4' : 'p-5')}>
       <header className="flex items-start gap-3">
         <button type="button" onClick={openAuthor} className="shrink-0 rounded-full" aria-label={`View ${authorName}'s profile`}>
-          <img src={avatarUrl} alt="" className="size-10 rounded-full bg-neutral-100 object-cover ring-1 ring-line" />
+          <img
+            src={avatarUrl}
+            alt=""
+            referrerPolicy="no-referrer"
+            onError={(e) => handleAvatarError(e, authorName)}
+            className="size-10 rounded-full bg-neutral-100 object-cover ring-1 ring-line"
+          />
         </button>
         <div className="min-w-0 flex-1">
           <button type="button" onClick={openAuthor} className="max-w-full truncate text-left text-sm font-semibold text-ink hover:underline">
@@ -204,9 +201,19 @@ export default function ResearchPostCard({
             {authorDept && <> · {authorDept}</>}
           </p>
         </div>
-        <time dateTime={new Date(post.createdAt || Date.now()).toISOString()} className="shrink-0 pt-0.5 text-xs text-ink-muted">
-          {formatDate(post.createdAt)}
-        </time>
+        {isFeedView ? (
+          <Link
+            href={`/feed/${post.id}`}
+            className="shrink-0 rounded pt-0.5 text-xs text-ink-muted hover:text-ink hover:underline"
+            aria-label={`Open post, ${formatDate(post.createdAt)}`}
+          >
+            <time dateTime={new Date(post.createdAt || Date.now()).toISOString()}>{formatDate(post.createdAt)}</time>
+          </Link>
+        ) : (
+          <time dateTime={new Date(post.createdAt || Date.now()).toISOString()} className="shrink-0 pt-0.5 text-xs text-ink-muted">
+            {formatDate(post.createdAt)}
+          </time>
+        )}
 
         <div className="relative -mr-1.5 -mt-1 shrink-0">
           <button
@@ -382,7 +389,6 @@ export default function ResearchPostCard({
           <button
             type="button"
             onClick={handleCollabRequest}
-            disabled={isCollaborating}
             className={cn(
               'ml-auto inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-colors disabled:opacity-50 [&_svg]:size-4',
               collabState === 'ACTIVE'
@@ -402,6 +408,17 @@ export default function ResearchPostCard({
         <div className="mt-4 border-t border-line pt-4">
           <FeedComments threadId={post.id} />
         </div>
+      )}
+
+      {authorId && (
+        <CollabRequestDialog
+          open={collabDialogOpen}
+          onClose={() => setCollabDialogOpen(false)}
+          recipientId={authorId}
+          recipientName={authorName}
+          threadId={post.id}
+          defaultMessage={collabMessage}
+        />
       )}
     </article>
   );

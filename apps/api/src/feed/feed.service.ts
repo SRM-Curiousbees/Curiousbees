@@ -1,11 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { SearchService } from '../search/search.service';
 
 @Injectable()
 export class FeedService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Optional() private searchService?: SearchService,
+  ) {}
 
   async searchFeed(query: string) {
+    if (this.searchService) {
+      return this.searchService.searchFeed(query);
+    }
+
     if (!query || query.trim() === '') {
       return { threads: [], publications: [], users: [] };
     }

@@ -10,9 +10,9 @@ export type EmailDeliveryResult = {
 export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
   private readonly brevoApiKey = process.env.BREVO_API_KEY;
-  // Required in production (env.validation.ts). Must be a Brevo-verified sender on a domain with SPF/DKIM.
-  private readonly senderEmail = process.env.MAIL_FROM_EMAIL || '';
-  private readonly senderName = process.env.MAIL_FROM_NAME || 'CuriousBees';
+  // Required in production. Must be a Brevo-verified sender on a domain with SPF/DKIM.
+  private readonly senderEmail = process.env.MAIL_FROM_EMAIL || process.env.BREVO_SENDER_EMAIL || '';
+  private readonly senderName = process.env.MAIL_FROM_NAME || process.env.BREVO_SENDER_NAME || 'CuriousBees';
   private readonly frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
   // Optional operational inbox for supervisor-registration alerts. Not used for authorization.
   private readonly mainAdminEmail = process.env.MAIN_ADMIN_EMAIL || '';

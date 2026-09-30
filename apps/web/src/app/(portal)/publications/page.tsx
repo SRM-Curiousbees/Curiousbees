@@ -1,28 +1,43 @@
 'use client';
 
+/**
+ * Publications registry. Scholars see and manage their own record; supervisors see
+ * the institution's publications and manage their own. Edit and delete are shown only
+ * where the API allows them (the author, or an institute admin).
+ */
+
 import React, { useEffect, useState } from 'react';
+import { BookOpen, ExternalLink, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { BookOpen, Plus, Search, Check, X, Edit3, Trash2, Calendar, FileText, Globe } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { PageHeader } from '@/components/ui/page-header';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { StatusBadge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog } from '@/components/ui/dialog';
+import { ActionMenu } from '@/components/ui/action-menu';
+import { Field } from '@/components/ui/field';
+
+const STATUSES = [
+  { value: 'DRAFT', label: 'Draft' },
+  { value: 'SUBMITTED', label: 'Submitted' },
+  { value: 'UNDER_REVIEW', label: 'Under review' },
+  { value: 'PUBLISHED', label: 'Published' },
+];
 
 export default function PublicationsPage() {
-  const {
-    currentUser,
-    publications,
-    fetchPublications,
-    createPublication,
-    updatePublication,
-    deletePublication,
-    isLoading
-  } = useStore();
+  const { currentUser, publications, fetchPublications, createPublication, updatePublication, deletePublication, addToast } = useStore();
 
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingPub, setEditingPub] = useState<any | null>(null);
+  const [deletingPub, setDeletingPub] = useState<any | null>(null);
   const [loading, setLoading] = useState(publications.length === 0);
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  // Form states
   const [title, setTitle] = useState('');
   const [authors, setAuthors] = useState('');
   const [doi, setDoi] = useState('');
@@ -33,19 +48,22 @@ export default function PublicationsPage() {
   const isSupervisor = currentUser?.role === 'RESEARCH_SUPERVISOR';
   const isAdmin = currentUser?.role === 'INSTITUTE_ADMIN';
 
-  const loadPublications = React.useCallback(async (showLoading = true) => {
-    const targetUserId = isSupervisor || isAdmin ? undefined : currentUser?.id;
-    if (showLoading && publications.length === 0) setLoading(true);
-    setError(null);
-    try {
-      await fetchPublications(targetUserId);
-    } catch (e: any) {
-      console.error('Failed to load publications:', e);
-      setError('Unable to load publications directory.');
-    } finally {
-      setLoading(false);
-    }
-  }, [currentUser?.id, isSupervisor, isAdmin, fetchPublications, publications.length]);
+  const loadPublications = React.useCallback(
+    async (showLoading = true) => {
+      const targetUserId = isSupervisor || isAdmin ? undefined : currentUser?.id;
+      if (showLoading && publications.length === 0) setLoading(true);
+      setError(null);
+      try {
+        await fetchPublications(targetUserId);
+      } catch (e: any) {
+        console.error('Failed to load publications:', e);
+        setError('The publications list could not be loaded.');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [currentUser?.id, isSupervisor, isAdmin, fetchPublications, publications.length],
+  );
 
   useEffect(() => {
     loadPublications(publications.length === 0);
@@ -59,6 +77,7 @@ export default function PublicationsPage() {
     setPublisher('');
     setYear(new Date().getFullYear());
     setStatus('PUBLISHED');
+    setFormError(null);
     setIsDrawerOpen(true);
   };
 
@@ -70,352 +89,271 @@ export default function PublicationsPage() {
     setPublisher(pub.publisher || '');
     setYear(pub.year);
     setStatus(pub.status);
+    setFormError(null);
     setIsDrawerOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !authors || !year) {
-      alert('Please fill out all required fields.');
+      setFormError('Title, authors and year are required.');
       return;
     }
-
+    setSaving(true);
+    setFormError(null);
+    const payload = { title, authors, doi: doi || undefined, publisher: publisher || undefined, year: Number(year), status };
     try {
       if (editingPub) {
-        await updatePublication(editingPub.id, {
-          title,
-          authors,
-          doi: doi || undefined,
-          publisher: publisher || undefined,
-          year: Number(year),
-          status
-        });
+        await updatePublication(editingPub.id, payload);
+        addToast('Publication updated.', 'success');
       } else {
-        await createPublication({
-          title,
-          authors,
-          doi: doi || undefined,
-          publisher: publisher || undefined,
-          year: Number(year),
-          status
-        });
+        await createPublication(payload);
+        addToast('Publication added.', 'success');
       }
       setIsDrawerOpen(false);
     } catch (err: any) {
-      alert(`Error saving publication: ${err.message}`);
+      setFormError(err?.message || 'The publication could not be saved.');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this publication?')) {
-      try {
-        await deletePublication(id);
-      } catch (err: any) {
-        alert(err.message);
-      }
+  const handleDelete = async () => {
+    if (!deletingPub) return;
+    setSaving(true);
+    try {
+      await deletePublication(deletingPub.id);
+      addToast('Publication deleted.', 'success');
+      setDeletingPub(null);
+    } catch (err: any) {
+      addToast(err?.message || 'The publication could not be deleted.', 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
-  const filteredPubs = publications.filter(
-    (p) =>
-      p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.authors.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const q = searchTerm.toLowerCase();
+  const filteredPubs = publications.filter((p) => p.title.toLowerCase().includes(q) || p.authors.toLowerCase().includes(q));
+  const canManage = (pub: any) => pub.userId === currentUser?.id || isAdmin;
 
   return (
-    <div className="space-y-6 text-left select-none">
-      
-      {/* 🚀 Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5 gap-4">
-        <div>
-          <span className="text-xs font-medium text-primary capitalize flex items-center gap-1.5">
-            <BookOpen className="w-4 h-4 text-primary" />
-            <span>Academic Publications Registry</span>
-          </span>
-          <h1 className="cb-page-title mt-2">Publications & Patents</h1>
-          <p className="cb-page-subtitle">
-            Manage your journal submissions, conference papers, and book chapters.
-          </p>
+    <div>
+      <PageHeader
+        meta="Research"
+        title="Publications"
+        description={
+          isSupervisor
+            ? 'Journal articles, conference papers and chapters recorded by researchers across SRMIST.'
+            : 'Your journal articles, conference papers and chapters. They appear on your researcher profile.'
+        }
+        actions={
+          !isAdmin && (
+            <Button onClick={handleOpenCreate}>
+              <Plus aria-hidden />
+              Add publication
+            </Button>
+          )
+        }
+      />
+
+      <Card>
+        <div className="border-b border-line p-4">
+          <div className="relative max-w-sm">
+            <label htmlFor="pub-search" className="sr-only">
+              Search publications
+            </label>
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" aria-hidden />
+            <input
+              id="pub-search"
+              type="search"
+              placeholder="Search title or authors"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="cb-input pl-9"
+            />
+          </div>
         </div>
 
-        {!isSupervisor && !isAdmin && (
-          <button
-            onClick={handleOpenCreate}
-            className="px-4 py-2.5 bg-primary hover:bg-primary/95 text-white text-xs font-medium capitalize rounded-lg shadow-sm transition-all duration-200 active:scale-95 flex items-center justify-center space-x-1.5 shrink-0 cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Publication</span>
-          </button>
-        )}
-      </div>
-
-      {/* 🚀 Search & Filter */}
-      <div className="cb-card p-4 bg-surface/95 backdrop-blur-md max-w-md">
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Search title, authors..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="cb-input pl-9"
-          />
-          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-3.5" />
-        </div>
-      </div>
-
-      {/* 🚀 List */}
-      <div className="grid grid-cols-1 gap-4">
         {loading && publications.length === 0 ? (
-          <div className="space-y-4 animate-pulse">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="cb-card p-5 bg-surface/95 backdrop-blur-md space-y-3">
-                <div className="w-24 h-4 bg-slate-200 rounded-full" />
-                <div className="w-3/4 h-5 bg-slate-200 rounded" />
-                <div className="w-1/2 h-4 bg-slate-100 rounded" />
+          <div role="status" aria-label="Loading publications" className="divide-y divide-line">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="space-y-2.5 px-5 py-5">
+                <Skeleton className="h-4 w-20 rounded-full" />
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-3.5 w-1/2" />
               </div>
             ))}
           </div>
         ) : error && publications.length === 0 ? (
-          <div className="cb-card p-12 text-center bg-surface/95 backdrop-blur-md max-w-md mx-auto space-y-4">
-            <div className="w-14 h-14 bg-rose-50 border border-rose-100 rounded-2xl flex items-center justify-center mx-auto text-rose-600">
-              <BookOpen className="w-7 h-7" />
-            </div>
-            <div>
-              <h3 className="text-base font-semibold text-slate-900">Unable to load publications</h3>
-              <p className="text-xs text-slate-500 mt-1">{error}</p>
-            </div>
-            <button
-              onClick={() => loadPublications(true)}
-              className="px-6 py-2.5 bg-brand hover:bg-brand-strong text-white font-semibold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
-            >
-              Retry Loading
-            </button>
-          </div>
+          <EmptyState
+            icon={BookOpen}
+            title="Publications didn't load"
+            description={`${error} Check your connection and try again.`}
+            action={
+              <Button variant="secondary" onClick={() => loadPublications(true)}>
+                Try again
+              </Button>
+            }
+          />
         ) : filteredPubs.length === 0 ? (
-          <div className="cb-card p-12 text-center bg-surface/95 backdrop-blur-md">
-            <BookOpen className="w-8 h-8 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-slate-900 font-bold text-sm">No Publications Logged</h3>
-            <p className="text-slate-400 text-xs mt-1">
-              Add your peer-reviewed journals, conference manuscripts, and patents to showcase them in the directory.
-            </p>
-          </div>
+          <EmptyState
+            icon={BookOpen}
+            title={searchTerm ? 'No publications match your search' : 'No publications yet'}
+            description={
+              searchTerm
+                ? 'Try a different title or author name.'
+                : 'Add your journal articles, conference papers and chapters so collaborators can find your work.'
+            }
+            action={
+              !searchTerm &&
+              !isAdmin && (
+                <Button onClick={handleOpenCreate}>
+                  <Plus aria-hidden />
+                  Add your first publication
+                </Button>
+              )
+            }
+          />
         ) : (
-          filteredPubs.map((pub) => (
-            <div key={pub.id} className="cb-card p-5 bg-surface/95 backdrop-blur-md flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div className="space-y-1.5">
-                <div className="flex items-center space-x-2 flex-wrap gap-y-1">
-                  <span className={`px-2 py-0.5 rounded text-2xs font-extrabold uppercase tracking-wider ${
-                    pub.status === 'PUBLISHED' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                    pub.status === 'UNDER_REVIEW' ? 'bg-amber-50 text-amber-700 border border-amber-100' :
-                    pub.status === 'SUBMITTED' ? 'bg-blue-50 text-blue-700 border border-blue-100' :
-                    'bg-slate-50 text-slate-650 border border-slate-100'
-                  }`}>
-                    {pub.status.replace('_', ' ')}
-                  </span>
-                  {pub.doi && (
-                    <span className="text-2xs text-slate-450 flex items-center gap-1 font-semibold">
-                      <Globe className="w-3 h-3" />
-                      DOI: {pub.doi}
-                    </span>
-                  )}
-                </div>
-                <h3 className="font-bold text-slate-900 text-sm leading-snug">{pub.title}</h3>
-                <p className="text-xs text-slate-500 font-medium">Authors: {pub.authors}</p>
-                
-                <div className="flex items-center space-x-3 text-2xs text-slate-400 font-semibold pt-1">
-                  {pub.publisher && (
-                    <span className="flex items-center gap-1">
-                      <FileText className="w-3.5 h-3.5" />
-                      {pub.publisher}
-                    </span>
-                  )}
-                  <span className="flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    Year: {pub.year}
-                  </span>
-                  {(pub as any).user && (
-                    <span className="text-primary font-bold">
-                      By: {(pub as any).user.name}
-                      {((pub as any).user.departmentRef?.name || (pub as any).user.department) && (
-                        <span className="text-slate-500 font-normal ml-1">
-                          · {(pub as any).user.departmentRef?.name || (pub as any).user.department}
-                          {(pub as any).user.departmentRef?.faculty?.name ? ` (${(pub as any).user.departmentRef.faculty.name})` : ''}
+          <ul className="divide-y divide-line">
+            {filteredPubs.map((pub) => {
+              const author = (pub as any).user;
+              const dept = author?.departmentRef?.name || author?.department;
+              return (
+                <li key={pub.id} className="flex items-start gap-4 px-5 py-5">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusBadge status={pub.status} />
+                      <span className="text-xs tabular-nums text-ink-muted">{pub.year}</span>
+                    </div>
+                    <h2 className="mt-2 font-serif text-lg font-semibold leading-snug text-ink">{pub.title}</h2>
+                    <p className="mt-1 text-sm text-ink-secondary">{pub.authors}</p>
+                    <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
+                      {pub.publisher && <span className="italic">{pub.publisher}</span>}
+                      {pub.doi && (
+                        <a
+                          href={`https://doi.org/${pub.doi.replace(/^https?:\/\/(dx\.)?doi\.org\//, '')}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 font-mono text-xs text-brand hover:underline"
+                        >
+                          doi:{pub.doi.replace(/^https?:\/\/(dx\.)?doi\.org\//, '')}
+                          <ExternalLink className="size-3" aria-hidden />
+                          <span className="sr-only">(opens in a new tab)</span>
+                        </a>
+                      )}
+                      {author && isSupervisor && (
+                        <span>
+                          Recorded by <span className="text-ink-secondary">{author.name}</span>
+                          {dept ? ` · ${dept}` : ''}
                         </span>
                       )}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {(pub.userId === currentUser?.id || isSupervisor || isAdmin) && (
-                <div className="flex items-center space-x-2 self-end md:self-center">
-                  <button
-                    onClick={() => handleOpenEdit(pub)}
-                    className="p-2 border border-slate-200 hover:border-slate-350 text-slate-600 hover:text-slate-800 rounded-lg transition-colors cursor-pointer"
-                  >
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(pub.id)}
-                    className="p-2 border border-slate-200 hover:border-red-200 text-slate-600 hover:text-red-655 rounded-lg transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </div>
-
-      {/* 🚀 Drawer */}
-      <AnimatePresence>
-        {isDrawerOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.3 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsDrawerOpen(false)}
-              className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-50 cursor-pointer"
-            />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 right-0 w-full sm:max-w-lg bg-surface border-l border-slate-200 z-50 p-6 shadow-2xl flex flex-col overflow-y-auto text-left"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-                <div className="flex items-center space-x-2.5">
-                  <BookOpen className="w-5 h-5 text-primary" />
-                  <div>
-                    <h3 className="font-display font-bold text-sm text-brand">
-                      {editingPub ? 'Edit Publication' : 'Add New Publication'}
-                    </h3>
-                    <p className="text-xs text-slate-400 font-medium capitalize mt-1">
-                      Academic Intranet Logs
                     </p>
                   </div>
-                </div>
-                <button
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-4 flex-1">
-                <div className="space-y-1">
-                  <label className="block text-xs font-medium text-slate-450 capitalize">
-                    Title *
-                  </label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    required
-                    placeholder="e.g. A Deep Analysis of VLSI Layout Algorithms"
-                    className="cb-input"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-medium text-slate-450 capitalize">
-                    Authors (Comma-separated) *
-                  </label>
-                  <input
-                    type="text"
-                    value={authors}
-                    onChange={(e) => setAuthors(e.target.value)}
-                    required
-                    placeholder="e.g. John Doe, प्रिया शर्मा"
-                    className="cb-input"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-medium text-slate-450 capitalize">
-                    DOI (Digital Object Identifier)
-                  </label>
-                  <input
-                    type="text"
-                    value={doi}
-                    onChange={(e) => setDoi(e.target.value)}
-                    placeholder="e.g. 10.1093/bioinformatics/btg239"
-                    className="cb-input"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="block text-xs font-medium text-slate-450 capitalize">
-                    Publisher / Journal
-                  </label>
-                  <input
-                    type="text"
-                    value={publisher}
-                    onChange={(e) => setPublisher(e.target.value)}
-                    placeholder="e.g. IEEE Transactions, Nature Communications"
-                    className="cb-input"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium text-slate-450 capitalize">
-                      Year *
-                    </label>
-                    <input
-                      type="number"
-                      value={year}
-                      onChange={(e) => setYear(Number(e.target.value))}
-                      required
-                      min={1900}
-                      max={new Date().getFullYear() + 2}
-                      className="cb-input"
+                  {canManage(pub) && (
+                    <ActionMenu
+                      label={`Actions for ${pub.title}`}
+                      items={[
+                        { label: 'Edit', icon: Pencil, onSelect: () => handleOpenEdit(pub) },
+                        'separator',
+                        { label: 'Delete', icon: Trash2, tone: 'danger', onSelect: () => setDeletingPub(pub) },
+                      ]}
                     />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-xs font-medium text-slate-450 capitalize">
-                      Status *
-                    </label>
-                    <select
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value)}
-                      className="w-full px-3 h-[42px] text-xs font-semibold rounded-lg bg-surface border border-slate-200 focus:outline-none transition-all cursor-pointer"
-                    >
-                      <option value="DRAFT">Draft</option>
-                      <option value="SUBMITTED">Submitted</option>
-                      <option value="UNDER_REVIEW">Under Review</option>
-                      <option value="PUBLISHED">Published</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
-                  <button
-                    type="button"
-                    onClick={() => setIsDrawerOpen(false)}
-                    className="px-4 py-2.5 border border-slate-200 rounded-lg text-slate-650 hover:bg-slate-50 transition-colors text-xs font-medium capitalize cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 bg-primary hover:bg-primary/95 text-white text-xs font-medium capitalize rounded-lg shadow-sm transition-all flex items-center space-x-1.5 cursor-pointer"
-                  >
-                    <Check className="w-4 h-4" />
-                    <span>{editingPub ? 'Update' : 'Publish'}</span>
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         )}
-      </AnimatePresence>
+      </Card>
 
+      <Dialog
+        open={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        dismissible={!saving}
+        side="right"
+        title={editingPub ? 'Edit publication' : 'Add publication'}
+        description="Shown on your researcher profile."
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setIsDrawerOpen(false)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button type="submit" form="publication-form" loading={saving}>
+              {editingPub ? 'Save changes' : 'Add publication'}
+            </Button>
+          </>
+        }
+      >
+        <form id="publication-form" onSubmit={handleSubmit} className="space-y-4">
+          {formError && (
+            <p role="alert" className="rounded-lg border border-danger-200 bg-danger-50 px-3 py-2 text-sm text-danger-700">
+              {formError}
+            </p>
+          )}
+          <Field label="Title" htmlFor="pub-title" required>
+            <input id="pub-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} required className="cb-input" />
+          </Field>
+          <Field label="Authors" htmlFor="pub-authors" required hint="Separate names with commas, in the order they appear on the paper.">
+            <input id="pub-authors" type="text" value={authors} onChange={(e) => setAuthors(e.target.value)} required className="cb-input" />
+          </Field>
+          <Field label="Journal, conference or publisher" htmlFor="pub-publisher">
+            <input
+              id="pub-publisher"
+              type="text"
+              value={publisher}
+              onChange={(e) => setPublisher(e.target.value)}
+              placeholder="e.g. IEEE Transactions on Image Processing"
+              className="cb-input"
+            />
+          </Field>
+          <Field label="DOI" htmlFor="pub-doi" hint="For example 10.1109/TIP.2024.1234567">
+            <input id="pub-doi" type="text" value={doi} onChange={(e) => setDoi(e.target.value)} className="cb-input font-mono text-sm" />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Year" htmlFor="pub-year" required>
+              <input
+                id="pub-year"
+                type="number"
+                value={year}
+                onChange={(e) => setYear(Number(e.target.value))}
+                required
+                min={1900}
+                max={new Date().getFullYear() + 2}
+                className="cb-input tabular-nums"
+              />
+            </Field>
+            <Field label="Status" htmlFor="pub-status" required>
+              <select id="pub-status" value={status} onChange={(e) => setStatus(e.target.value)} className="cb-input">
+                {STATUSES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </form>
+      </Dialog>
+
+      <Dialog
+        open={!!deletingPub}
+        onClose={() => setDeletingPub(null)}
+        dismissible={!saving}
+        size="sm"
+        title="Delete this publication?"
+        description={deletingPub ? `“${deletingPub.title}” will be removed from your profile. This cannot be undone.` : undefined}
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setDeletingPub(null)} disabled={saving}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleDelete} loading={saving}>
+              Delete
+            </Button>
+          </>
+        }
+      />
     </div>
   );
 }

@@ -2,11 +2,11 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GraduationCap, LogOut, Settings, User } from 'lucide-react';
+import { GraduationCap, HelpCircle, LogOut, Settings, User } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useStore } from '@/store/useStore';
 import { cn } from '@/lib/utils';
-import { getProfileImageUrl } from '@/lib/avatar';
+import { getProfileImageUrl, handleAvatarError } from '@/lib/avatar';
 import { RoleBadge } from './role-badge';
 
 export function ProfileDropdown() {
@@ -44,6 +44,7 @@ export function ProfileDropdown() {
     // Admins have no research profile; their account lives in Settings.
     ...(currentUser.role !== 'INSTITUTE_ADMIN' ? [{ label: 'My profile', href: '/profile', icon: User }] : []),
     { label: 'Settings', href: '/settings', icon: Settings },
+    { label: 'Help', href: '/help', icon: HelpCircle },
   ];
 
   return (
@@ -59,6 +60,8 @@ export function ProfileDropdown() {
         <img
           src={getProfileImageUrl(currentUser)}
           alt=""
+          referrerPolicy="no-referrer"
+          onError={(e) => handleAvatarError(e, currentUser?.name)}
           className="size-8 rounded-full bg-neutral-100 object-cover ring-1 ring-line"
         />
       </button>

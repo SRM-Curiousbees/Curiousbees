@@ -60,25 +60,17 @@ export default function RolesPermissionsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto py-2 select-none">
+    <div className="mx-auto max-w-6xl space-y-6">
       {/* Header */}
-      <div className="border-b border-slate-200/80 pb-4">
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-brand/10 text-brand border border-brand/20">
-            Access Control
-          </span>
-        </div>
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
-          Roles & Permissions Matrix
-        </h1>
-        <p className="text-xs text-slate-500 font-semibold mt-0.5">
-          Authoritative institutional permission matrix enforced at edge, API, and database layers.
-        </p>
+      <div className="pb-2">
+        <p className="mb-1.5 text-sm font-medium text-ink-muted">Access Control</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Roles and permissions</h1>
+          <p className="mt-1.5 max-w-prose text-base text-ink-secondary">What each role can do. The web app and the API both enforce these rules.</p>
       </div>
 
       {/* Role Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-surface border border-slate-200/80 rounded-2xl p-4.5 space-y-2 shadow-2xs">
+        <div className="bg-surface border border-slate-200/80 rounded-2xl p-4 space-y-2 shadow-2xs">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-semibold text-xs">
               RS
@@ -90,7 +82,7 @@ export default function RolesPermissionsPage() {
           </p>
         </div>
 
-        <div className="bg-surface border border-slate-200/80 rounded-2xl p-4.5 space-y-2 shadow-2xs">
+        <div className="bg-surface border border-slate-200/80 rounded-2xl p-4 space-y-2 shadow-2xs">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center font-semibold text-xs">
               RP
@@ -102,7 +94,7 @@ export default function RolesPermissionsPage() {
           </p>
         </div>
 
-        <div className="bg-surface border border-slate-200/80 rounded-2xl p-4.5 space-y-2 shadow-2xs">
+        <div className="bg-surface border border-slate-200/80 rounded-2xl p-4 space-y-2 shadow-2xs">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center font-semibold text-xs">
               IA

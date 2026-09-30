@@ -1,5 +1,8 @@
 'use client';
 
+import { PageHeader } from '@/components/ui/page-header';
+import { Button } from '@/components/ui/button';
+
 import React, { useEffect, useState } from 'react';
 import { useStore } from '@/store/useStore';
 import { useRouter } from 'next/navigation';
@@ -130,22 +133,19 @@ export default function AdminAnnouncementsPage() {
   const filtered = announcements.filter(a => a.title.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
-    <div className="space-y-6 text-left select-none">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5 gap-4">
-        <div>
-          <span className="text-xs font-medium text-primary capitalize flex items-center gap-1.5">
-            <Megaphone className="w-4 h-4 text-primary" />
-            <span>Global Broadcast</span>
-          </span>
-          <h1 className="cb-page-title mt-2 font-display">Announcements</h1>
-          <p className="cb-page-subtitle">Create, manage, and push global announcements to all users.</p>
-        </div>
-        <button onClick={handleOpenCreate} className="px-4 py-2.5 bg-primary hover:bg-primary/95 text-white text-xs font-medium capitalize rounded-lg shadow-sm transition-all flex items-center justify-center space-x-1.5 shrink-0 cursor-pointer">
-          <Plus className="w-4 h-4" />
-          <span>New Announcement</span>
-        </button>
-      </div>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <PageHeader
+        meta="Communication"
+        title="Announcements"
+        description="Notices for everyone on CuriousBees. Draft them here and publish when they’re ready."
+        actions={
+          <Button onClick={handleOpenCreate}>
+            <Plus aria-hidden />
+            New announcement
+          </Button>
+        }
+        className="pb-2"
+      />
 
       {/* Search */}
       <div className="cb-card p-4 bg-surface/95 backdrop-blur-md max-w-md">
@@ -243,10 +243,7 @@ export default function AdminAnnouncementsPage() {
                   <label className="block text-xs font-medium text-slate-455 capitalize">Content *</label>
                   <textarea rows={8} value={content} onChange={e => setContent(e.target.value)} required placeholder="Message details..." className="w-full px-3 py-2 text-xs font-semibold rounded-lg bg-surface border border-slate-200 outline-none focus:border-primary transition-all" />
                 </div>
-                <div className="flex items-center gap-2 pt-2">
-                  <input type="checkbox" id="pushToEmail" checked={pushToEmail} onChange={e => setPushToEmail(e.target.checked)} className="rounded border-slate-300 text-primary focus:ring-primary w-4 h-4 cursor-pointer" />
-                  <label htmlFor="pushToEmail" className="text-xs font-bold text-slate-700 cursor-pointer">Push copy to user emails (Simulated)</label>
-                </div>
+                {/* Emailing announcements isn't implemented, so there's no option for it here. */}
                 <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
                   <button type="button" onClick={() => setIsDrawerOpen(false)} className="px-4 py-2.5 border border-slate-200 rounded-lg text-slate-600 hover:bg-slate-50 text-xs font-medium capitalize cursor-pointer" disabled={saving}>Cancel</button>
                   <button type="submit" disabled={saving} className="px-5 py-2.5 bg-primary hover:bg-primary/95 text-white text-xs font-medium capitalize rounded-lg shadow-sm flex items-center space-x-1.5 cursor-pointer disabled:opacity-50">

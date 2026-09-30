@@ -1,14 +1,16 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateThreadInput } from '@curiousbees/types';
 import { CreateThreadSchema } from '@curiousbees/shared-utils';
 import { NotificationsService } from '../notifications/notifications.service';
+import { FilesService } from '../files/files.service';
 
 @Injectable()
 export class ThreadsService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    @Optional() private files?: FilesService,
   ) {}
 
   async getThreads(
@@ -206,7 +208,8 @@ export class ThreadsService {
       }
     });
 
-    if (!thread) {
+    // Posts hidden by moderation stay visible to their author only.
+    if (!thread || (thread.hidden && thread.authorId !== userId)) {
       throw new NotFoundException('Research thread not found.');
     }
 
@@ -214,8 +217,8 @@ export class ThreadsService {
   }
 
   async getThreadPublic(id: string) {
-    return this.prisma.thread.findUnique({
-      where: { id },
+    return this.prisma.thread.findFirst({
+      where: { id, hidden: false },
       include: {
         author: {
           select: {
@@ -507,5 +510,33 @@ export class ThreadsService {
     });
 
     return updated;
+  }
+
+  async createFileUpload(userId: string, input: { filename: string; contentType: string; sizeBytes: number }) {
+    if (!this.files) {
+      throw new BadRequestException('File storage service is not available.');
+    }
+    const safeName = this.files.validateUpload(input.filename, input.contentType, input.sizeBytes);
+    const storageKey = this.files.buildObjectKey('threads', 'posts', userId, safeName);
+    const presigned = await this.files.createPresignedUpload(storageKey, input.contentType.toLowerCase(), input.sizeBytes);
+    return {
+      ...presigned,
+      downloadPath: `/api/threads/files/download?key=${encodeURIComponent(storageKey)}`,
+    };
+  }
+
+  async getFileDownload(storageKey: string) {
+    if (!this.files) {
+      throw new BadRequestException('File storage service is not available.');
+    }
+    if (!this.files.isWellFormedKey(storageKey)) {
+      throw new BadRequestException('Invalid storage key.');
+    }
+    // Only post attachments are served here. Workspace files are private to their
+    // members and must go through WorkspacesService, which checks membership.
+    if (!storageKey.startsWith('threads/')) {
+      throw new ForbiddenException('This file is not a post attachment.');
+    }
+    return this.files.createPresignedDownload(storageKey);
   }
 }

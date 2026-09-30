@@ -138,6 +138,15 @@ describe('CuriousBees API (integration)', () => {
       await as('admin@srmist.edu.in').get('/api/system').expect(200);
     });
 
+    it('published announcements are for signed-in members only, without author emails', async () => {
+      await as(null).get('/api/announcements').expect(401);
+      const admin = await prisma.user.findUniqueOrThrow({ where: { email: 'admin@srmist.edu.in' } });
+      await prisma.systemAnnouncement.create({ data: { title: 'Library hours', content: 'Open until 10 pm.', status: 'PUBLISHED', authorId: admin.id } });
+      const res = await as('admin@srmist.edu.in').get('/api/announcements').expect(200);
+      expect(res.body[0]).toMatchObject({ title: 'Library hours' });
+      expect(res.body[0].author).not.toHaveProperty('email');
+    });
+
     it('the removed arbitrary-key download endpoint no longer exists', async () => {
       await as('admin@srmist.edu.in').get('/api/files/presigned-download?key=workspaces/x/y/z/a.pdf').expect(404);
       await as('admin@srmist.edu.in').post('/api/files/presigned-upload').send({}).expect(404);
@@ -354,6 +363,12 @@ describe('CuriousBees API (integration)', () => {
       expect(record.storageKey).not.toMatch(/^https?:/);
     });
 
+    it('the post-attachment download routes do not serve workspace files', async () => {
+      const key = encodeURIComponent(storageKey);
+      await as('outsider@srmist.edu.in').get(`/api/threads/files/download?key=${key}`).expect(403);
+      await http.get(`/api/threads/public/files/download?key=${key}`).expect(403);
+    });
+
     it('non-members can neither download nor upload', async () => {
       await as('outsider@srmist.edu.in').get(`/api/workspaces/${workspaceId}/files/${fileId}/download`).expect(403);
       await as('outsider@srmist.edu.in')
@@ -444,6 +459,39 @@ describe('CuriousBees API (integration)', () => {
       const adminPost = await prisma.thread.create({ data: { title: 'Notice', content: 'Institutional notice', tags: [], authorId: admin.id } });
       await as('scholar.one@gmail.com').put(`/api/threads/${adminPost.id}`).send({ title: 'Changed' }).expect(400);
       expect(await prisma.thread.findUnique({ where: { id: adminPost.id } })).toMatchObject({ title: 'Notice' });
+    });
+  });
+
+  describe('progress reports', () => {
+    it("go to the scholar's own supervisor, and only once one is assigned", async () => {
+      const supervisor = await prisma.user.findUniqueOrThrow({ where: { email: 'dr.srm@srmist.edu.in' } });
+      const before = await prisma.user.findUniqueOrThrow({ where: { id: scholar.id }, select: { supervisorId: true } });
+      const report = { title: 'October progress', description: 'Finished the literature review.' };
+
+      await prisma.user.update({ where: { id: scholar.id }, data: { supervisorId: null } });
+      await as('scholar.one@gmail.com').post('/api/reports').send(report).expect(400);
+
+      await prisma.user.update({ where: { id: scholar.id }, data: { supervisorId: supervisor.id } });
+      await as('scholar.one@gmail.com').post('/api/reports').send({ ...report, supervisorId: scholar.id }).expect(403);
+      await as('scholar.one@gmail.com').post('/api/reports').send({ ...report, evidenceUrl: 'javascript:alert(1)' }).expect(400);
+      const created = await as('scholar.one@gmail.com').post('/api/reports').send(report).expect(201);
+      expect(created.body).toMatchObject({ supervisorId: supervisor.id, status: 'PENDING', title: 'October progress' });
+
+      // Supervisors don't file reports.
+      await as('dr.srm@srmist.edu.in').post('/api/reports').send(report).expect(403);
+
+      await prisma.user.update({ where: { id: scholar.id }, data: { supervisorId: before.supervisorId } });
+    });
+  });
+
+  describe('moderated posts', () => {
+    it('a hidden post is visible to its author only, and never on the public share route', async () => {
+      const post = await prisma.thread.create({
+        data: { title: 'Hidden draft', content: 'Removed by moderation', tags: [], authorId: scholar.id, hidden: true, moderationReason: 'Test' },
+      });
+      await as('scholar.one@gmail.com').get(`/api/threads/${post.id}`).expect(200);
+      await as('dr.srm@srmist.edu.in').get(`/api/threads/${post.id}`).expect(404);
+      await http.get(`/api/threads/public/${post.id}`).expect(404);
     });
   });
 

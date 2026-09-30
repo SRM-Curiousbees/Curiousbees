@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useStore } from '@/store/useStore';
-import { getProfileImageUrl } from '@/lib/avatar';
+import { getProfileImageUrl, handleAvatarError } from '@/lib/avatar';
 import { ROLE_LABEL } from '@/lib/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -76,7 +76,13 @@ export default function ResearchDiscoverySidebar({
               return (
                 <li key={peer.id}>
                   <Link href={`/researchers/${peer.id}`} className="group flex items-start gap-3 px-4 py-2.5 transition-colors hover:bg-surface-muted">
-                    <img src={getProfileImageUrl(peer)} alt="" className="size-9 shrink-0 rounded-full bg-neutral-100 object-cover ring-1 ring-line" />
+                    <img
+                      src={getProfileImageUrl(peer)}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                      onError={(e) => handleAvatarError(e, name)}
+                      className="size-9 shrink-0 rounded-full bg-neutral-100 object-cover ring-1 ring-line"
+                    />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm font-medium text-ink group-hover:text-brand">{name}</span>
                       <span className="block truncate text-xs text-ink-muted">

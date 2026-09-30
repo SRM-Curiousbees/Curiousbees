@@ -21,8 +21,10 @@ export class AnnouncementsService {
     return this.prisma.systemAnnouncement.findMany({
       where: { status: 'PUBLISHED' },
       orderBy: { createdAt: 'desc' },
+      take: 20,
       include: {
-        author: { select: { name: true, email: true, image: true, role: true } },
+        // Members see who posted a notice, not their email address.
+        author: { select: { name: true, image: true, role: true } },
       },
     });
   }

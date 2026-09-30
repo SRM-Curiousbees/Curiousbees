@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LogOut, X } from 'lucide-react';
 import { useStore } from '@/store/useStore';
 import { cn } from '@/lib/utils';
-import { getProfileImageUrl } from '@/lib/avatar';
+import { getProfileImageUrl, handleAvatarError } from '@/lib/avatar';
 import { getNavSections, isNavItemActive, ROLE_LABEL } from '@/lib/navigation';
 import Logo from '@/components/Logo';
 import { IconButton } from '@/components/ui/button';
@@ -44,7 +44,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             )}
             <ul className="space-y-px">
               {section.items.map((item) => {
-                const active = isNavItemActive(item.href, pathname, tab);
+                const active = isNavItemActive(item.href, pathname, tab, item);
                 const Icon = item.icon;
                 return (
                   <li key={item.href}>
@@ -85,6 +85,8 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
             <img
               src={getProfileImageUrl(currentUser)}
               alt=""
+              referrerPolicy="no-referrer"
+              onError={(e) => handleAvatarError(e, currentUser?.name)}
               className="size-8 shrink-0 rounded-full bg-neutral-100 object-cover ring-1 ring-line"
             />
             <div className="min-w-0 flex-1">

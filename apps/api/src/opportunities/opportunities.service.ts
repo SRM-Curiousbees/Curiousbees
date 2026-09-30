@@ -370,7 +370,7 @@ export class OpportunitiesService {
     const request = await this.prisma.collaborationRequest.findUnique({
       where: { id: requestId },
       include: {
-        opportunity: true,
+        opportunity: { include: { author: { select: { name: true } } } },
         scholar: true
       }
     });
@@ -409,7 +409,7 @@ export class OpportunitiesService {
       const workspace = await this.prisma.workspace.create({
         data: {
           title: `Workspace: ${request.opportunity.title}`,
-          description: `Research collaboration space for "${request.opportunity.title}" between Prof. ${request.opportunity.authorId} and scholar ${request.scholar.name || request.scholar.email}.`
+          description: `Research collaboration space for "${request.opportunity.title}" between ${request.opportunity.author?.name || 'the supervisor'} and ${request.scholar.name || request.scholar.email}.`
         }
       });
 

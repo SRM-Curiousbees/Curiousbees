@@ -1,283 +1,283 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { Briefcase, Calendar, CornerDownLeft, MessageSquare, Search, Users } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { Search, MessageSquare, Briefcase, Calendar, Users, CornerDownLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+type Category = 'Posts' | 'Opportunities' | 'Events' | 'Researchers';
 
 interface SearchResultItem {
   id: string;
   title: string;
-  category: 'Threads' | 'Opportunities' | 'Events' | 'Researchers';
+  category: Category | 'Action';
   url: string;
   meta?: string;
 }
 
-interface SpotlightSearchProps {
-  isOpen: boolean;
-  onClose: () => void;
-}
+const FILTERS: { id: 'ALL' | Category; label: string }[] = [
+  { id: 'ALL', label: 'All' },
+  { id: 'Posts', label: 'Posts' },
+  { id: 'Researchers', label: 'Researchers' },
+  { id: 'Opportunities', label: 'Opportunities' },
+  { id: 'Events', label: 'Events' },
+];
 
-export default function SpotlightSearch({ isOpen, onClose }: SpotlightSearchProps) {
+const ICONS: Record<SearchResultItem['category'], React.ElementType> = {
+  Posts: MessageSquare,
+  Opportunities: Briefcase,
+  Events: Calendar,
+  Researchers: Users,
+  Action: Search,
+};
+
+const MAX_RESULTS = 8;
+
+/**
+ * Quick jump to posts, researchers, opportunities and events already loaded in
+ * the portal (⌘K / Ctrl K). "Search all posts" runs the full server search on the feed.
+ */
+export default function SpotlightSearch({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
   const inputRef = useRef<HTMLInputElement>(null);
+  const listId = useId();
   const { threads, opportunities, events, collaborators, fetchCollaborators } = useStore();
-  
-  const [query, setQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<'ALL' | 'THREADS' | 'OPPORTUNITIES' | 'EVENTS' | 'RESEARCHERS'>('ALL');
-  const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // Focus input when modal opens
+  const [query, setQuery] = useState('');
+  const [filter, setFilter] = useState<'ALL' | Category>('ALL');
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-      setQuery('');
-      setSelectedIndex(0);
-      fetchCollaborators(); // Ensure collaborators are cached
-    }
+    if (!isOpen) return;
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    const { overflow } = document.body.style;
+    document.body.style.overflow = 'hidden';
+    setQuery('');
+    setSelectedIndex(0);
+    fetchCollaborators();
+    const t = setTimeout(() => inputRef.current?.focus(), 30);
+    return () => {
+      clearTimeout(t);
+      document.body.style.overflow = overflow;
+      previouslyFocused?.focus?.();
+    };
   }, [isOpen, fetchCollaborators]);
 
-  // Aggregate and filter search items
-  const getFilteredResults = (): SearchResultItem[] => {
+  const results = useMemo<SearchResultItem[]>(() => {
+    const q = query.trim().toLowerCase();
     const list: SearchResultItem[] = [];
 
-    // 1. Threads
-    (threads || []).forEach((t) => {
+    (threads || []).forEach((t: any) => {
       if (!t) return;
+      const title = t.title || (t.content ? String(t.content).slice(0, 80) : '');
+      if (!title) return;
       list.push({
         id: `t-${t.id}`,
-        title: t.title,
-        category: 'Threads',
-        url: `/threads/${t.id}`,
-        meta: `By ${t.author?.name || 'Scholar'} · ${(t.tags || []).join(', ')}`,
+        title,
+        category: 'Posts',
+        url: `/feed/${t.id}`,
+        meta: [t.author?.name, (t.tags || []).slice(0, 3).join(', ')].filter(Boolean).join(' · '),
       });
     });
-
-    // 2. Opportunities
-    (opportunities || []).forEach((o) => {
-      if (!o) return;
+    (collaborators || []).forEach((c: any) => {
+      if (!c?.id) return;
+      const interests = (c.interests || []).map((i: any) => i?.interest?.name || i?.name).filter(Boolean).slice(0, 3).join(', ');
+      list.push({
+        id: `c-${c.id}`,
+        title: c.name || c.email || 'Researcher',
+        category: 'Researchers',
+        url: `/researchers/${c.id}`,
+        meta: [c.department, interests].filter(Boolean).join(' · '),
+      });
+    });
+    (opportunities || []).forEach((o: any) => {
+      if (!o?.title) return;
       list.push({
         id: `o-${o.id}`,
         title: o.title,
         category: 'Opportunities',
         url: '/opportunities',
-        meta: `${o.department || 'Department'} · PI: ${o.author?.name || 'Faculty Leads'}`,
+        meta: [o.opportunityType, o.author?.name].filter(Boolean).join(' · '),
       });
     });
-
-    // 3. Events
-    (events || []).forEach((e) => {
-      if (!e) return;
-      list.push({
-        id: `e-${e.id}`,
-        title: e.title,
-        category: 'Events',
-        url: '/events',
-        meta: `${e.date || ''} · ${e.venue || ''}`,
-      });
+    (events || []).forEach((e: any) => {
+      if (!e?.title) return;
+      const d = e.date ? new Date(e.date) : null;
+      const when = d && !isNaN(d.getTime()) ? d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : e.date;
+      list.push({ id: `e-${e.id}`, title: e.title, category: 'Events', url: '/events', meta: [when, e.venue].filter(Boolean).join(' · ') });
     });
 
-    // 4. Researchers
-    (collaborators || []).forEach((c) => {
-      if (!c) return;
-      list.push({
-        id: `c-${c.id}`,
-        title: c.name || 'Scholar',
-        category: 'Researchers',
-        url: '/researchers',
-        meta: `${c.department || 'SRMIST'} · Interests: ${c.interests?.map((i: any) => i.interest?.name || i.name || '').filter(Boolean).join(', ') || 'General'}`,
-      });
-    });
+    const matched = list
+      .filter((item) => filter === 'ALL' || item.category === filter)
+      .filter((item) => !q || item.title.toLowerCase().includes(q) || (item.meta || '').toLowerCase().includes(q))
+      .slice(0, MAX_RESULTS);
 
-    // Filtering by category & query
-    return list.filter((item) => {
-      const matchCat =
-        activeCategory === 'ALL' ||
-        (activeCategory === 'THREADS' && item.category === 'Threads') ||
-        (activeCategory === 'OPPORTUNITIES' && item.category === 'Opportunities') ||
-        (activeCategory === 'EVENTS' && item.category === 'Events') ||
-        (activeCategory === 'RESEARCHERS' && item.category === 'Researchers');
+    // The feed search covers every post, not just the ones loaded here.
+    if (q && (filter === 'ALL' || filter === 'Posts')) {
+      matched.push({ id: 'search-feed', title: `Search all posts for “${query.trim()}”`, category: 'Action', url: `/feed?q=${encodeURIComponent(query.trim())}` });
+    }
+    return matched;
+  }, [threads, collaborators, opportunities, events, query, filter]);
 
-      const matchQuery =
-        item.title.toLowerCase().includes(query.toLowerCase()) ||
-        (item.meta && item.meta.toLowerCase().includes(query.toLowerCase()));
-
-      return matchCat && matchQuery;
-    });
+  const go = (item?: SearchResultItem) => {
+    if (!item) return;
+    onClose();
+    router.push(item.url);
   };
 
-  const results = getFilteredResults().slice(0, 8);
-
-  // Handle keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-        return;
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((i) => (results.length ? (i + 1) % results.length : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((i) => (results.length ? (i - 1 + results.length) % results.length : 0));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      go(results[selectedIndex]);
+    } else if (e.key === 'Tab') {
+      // Keep focus inside: the input and the filter buttons are the only stops.
+      const panel = (e.currentTarget as HTMLElement).querySelectorAll<HTMLElement>('input, button');
+      const first = panel[0];
+      const last = panel[panel.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
       }
-
-      if (!isOpen) return;
-
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev + 1) % Math.max(results.length, 1));
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        setSelectedIndex((prev) => (prev - 1 + results.length) % Math.max(results.length, 1));
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        if (results[selectedIndex]) {
-          router.push(results[selectedIndex].url);
-          onClose();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, results, selectedIndex, onClose, router]);
-
-  const categoryIcons = {
-    Threads: <MessageSquare className="w-4 h-4 text-primary" />,
-    Opportunities: <Briefcase className="w-4 h-4 text-amber-600" />,
-    Events: <Calendar className="w-4 h-4 text-emerald-600" />,
-    Researchers: <Users className="w-4 h-4 text-blue-600" />,
+    }
   };
 
-  return (
+  if (!mounted) return null;
+
+  const activeId = results[selectedIndex] ? `${listId}-${selectedIndex}` : undefined;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4 overflow-y-auto">
-          {/* Backdrop */}
+        <div className="fixed inset-0 z-modal flex items-start justify-center px-4 pt-[12vh]">
           <motion.div
+            aria-hidden
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-[3px]"
+            className="fixed inset-0 bg-black/40"
           />
-
-          {/* Modal Container */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.97, y: -8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: -8 }}
-            transition={{ type: 'spring', duration: 0.35 }}
-            className="relative w-full max-w-xl bg-surface border border-borderStroke rounded-2xl shadow-2xl overflow-hidden text-left flex flex-col font-sans"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Search CuriousBees"
+            onKeyDown={onKeyDown}
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18, ease: [0.2, 0, 0, 1] }}
+            className="relative flex max-h-[76vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-line bg-surface shadow-xl"
           >
-            {/* Search Input Bar */}
-            <div className="flex items-center px-4 py-3.5 border-b border-borderStroke gap-3">
-              <Search className="w-4.5 h-4.5 text-textSecondary shrink-0" />
+            <div className="flex items-center gap-3 border-b border-line px-4">
+              <Search className="size-[18px] shrink-0 text-ink-muted" aria-hidden />
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Search threads, events, workspaces, experts..."
+                role="combobox"
+                aria-expanded="true"
+                aria-controls={listId}
+                aria-activedescendant={activeId}
+                aria-autocomplete="list"
+                aria-label="Search posts, researchers, opportunities and events"
+                placeholder="Search posts, researchers, opportunities…"
                 value={query}
                 onChange={(e) => {
                   setQuery(e.target.value);
                   setSelectedIndex(0);
                 }}
-                className="flex-1 bg-transparent border-none text-sm text-slate-900 placeholder-textSecondary/50 outline-none select-text"
+                className="h-14 min-w-0 flex-1 bg-transparent text-base text-ink outline-none placeholder:text-ink-muted"
               />
-              <span className="text-2xs font-bold text-textSecondary/60 uppercase border border-borderStroke/70 bg-slate-50 px-2 py-0.5 rounded shadow-sm">
-                ESC
-              </span>
+              <kbd className="hidden shrink-0 rounded-md border border-line px-1.5 py-0.5 font-sans text-xs text-ink-muted sm:inline">Esc</kbd>
             </div>
 
-            {/* Quick Filter Tabs */}
-            <div className="flex px-3 py-2 border-b border-borderStroke bg-slate-50/50 gap-1.5 overflow-x-auto">
-              {(['ALL', 'THREADS', 'OPPORTUNITIES', 'EVENTS', 'RESEARCHERS'] as const).map((cat) => (
+            <div className="flex gap-1 overflow-x-auto border-b border-line px-3 py-2">
+              {FILTERS.map((f) => (
                 <button
-                  key={cat}
+                  key={f.id}
+                  type="button"
+                  aria-pressed={filter === f.id}
                   onClick={() => {
-                    setActiveCategory(cat);
+                    setFilter(f.id);
                     setSelectedIndex(0);
+                    inputRef.current?.focus();
                   }}
                   className={cn(
-                    'px-2.5 py-1 rounded-lg text-xs font-medium capitalize transition-colors cursor-pointer',
-                    activeCategory === cat
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'bg-transparent text-textSecondary hover:text-ink hover:bg-slate-100'
+                    'h-8 shrink-0 rounded-lg px-2.5 text-sm transition-colors duration-fast',
+                    filter === f.id ? 'bg-neutral-100 font-medium text-ink' : 'text-ink-muted hover:bg-neutral-100 hover:text-ink',
                   )}
                 >
-                  {cat}
+                  {f.label}
                 </button>
               ))}
             </div>
 
-            {/* Results Zone */}
-            <div className="max-h-[320px] overflow-y-auto p-2 space-y-0.5">
+            <ul id={listId} role="listbox" aria-label="Results" className="min-h-0 flex-1 overflow-y-auto p-2">
               {results.length === 0 ? (
-                <div className="py-10 text-center text-textSecondary space-y-1.5">
-                  <Search className="w-8 h-8 opacity-20 mx-auto text-textSecondary" />
-                  <p className="text-xs font-medium capitalize text-textSecondary/80">No matching results found</p>
-                  <p className="text-xs text-textSecondary/50">Try refining your search keyword queries</p>
-                </div>
+                <li className="px-3 py-10 text-center" role="presentation">
+                  <p className="text-sm font-medium text-ink">No matches</p>
+                  <p className="mt-1 text-sm text-ink-muted">Try another word, or a different filter.</p>
+                </li>
               ) : (
                 results.map((item, idx) => {
-                  const isSelected = idx === selectedIndex;
+                  const Icon = ICONS[item.category];
+                  const selected = idx === selectedIndex;
                   return (
-                    <div
+                    <li
                       key={item.id}
-                      onClick={() => {
-                        router.push(item.url);
-                        onClose();
-                      }}
-                      onMouseEnter={() => setSelectedIndex(idx)}
-                      className={cn(
-                        'flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-all duration-150 relative overflow-hidden',
-                        isSelected ? 'bg-primary/5' : 'bg-transparent'
-                      )}
+                      id={`${listId}-${idx}`}
+                      role="option"
+                      aria-selected={selected}
+                      onMouseMove={() => setSelectedIndex(idx)}
+                      onClick={() => go(item)}
+                      className={cn('flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5', selected && 'bg-neutral-100')}
                     >
-                      <div className="flex items-center gap-3 min-w-0 z-10">
-                        <div className={cn(
-                          'p-1.5 rounded-lg shrink-0 border transition-all',
-                          isSelected 
-                            ? 'bg-surface border-primary/20 shadow-sm' 
-                            : 'bg-slate-50 border-borderStroke/30'
-                        )}>
-                          {categoryIcons[item.category]}
-                        </div>
-                        <div className="min-w-0 text-left">
-                          <p className={cn(
-                            'text-sm font-semibold leading-tight truncate transition-colors',
-                            isSelected ? 'text-primary' : 'text-slate-900'
-                          )}>
-                            {item.title}
-                          </p>
-                          {item.meta && (
-                            <p className="text-2xs text-textSecondary/60 leading-normal truncate mt-0.5 font-medium">
-                              {item.meta}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {isSelected && (
-                        <div className="flex items-center gap-1 text-2xs font-bold text-primary uppercase shrink-0 z-10">
-                          <span>Open</span>
-                          <CornerDownLeft className="w-3.5 h-3.5 text-primary" />
-                        </div>
-                      )}
-                    </div>
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-line bg-surface text-ink-muted">
+                        <Icon className="size-4" aria-hidden />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-medium text-ink">{item.title}</span>
+                        {(item.meta || item.category !== 'Action') && (
+                          <span className="block truncate text-xs text-ink-muted">
+                            {item.category !== 'Action' && item.category}
+                            {item.meta && ` · ${item.meta}`}
+                          </span>
+                        )}
+                      </span>
+                      {selected && <CornerDownLeft className="size-4 shrink-0 text-ink-muted" aria-hidden />}
+                    </li>
                   );
                 })
               )}
-            </div>
+            </ul>
 
-            {/* Instructions Footer */}
-            <div className="flex items-center justify-between px-4 py-2.5 border-t border-borderStroke bg-slate-50/50 text-2xs font-bold text-textSecondary/60 uppercase">
-              <div className="flex items-center gap-4">
-                <span>↑↓ navigate</span>
-                <span>⏎ select</span>
-              </div>
-              <span className="font-semibold text-primary">CuriousBees Spotlight Search</span>
+            <div className="hidden items-center gap-4 border-t border-line px-4 py-2 text-xs text-ink-muted sm:flex">
+              <span>↑ ↓ to move</span>
+              <span>Enter to open</span>
+              <span className="ml-auto">Searches what’s loaded; use “Search all posts” for the full feed</span>
             </div>
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

@@ -1,17 +1,27 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useStore } from '@/store/useStore';
-import { Loader2, CheckCircle2, AlertTriangle, ArrowRight } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { buttonVariants } from '@/components/ui/button';
 
+const SETTINGS_HREF = '/settings?tab=integrations';
+
+/**
+ * Google and Zoom send people back here after they approve access. The code is
+ * exchanged by the API; tokens never reach the browser.
+ */
 export default function IntegrationsCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { handleGoogleCallback, handleZoomCallback, addToast } = useStore();
 
-  const [status, setStatus] = useState<'PROCESSING' | 'SUCCESS' | 'ERROR'>('PROCESSING');
+  const [status, setStatus] = useState<'working' | 'done' | 'failed'>('working');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [providerName, setProviderName] = useState('your account');
   const processedRef = useRef(false);
 
   useEffect(() => {
@@ -23,111 +33,72 @@ export default function IntegrationsCallbackPage() {
     const stateParam = searchParams.get('state');
     if (!provider && stateParam) {
       try {
-        const decoded = JSON.parse(atob(stateParam));
-        if (decoded?.provider) {
-          provider = decoded.provider;
-        }
-      } catch (e) {
-        provider = 'GOOGLE_WORKSPACE';
+        provider = JSON.parse(atob(stateParam))?.provider || null;
+      } catch {
+        provider = null;
       }
     }
-    const error = searchParams.get('error') || searchParams.get('error_description');
+    const isZoom = provider === 'ZOOM_WORKPLACE';
+    setProviderName(isZoom ? 'Zoom' : 'Google Workspace');
 
+    const error = searchParams.get('error_description') || searchParams.get('error');
     if (error) {
-      setStatus('ERROR');
-      setErrorMessage(error);
+      setStatus('failed');
+      setErrorMessage(error === 'access_denied' ? 'Access was not granted, so nothing was connected.' : error);
       return;
     }
-
     if (!code) {
-      setStatus('ERROR');
-      setErrorMessage('No authorization code was returned by the provider.');
+      setStatus('failed');
+      setErrorMessage('The provider didn’t return an authorization code. Start the connection again from Settings.');
       return;
     }
 
-    const exchange = async () => {
+    (async () => {
       try {
         const redirectUri = `${window.location.origin}/settings/integrations/callback`;
-        
-        if (provider === 'ZOOM_WORKPLACE') {
-          await handleZoomCallback(code, redirectUri);
-          addToast('Your Zoom account has been successfully linked to CuriousBees.', 'success');
-        } else {
-          await handleGoogleCallback(code, redirectUri);
-          addToast('Your Google Workspace account has been successfully linked to CuriousBees.', 'success');
-        }
-
-        setStatus('SUCCESS');
-        setTimeout(() => {
-          router.push('/settings/integrations');
-        }, 1500);
+        if (isZoom) await handleZoomCallback(code, redirectUri);
+        else await handleGoogleCallback(code, redirectUri);
+        addToast(`${isZoom ? 'Zoom' : 'Google Workspace'} connected.`, 'success');
+        setStatus('done');
+        setTimeout(() => router.replace(SETTINGS_HREF), 1200);
       } catch (err: any) {
-        setStatus('ERROR');
-        setErrorMessage(err.message || 'Failed to exchange authorization tokens.');
+        setStatus('failed');
+        setErrorMessage(err?.message || 'The connection could not be completed.');
       }
-    };
-
-    exchange();
+    })();
   }, [searchParams, handleGoogleCallback, handleZoomCallback, addToast, router]);
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center p-4">
-      <div className="cb-card max-w-md w-full p-8 bg-surface border border-slate-200/80 rounded-2xl shadow-sm text-center space-y-5">
-        {status === 'PROCESSING' && (
+    <div className="mx-auto flex min-h-[60vh] max-w-md items-center">
+      <Card className="w-full p-8 text-center" role="status" aria-live="polite">
+        {status === 'working' && (
           <>
-            <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
-              <Loader2 className="w-6 h-6 animate-spin" />
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="font-display font-bold text-lg text-slate-900">Finalizing Authorization</h3>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                Establishing secure server-side handshake and storing encrypted tokens...
-              </p>
-            </div>
+            <Loader2 className="mx-auto size-8 animate-spin text-brand" aria-hidden />
+            <h1 className="mt-4 text-lg font-semibold text-ink">Connecting {providerName}</h1>
+            <p className="mt-1 text-sm text-ink-muted">This takes a few seconds.</p>
           </>
         )}
-
-        {status === 'SUCCESS' && (
+        {status === 'done' && (
           <>
-            <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="font-display font-bold text-lg text-slate-900">Integration Connected</h3>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                Redirecting back to your research collaboration settings...
-              </p>
-            </div>
-            <button
-              onClick={() => router.push('/settings/integrations')}
-              className="inline-flex items-center gap-2 text-xs font-bold text-primary hover:underline cursor-pointer pt-2"
-            >
-              <span>Go to Settings</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            <CheckCircle2 className="mx-auto size-8 text-success-600" aria-hidden />
+            <h1 className="mt-4 text-lg font-semibold text-ink">{providerName} connected</h1>
+            <p className="mt-1 text-sm text-ink-muted">Taking you back to Settings…</p>
+            <Link href={SETTINGS_HREF} className={buttonVariants({ variant: 'secondary', className: 'mt-5' })}>
+              Go to Settings
+            </Link>
           </>
         )}
-
-        {status === 'ERROR' && (
+        {status === 'failed' && (
           <>
-            <div className="w-12 h-12 rounded-full bg-red-50 text-red-600 border border-red-200 flex items-center justify-center mx-auto">
-              <AlertTriangle className="w-6 h-6" />
-            </div>
-            <div className="space-y-1.5">
-              <h3 className="font-display font-bold text-lg text-slate-900">Connection Failed</h3>
-              <p className="text-xs text-red-600 font-medium leading-relaxed">
-                {errorMessage}
-              </p>
-            </div>
-            <button
-              onClick={() => router.push('/settings/integrations')}
-              className="w-full py-2.5 bg-primary text-white rounded-lg text-xs font-medium capitalize hover:bg-primary/95 transition-all cursor-pointer"
-            >
-              Return to Integrations
-            </button>
+            <AlertTriangle className="mx-auto size-8 text-danger-600" aria-hidden />
+            <h1 className="mt-4 text-lg font-semibold text-ink">{providerName} wasn’t connected</h1>
+            <p className="mt-1 text-sm text-ink-secondary">{errorMessage}</p>
+            <Link href={SETTINGS_HREF} className={buttonVariants({ className: 'mt-5' })}>
+              Back to Connected apps
+            </Link>
           </>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

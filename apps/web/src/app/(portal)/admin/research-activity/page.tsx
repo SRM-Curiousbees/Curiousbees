@@ -30,20 +30,12 @@ export default function AdminResearchActivityPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto py-2 select-none">
+    <div className="mx-auto max-w-6xl space-y-6">
       {/* Header */}
-      <div className="border-b border-slate-200/80 pb-4">
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-cyan-50 text-cyan-700 border border-cyan-200">
-            Research Governance
-          </span>
-        </div>
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
-          Institutional Research Activity
-        </h1>
-        <p className="text-xs text-slate-500 font-semibold mt-0.5">
-          High-level oversight of ongoing doctoral projects, interdisciplinary collaborations, and supervisor loads.
-        </p>
+      <div className="pb-2">
+        <p className="mb-1.5 text-sm font-medium text-ink-muted">Research Governance</p>
+        <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Research activity</h1>
+          <p className="mt-1.5 max-w-prose text-base text-ink-secondary">An overview of research across the institution: projects, collaborations and supervisor workloads.</p>
       </div>
 
       {/* Summary Cards */}

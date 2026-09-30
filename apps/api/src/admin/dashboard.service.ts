@@ -163,7 +163,7 @@ export class AdminDashboardService {
           category: 'SECURITY',
           targetId: log.targetId || log.id,
           targetType: log.targetType || 'SYSTEM',
-          actionUrl: `/admin/security`,
+          actionUrl: `/admin/audit`,
           timestamp: log.createdAt,
         });
       }

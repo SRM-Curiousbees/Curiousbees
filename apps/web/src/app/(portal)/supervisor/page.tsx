@@ -1,7 +1,7 @@
 'use client';
 
-import { PremiumDashboard } from '@/components/dashboard/PremiumDashboard';
+import { SupervisorOverview } from '@/components/dashboard/SupervisorOverview';
 
-export default function SupervisorDashboard() {
-  return <PremiumDashboard />;
+export default function SupervisorDashboardPage() {
+  return <SupervisorOverview />;
 }

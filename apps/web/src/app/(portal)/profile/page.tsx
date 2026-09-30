@@ -3,7 +3,11 @@
 import React, { useEffect } from 'react';
 import { useStore } from '@/store/useStore';
 import { AcademicProfileView } from '@/components/profile/AcademicProfileView';
-import { Loader2 } from 'lucide-react';
+import { UserX } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProfilePage() {
   const { currentUser, fetchProfile } = useStore();
@@ -29,25 +33,30 @@ export default function ProfilePage() {
 
   if (loading && !currentUser) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-slate-500">
-        <Loader2 className="w-8 h-8 text-brand animate-spin" />
-        <span className="text-sm font-bold">Loading profile...</span>
+      <div role="status" aria-label="Loading profile" className="space-y-6">
+        <Skeleton className="h-40 w-full rounded-2xl" />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Skeleton className="h-64 rounded-2xl lg:col-span-2" />
+          <Skeleton className="h-64 rounded-2xl" />
+        </div>
       </div>
     );
   }
 
   if (error && !currentUser) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center space-y-4">
-        <h2 className="text-lg font-bold text-slate-900">Failed to load profile</h2>
-        <p className="text-xs text-slate-500">{error}</p>
-        <button
-          onClick={loadProfile}
-          className="px-6 py-2.5 bg-brand hover:bg-brand-strong text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer"
-        >
-          Retry
-        </button>
-      </div>
+      <Card>
+        <EmptyState
+          icon={UserX}
+          title="Your profile didn't load"
+          description="Check your connection and try again."
+          action={
+            <Button variant="secondary" onClick={loadProfile}>
+              Try again
+            </Button>
+          }
+        />
+      </Card>
     );
   }
 

@@ -69,6 +69,12 @@ export class FilesService {
     this.bucketName = process.env.AWS_S3_BUCKET || '';
 
     const config: S3ClientConfig = { region: process.env.AWS_REGION || 'ap-south-1' };
+    if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+      config.credentials = {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+      };
+    }
     // Local testing against an S3-compatible server (e.g. MinIO). Never used in production.
     if (process.env.NODE_ENV !== 'production' && process.env.AWS_S3_ENDPOINT) {
       config.endpoint = process.env.AWS_S3_ENDPOINT;
@@ -110,7 +116,12 @@ export class FilesService {
   }
 
   /** Builds `<scope>/<scopeId>/<userId>/<uuid>/<name>`, so keys can't collide or be chosen by clients. */
-  buildObjectKey(scope: 'workspaces', scopeId: string, userId: string, safeName: string): string {
+  buildObjectKey(
+    scope: 'workspaces' | 'threads' | 'attachments',
+    scopeId: string,
+    userId: string,
+    safeName: string,
+  ): string {
     if (!SAFE_ID.test(scopeId) || !SAFE_ID.test(userId)) {
       throw new BadRequestException('Invalid identifier for object key.');
     }
@@ -164,13 +175,17 @@ export class FilesService {
     return { size, contentType };
   }
 
-  async createPresignedDownload(storageKey: string, downloadName: string): Promise<{ downloadUrl: string; expiresIn: number }> {
+  async createPresignedDownload(
+    storageKey: string,
+    downloadName?: string,
+  ): Promise<{ downloadUrl: string; expiresIn: number }> {
     this.assertConfigured();
-    const asciiName = downloadName.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_');
+    const effectiveName = downloadName || storageKey.split('/').pop() || 'download';
+    const asciiName = effectiveName.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_');
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
       Key: storageKey,
-      ResponseContentDisposition: `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(downloadName)}`,
+      ResponseContentDisposition: `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(effectiveName)}`,
     });
     const downloadUrl = await getSignedUrl(this.s3Client, command, { expiresIn: DOWNLOAD_URL_TTL_SECONDS });
     return { downloadUrl, expiresIn: DOWNLOAD_URL_TTL_SECONDS };

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { cn } from '@/lib/utils';
+import { handleAvatarError } from '@/lib/avatar';
 
 interface AvatarRingProps {
   src?: string | null;
@@ -49,6 +50,8 @@ export default function AvatarRing({
           <img
             src={src}
             alt={name}
+            referrerPolicy="no-referrer"
+            onError={(e) => handleAvatarError(e, name)}
             className="w-full h-full rounded-full object-cover bg-blue-50"
           />
         ) : (

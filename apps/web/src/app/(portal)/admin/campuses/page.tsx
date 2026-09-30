@@ -61,21 +61,13 @@ export default function CampusesPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto py-2 select-none">
+    <div className="mx-auto max-w-6xl space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/80 pb-4">
+      <div className="flex flex-col gap-4 pb-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium capitalize bg-teal-50 text-teal-700 border border-teal-200">
-              Institutional Structure
-            </span>
-          </div>
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight mt-1">
-            Institutional Campuses & Locations
-          </h1>
-          <p className="text-xs text-slate-500 font-semibold mt-0.5">
-            Configure SRMIST campuses, regional centers, and research branches.
-          </p>
+          <p className="mb-1.5 text-sm font-medium text-ink-muted">Institutional Structure</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-ink sm:text-3xl">Campuses</h1>
+          <p className="mt-1.5 max-w-prose text-base text-ink-secondary">The institution’s campuses. Faculties belong to a campus.</p>
         </div>
 
         <button

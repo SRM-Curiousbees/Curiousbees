@@ -2,7 +2,6 @@
 
 <div align="center">
 
-  <img src="https://img.shields.io/badge/Production--Ready-0C4DA2.svg?style=for-the-badge&logo=shield" alt="Production Ready" />
   <img src="https://img.shields.io/badge/TypeScript%20Strict-007ACC?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript Strict" />
   <img src="https://img.shields.io/badge/Next.js%2015-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js 15" />
   <img src="https://img.shields.io/badge/NestJS%2011-E0234E?style=for-the-badge&logo=nestjs&logoColor=white" alt="NestJS 11" />
@@ -12,7 +11,7 @@
   <img src="https://img.shields.io/badge/TailwindCSS%203.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS" />
 
   <p align="center">
-    <strong>A next-generation digital research ecosystem connecting scholars, faculty supervisors, and university leadership into a structured, audited academic workspace.</strong>
+    <strong>The research collaboration platform for SRM Institute of Science and Technology: supervision, shared workspaces and research discovery for scholars, supervisors and research leadership.</strong>
   </p>
 
   <p align="center">
@@ -31,58 +30,55 @@
 
 ## 🧭 Executive Overview
 
-**CuriousBees** is an enterprise-grade digital research collaboration and academic governance platform designed specifically for higher education institutions (SRMIST). It unifies Ph.D. lifecycle supervision, research discovery, collaborative sandboxes, publication tracking, and institutional administration into a single high-performance monorepo.
+**CuriousBees** is the research collaboration platform for SRM Institute of Science and Technology (SRMIST). It brings doctoral supervision, shared research workspaces, a research feed, opportunities, events and institutional administration into one product.
 
-### 🌟 Core Value Pillars
+### 🌟 What it does
 
-* **🎓 Ph.D. Supervision & Mentorship Lifecycle**: Scholars discover prospective supervisors, apply directly through the portal, and track doctoral milestones in shared collaborative sandboxes.
-* **⚡ CuriousNexus Research Hub**: Interactive discovery feed with trending research clusters, real-time discussions, and campus event schedules.
-* **📑 Publication & Evidence Registry**: Centralized repository for research papers, thesis drafts, DOIs, and scholarly achievements backed by AWS S3 and CloudFront CDN.
-* **🏛️ Institutional Governance & Compliance**: Role-based access control, departmental hierarchies, content moderation queues, and an **immutable, append-only `AuditLog`** recording every administrative action.
-* **📬 Transactional Notification Gateway**: Integrated Brevo transactional email engine and in-app notification center keeping all participants synchronized.
+* **🎓 Supervision**: Scholars send supervision requests to supervisors in their department; supervisors accept or decline in the Supervision Panel and review progress reports (on track, more information needed, delayed).
+* **🧪 Research record**: Each scholar keeps their thesis title, research stage, milestones and progress reports in *My research*.
+* **📁 Workspaces**: Private spaces for files (uploads up to 50 MB in a private S3 bucket, opened through short-lived links), milestones, updates and meetings (Google Meet, Zoom or any link).
+* **💬 Feed and collaboration**: Posts, papers and questions with comments and follows; collaboration requests open a conversation in Curious Nexus.
+* **📌 Opportunities and events**: Positions, projects and fellowships with external, email or in-app join requests; an institutional events calendar.
+* **🏛️ Governance**: Administrator-created accounts, faculties and departments, moderation, announcements, an audit log of sensitive actions, and analytics.
+* **📬 Notifications**: In-app notifications, optional browser push, and Brevo transactional email for invitations and supervision updates.
 
 ---
 
 ## 🏛️ Role Architecture & Governance
 
-CuriousBees enforces strict separation of concerns across three primary institutional roles:
+Accounts are created by institute administrators. People sign in with the Google account for an allowed email domain (`ALLOWED_EMAIL_DOMAINS`), then complete a short onboarding.
 
 ```mermaid
 flowchart TD
     subgraph Governance [" Institutional Governance "]
-        Admin["🏛️ INSTITUTE ADMIN<br/>(Governance, Moderation, Audit Log, User Directory)"]
+        Admin["🏛️ INSTITUTE ADMIN<br/>(Accounts, structure, moderation, audit)"]
     end
 
-    subgraph ResearchEcosystem [" Academic Research Ecosystem "]
-        Supervisor["👨‍🏫 RESEARCH SUPERVISOR<br/>(Instant Auth, Direct Onboarding, Scholar Mentorship)"]
-        Scholar["🧑‍🎓 RESEARCH SCHOLAR<br/>(Supervisor Application, Publishing, Workspaces)"]
+    subgraph ResearchEcosystem [" Research "]
+        Supervisor["👨‍🏫 RESEARCH SUPERVISOR<br/>(Supervision, reviews, opportunities)"]
+        Scholar["🧑‍🎓 RESEARCH SCHOLAR<br/>(Research record, reports, workspaces)"]
     end
 
-    Admin -->|"Configures & Audits"| Supervisor
-    Admin -->|"Configures & Audits"| Scholar
-    Scholar -->|"1. Submits Supervision Application"| Supervisor
-    Supervisor -->|"2. Accepts / Mentors / Evaluates"| Scholar
-    Scholar <-->|"Collaborative Workspaces & Research Threads"| Supervisor
+    Admin -->|"Creates accounts, moderates"| Supervisor
+    Admin -->|"Creates accounts, moderates"| Scholar
+    Scholar -->|"1. Supervision request"| Supervisor
+    Supervisor -->|"2. Accepts and reviews progress"| Scholar
+    Scholar <-->|"Workspaces, feed, Nexus"| Supervisor
 ```
 
 ### 1. 🧑‍🎓 Research Scholar
-- Direct authentication via institutional Google account (`@srmist.edu.in`).
-- Discovers faculty supervisors across campus faculties and departments; submits supervision applications.
-- Authors research publications, logs thesis progress reports, and manages shared research workspaces.
-- Participates in academic discussion threads and event calendars.
+- Onboarding: research areas and a supervisor from their department. Access opens when the supervisor accepts.
+- Keeps a research record, submits progress reports, shares work on the feed, and joins workspaces.
+- Requests to join opportunities in their department.
 
 ### 2. 👨‍🏫 Research Supervisor
-- **Instant Authentication & Onboarding**: Fully active immediately upon sign-in with **no administrative bottleneck or approval wait**.
-- Reviews, approves, or rejects scholar supervision applications directly.
-- Evaluates doctoral progress reports, co-authors publications, and mentors candidates inside dedicated workspaces.
-- Publishes research opportunity listings and vacancies for prospective scholars.
+- Onboarding: research areas, and their department if an administrator hasn't already set it.
+- Accepts or declines supervision requests within their scholar capacity, and reviews progress reports.
+- Posts opportunities; accepting a join request creates a shared workspace.
 
 ### 3. 🏛️ Institute Admin
-- Operates the institutional governance command center at `/admin/*`.
-- Manages university organizational structures (Faculties, Departments, Campus Nodes).
-- Moderates platform content, resolves reported threads/comments, and handles user account suspensions.
-- **Immutable Audit Trail**: Every administrative action requires a recorded justification and permanently commits to the append-only `AuditLog` table.
-- **Zero Research Authoring Clutter**: Pure governance, compliance, and institutional administration.
+- Works in `/admin/*`: accounts and suspensions, faculties, departments and campuses, supervision requests, moderation, announcements, audit log, analytics, and the effective system configuration.
+- Governs but does not take part in research: the API (`ResearchParticipantGuard`) and the web route matrix both block posting, commenting, collaborating and workspaces for admins.
 
 ---
 
@@ -103,7 +99,7 @@ graph TB
     subgraph ServiceLayer [" Cloud & Infrastructure Services "]
         Postgres[("PostgreSQL Database<br/>(Prisma ORM • Supabase Connection Pool)")]
         AuthService["Supabase Auth / Google OAuth"]
-        S3["Amazon S3 + CloudFront CDN<br/>(Research Papers & Media Storage)"]
+        S3["Amazon S3 (private bucket)<br/>(Workspace files and post attachments)"]
         EmailService["Brevo Email Gateway<br/>(Transactional Alerts & Notices)"]
     end
 
@@ -235,9 +231,30 @@ npm run dev
 
 ---
 
+## 🎨 Design System & UI
+
+* The interface is built on the tokens and components described in [`docs/design/DESIGN_SYSTEM.md`](./docs/design/DESIGN_SYSTEM.md): colour scales re-tuned for light and dark themes, motion tokens with reduced-motion support, and shared components in `apps/web/src/components/ui` (`PageHeader`, `Card`, `Dialog`, `Field`, `Badge`, `EmptyState`, `Skeleton`).
+* [`docs/design/REDESIGN_AUDIT.md`](./docs/design/REDESIGN_AUDIT.md) lists every route, its status, and the security and correctness findings from the redesign.
+* UI copy only describes what the product actually does. When a value is unknown the UI says so rather than inventing a fallback.
+* Optional: set `NEXT_PUBLIC_CONTACT_EMAIL` to publish a contact address on `/contact`.
+
+> **Build note:** Google Fonts currently returns some font files at extension-less `fonts.gstatic.com/l/font?kit=` URLs, which the `next/font/google` loader (Next 15.5 and canary) cannot handle, so `next build` fails while fetching fonts. Self-host IBM Plex Sans, IBM Plex Mono and Source Serif 4 with `next/font/local` to make builds independent of Google's response format.
+
+---
+
+## 🧪 Testing
+
+| Command | What it runs |
+| :--- | :--- |
+| `npm test --workspace apps/api` | API unit tests (Jest) |
+| `npx jest -c test/jest-e2e.config.js` (in `apps/api`) | API integration tests against a real PostgreSQL and an S3-compatible store. Set `E2E_DATABASE_URL` and `E2E_S3_ENDPOINT`; the suite applies migrations with `prisma migrate deploy` |
+| `npm run lint` / `npm run typecheck` | ESLint and TypeScript across workspaces |
+
+---
+
 ## 🔐 Security & Governance Model
 
-1. **Immutable Audit Trail**: All administrative changes (account suspensions, role promotions, supervisor reassignments, moderation actions) require a mandatory justification and write to the immutable `AuditLog` table.
+1. **Audit log**: Sensitive administrative actions (suspensions, role changes, supervisor reassignments, moderation) require a reason and are recorded in the `AuditLog` table.
 2. **Dual-Layer Route Protection**:
    * **Edge Middleware (Next.js)**: Validates session tokens and enforces role-based URL access.
    * **Backend JWT Guards (NestJS)**: Verifies Supabase Bearer tokens, checking `ApprovedGuard` and `RolesGuard`.
@@ -276,6 +293,8 @@ For in-depth guides and specifications, visit our documentation portal:
 * 📈 **[Capacity & Cloud Cost Analysis](./docs/architecture/PRODUCTION_CAPACITY_COST_ANALYSIS.md)** — Concurrency models and cloud cost projections.
 * 🔒 **[Security & Governance Specification](./docs/audits/SECURITY_AUDIT.md)** — Security policies, headers, and rate limits.
 * 🚀 **[Developer Quick Start Guide](./docs/guides/QUICK_START.md)** — 5-minute setup and onboarding guide.
+* 🎨 **[Design System](./docs/design/DESIGN_SYSTEM.md)** — Tokens, components, motion, dark mode and content rules.
+* 🧾 **[Redesign Audit](./docs/design/REDESIGN_AUDIT.md)** — Route status, fixed issues and open risks.
 
 ---
 

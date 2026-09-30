@@ -26,8 +26,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '@/store/useStore';
-import { supabase, getStoragePublicUrl } from '@/lib/supabase';
-import { getProfileImageUrl } from '@/lib/avatar';
+import { apiFetch, readApiError, API_URL } from '@/lib/api-client';
+import { getProfileImageUrl, handleAvatarError } from '@/lib/avatar';
 import { Button } from '@/components/ui/button';
 
 // Types accepted by the threads API (CreateThreadSchema).
@@ -92,23 +92,34 @@ export default function CompactComposer({ onPostCreated }: CompactComposerProps)
 
     setIsUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `post-attachments/${fileName}`;
+      const contentType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream');
+      
+      const presignedRes = await apiFetch('/api/threads/files/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: file.name, contentType, sizeBytes: file.size }),
+      });
+      if (!presignedRes.ok) {
+        throw new Error((await readApiError(presignedRes)) || 'Failed to initiate upload');
+      }
+      const { uploadUrl, requiredHeaders, downloadPath } = await presignedRes.json();
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: requiredHeaders || { 'Content-Type': contentType },
+        body: file,
+      });
+      if (!uploadRes.ok) {
+        throw new Error(`Upload to storage failed (HTTP ${uploadRes.status})`);
+      }
 
-      if (uploadError) throw uploadError;
-
-      const publicUrl = getStoragePublicUrl('avatars', filePath);
+      const fileUrl = downloadPath.startsWith('http') ? downloadPath : `${API_URL}${downloadPath}`;
       const isPdf = file.type === 'application/pdf' || file.name.endsWith('.pdf');
       
       setAttachment({
         name: file.name,
         size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-        url: publicUrl,
+        url: fileUrl,
         type: isPdf ? 'pdf' : 'image'
       });
 
@@ -214,7 +225,13 @@ export default function CompactComposer({ onPostCreated }: CompactComposerProps)
 
       <section aria-label="Share with your research network" className="rounded-2xl border border-line bg-surface shadow-xs transition-shadow duration-base focus-within:border-line-strong focus-within:shadow-md">
         <div className="flex gap-3 p-4 pb-0">
-          <img src={avatarUrl} alt="" className="mt-0.5 size-10 shrink-0 rounded-full bg-neutral-100 object-cover ring-1 ring-line" />
+          <img
+            src={avatarUrl}
+            alt=""
+            referrerPolicy="no-referrer"
+            onError={(e) => handleAvatarError(e, currentUser?.name)}
+            className="mt-0.5 size-10 shrink-0 rounded-full bg-neutral-100 object-cover ring-1 ring-line"
+          />
 
           <div className="min-w-0 flex-1">
             <label htmlFor="feed-composer" className="sr-only">Share an update, paper or question</label>
