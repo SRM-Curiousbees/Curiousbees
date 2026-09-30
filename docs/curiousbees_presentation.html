@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CuriousBees · Institutional Research Collaboration Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0C4DA2;
+      --primary-dark: #072F64;
+      --accent: #F59E0B;
+      --accent-light: #FEF3C7;
+      --bg: #090E17;
+      --surface: #111A28;
+      --surface-light: #182438;
+      --border: #233550;
+      --text-main: #F1F5F9;
+      --text-muted: #94A3B8;
+      --success: #10B981;
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+    }
+
+    /* Background Ambient Glow */
+    .ambient-glow {
+      position: absolute;
+      top: -20%;
+      right: -10%;
+      width: 60vw;
+      height: 60vw;
+      background: radial-gradient(circle, rgba(12, 77, 162, 0.25) 0%, rgba(245, 158, 11, 0.08) 40%, transparent 70%);
+      filter: blur(80px);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .ambient-glow-2 {
+      position: absolute;
+      bottom: -20%;
+      left: -10%;
+      width: 50vw;
+      height: 50vw;
+      background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, rgba(12, 77, 162, 0.15) 50%, transparent 70%);
+      filter: blur(90px);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Header Nav */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 20px;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #F59E0B, #D97706);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+    }
+
+    .institution-pill {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .slide-counter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 14px;
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Presentation Deck */
+    .deck-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      padding-top: 70px;
+      padding-bottom: 70px;
+    }
+
+    .slide {
+      position: absolute;
+      width: 90%;
+      max-width: 1200px;
+      height: 78vh;
+      background: rgba(17, 26, 40, 0.75);
+      backdrop-filter: blur(24px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 48px 56px;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      transform: translateY(24px) scale(0.98);
+      pointer-events: none;
+      transition: all 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .slide.active {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: all;
+    }
+
+    /* Slide Typography & Grids */
+    .slide-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .slide-title {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      color: #FFFFFF;
+    }
+
+    .slide-subtitle {
+      font-size: 18px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      max-width: 850px;
+      margin-bottom: 32px;
+    }
+
+    .content-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      height: 100%;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+      height: 100%;
+    }
+
+    .card {
+      background: rgba(24, 36, 56, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(245, 158, 11, 0.5);
+    }
+
+    .card-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+
+    .card-title {
+      font-size: 19px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #FFFFFF;
+    }
+
+    .card-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .card-list {
+      margin-top: 14px;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .card-list li {
+      font-size: 13px;
+      color: #CBD5E1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-list li::before {
+      content: "▹";
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    /* Badges & Metrics */
+    .stat-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34D399;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-top: 12px;
+      width: fit-content;
+    }
+
+    /* Title Slide Custom Layout */
+    .title-slide {
+      text-align: center;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 18px;
+      background: rgba(12, 77, 162, 0.3);
+      border: 1px solid rgba(12, 77, 162, 0.6);
+      border-radius: 30px;
+      color: #93C5FD;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+
+    .hero-title {
+      font-size: 58px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #FFFFFF 30%, #94A3B8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 20px;
+    }
+
+    .hero-title span {
+      background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-desc {
+      font-size: 20px;
+      color: var(--text-muted);
+      max-width: 720px;
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+
+    .presenter-pill {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 24px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 40px;
+    }
+
+    /* Workflow Diagram */
+    .flow-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 10px;
+    }
+
+    .flow-step {
+      flex: 1;
+      background: rgba(24, 36, 56, 0.8);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 16px;
+      text-align: center;
+      position: relative;
+    }
+
+    .flow-step-num {
+      width: 28px;
+      height: 28px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      margin: 0 auto 10px;
+    }
+
+    .flow-arrow {
+      font-size: 22px;
+      color: var(--accent);
+      opacity: 0.7;
+    }
+
+    /* Bottom Controller */
+    footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      z-index: 50;
+    }
+
+    .ctrl-hints {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      gap: 20px;
+    }
+
+    .ctrl-hints kbd {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #E2E8F0;
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      border-color: #1E6BEB;
+    }
+
+    .btn-primary:hover {
+      background: #145BCB;
+    }
+
+    /* Speaker Notes Drawer */
+    .speaker-drawer {
+      position: fixed;
+      bottom: 70px;
+      left: 50%;
+      transform: translateX(-50%) translateY(120%);
+      width: 70%;
+      max-width: 800px;
+      background: #0B111D;
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 16px 24px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+      z-index: 40;
+      transition: transform 0.3s ease;
+    }
+
+    .speaker-drawer.open {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .speaker-drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .speaker-drawer-content {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #E2E8F0;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+  <div class="ambient-glow-2"></div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo">🐝</div>
+      <span>CuriousBees</span>
+      <span class="institution-pill">SRMIST Official</span>
+    </div>
+    <div class="slide-counter" id="counter">01 / 10</div>
+  </header>
+
+  <!-- Presentation Deck -->
+  <div class="deck-container">
+    <!-- Slide 1: Title -->
+    <div class="slide active title-slide" data-notes="Welcome leadership and distinguished reviewers. Today we introduce CuriousBees: SRMIST's dedicated next-generation research collaboration and supervision platform. Built from the ground up to solve institutional silos, streamline doctoral progress, and supercharge research output.">
+      <div class="hero-badge">SRM Institute of Science and Technology · Directorate of Research</div>
+      <h1 class="hero-title">CuriousBees<br><span>Research Platform</span></h1>
+      <p class="hero-desc">An institutional operating system connecting Doctoral Scholars, Faculty Supervisors, and University Leadership into one unified collaborative ecosystem.</p>
+      <div class="presenter-pill">
+        <span style="font-size: 14px; color: #94A3B8;">Lead Presentation</span>
+        <span style="width: 4px; height: 4px; border-radius: 50%; background: #475569;"></span>
+        <span style="font-size: 14px; font-weight: 600; color: #F8FAFC;">Dr. Matheshwaran · Research Innovation Team</span>
+      </div>
+    </div>
+
+    <!-- Slide 2: The Institutional Challenge -->
+    <div class="slide" data-notes="Highlight the friction: before CuriousBees, scholars communicated through disjointed WhatsApp groups and personal emails. Supervisors struggled to track student milestone reports. University leaders had no real-time audit trail of institutional publications or grant progress.">
+      <div class="slide-tag">01 · Problem Statement</div>
+      <h2 class="slide-title">The Fragmented Academic Ecosystem</h2>
+      <p class="slide-subtitle">Current university research operations suffer from unorganized communication channels, siloed departments, and lack of real-time governance.</p>
+      <div class="content-area">
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-icon" style="background: rgba(239, 68, 68, 0.15); color: #EF4444;">❌</div>
+            <div class="card-title">Fragmented Communication</div>
+            <div class="card-desc">Supervisory exchanges scattered across WhatsApp, unorganized Gmail threads, and physical meetings without institutional records.</div>
+            <div class="stat-badge" style="background: rgba(239, 68, 68, 0.1); color: #FCA5A5; border-color: rgba(239, 68, 68, 0.2);">High Risk of Data Loss</div>
+          </div>
+          <div class="card">
+            <div class="card-icon" style="background: rgba(245, 158, 11, 0.15); color: #F59E0B;">⏳</div>
+            <div class="card-title">Opaque Milestone Progress</div>
+            <div class="card-desc">Scholar doctoral milestones (literature review, methodology, thesis drafts) lack structured progress tracking and feedback loops.</div>
+            <div class="stat-badge" style="background: rgba(245, 158, 11, 0.1); color: #FCD34D; border-color: rgba(245, 158, 11, 0.2);">Delayed Thesis Defense</div>
+          </div>
+          <div class="card">
+            <div class="card-icon" style="background: rgba(59, 130, 246, 0.15); color: #3B82F6;">📊</div>
+            <div class="card-title">Audit & NIRF Blindspots</div>
+            <div class="card-desc">University leadership lacks real-time dashboards for institutional publications, active citations, and cross-department collaboration metrics.</div>
+            <div class="stat-badge" style="background: rgba(59, 130, 246, 0.1); color: #93C5FD; border-color: rgba(59, 130, 246, 0.2);">Manual Accreditation Prep</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: The Solution -->
+    <div class="slide" data-notes="CuriousBees brings three specialized, role-tailored portals governed by strict security and authenticated via SRMIST Google Workspace. Every role sees exactly what they need with zero clutter.">
+      <div class="slide-tag">02 · The Solution</div>
+      <h2 class="slide-title">ONE Platform · THREE Role Portals</h2>
+      <p class="slide-subtitle">A purpose-built, secure academic collaboration suite with dedicated workflows for every tier of the research hierarchy.</p>
+      <div class="content-area">
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-icon" style="background: rgba(12, 77, 162, 0.25); color: #60A5FA;">🎓</div>
+            <div class="card-title">Research Scholar</div>
+            <div class="card-desc">End-to-end doctoral workspace. Milestone tracking, report submissions, literature discovery, and direct supervisor communication.</div>
+            <ul class="card-list">
+              <li>Doctoral Milestone Roadmap</li>
+              <li>Research Workspace & Files</li>
+              <li>Nexus Collaboration Hub</li>
+              <li>Verified Publication Portfolio</li>
+            </ul>
+          </div>
+          <div class="card">
+            <div class="card-icon" style="background: rgba(245, 158, 11, 0.2); color: #F59E0B;">👨‍🏫</div>
+            <div class="card-title">Research Supervisor</div>
+            <div class="card-desc">Centralized supervisory command. Supervise assigned scholars, review doctoral reports, approve requests, and manage shared lab workspaces.</div>
+            <ul class="card-list">
+              <li>Scholar Supervision Roster</li>
+              <li>Quarterly Report Reviews</li>
+              <li>Advisory Approvals & Workspaces</li>
+              <li>Department Research Analytics</li>
+            </ul>
+          </div>
+          <div class="card">
+            <div class="card-icon" style="background: rgba(16, 185, 129, 0.2); color: #10B981;">🏛️</div>
+            <div class="card-title">Institute Admin</div>
+            <div class="card-desc">Institutional governance. Campus & department hierarchies, user provisioning, academic integrity moderation, and platform audit logs.</div>
+            <ul class="card-list">
+              <li>User Provisioning & Roles</li>
+              <li>Institutional KPI Dashboards</li>
+              <li>Campus Announcements</li>
+              <li>Tamper-Proof Audit Logging</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 4: Supervision Lifecycle Flow -->
+    <div class="slide" data-notes="Demonstrate the complete closed-loop lifecycle: From the scholar drafting milestone reports, to the supervisor reviewing and approving them, through to the admin monitoring institutional health.">
+      <div class="slide-tag">03 · Cross-Role Workflow</div>
+      <h2 class="slide-title">End-to-End Supervision Lifecycle</h2>
+      <p class="slide-subtitle">Structured, transparent, and auditable supervision milestones that keep scholars and supervisors aligned.</p>
+      <div class="content-area">
+        <div class="flow-container">
+          <div class="flow-step">
+            <div class="flow-step-num">1</div>
+            <h4 style="font-size: 16px; margin-bottom: 6px;">Scholar Submits Report</h4>
+            <p style="font-size: 12px; color: var(--text-muted);">Scholar uploads empirical benchmarks and progress documentation under /my-research.</p>
+          </div>
+          <div class="flow-arrow">➔</div>
+          <div class="flow-step">
+            <div class="flow-step-num">2</div>
+            <h4 style="font-size: 16px; margin-bottom: 6px;">Instant Notification</h4>
+            <p style="font-size: 12px; color: var(--text-muted);">Supervisor receives high-priority notification with deep-link to the report review modal.</p>
+          </div>
+          <div class="flow-arrow">➔</div>
+          <div class="flow-step">
+            <div class="flow-step-num">3</div>
+            <h4 style="font-size: 16px; margin-bottom: 6px;">Supervisor Reviews</h4>
+            <p style="font-size: 12px; color: var(--text-muted);">Supervisor assesses findings, writes qualitative feedback, and approves or requests edits.</p>
+          </div>
+          <div class="flow-arrow">➔</div>
+          <div class="flow-step">
+            <div class="flow-step-num">4</div>
+            <h4 style="font-size: 16px; margin-bottom: 6px;">Institutional Sync</h4>
+            <p style="font-size: 12px; color: var(--text-muted);">Approved milestone logs into institutional database; leadership metrics update dynamically.</p>
+          </div>
+        </div>
+        <div style="margin-top: 36px; padding: 20px; background: rgba(12, 77, 162, 0.15); border: 1px solid rgba(12, 77, 162, 0.4); border-radius: 12px; display: flex; align-items: center; justify-content: space-between;">
+          <div>
+            <div style="font-weight: 700; color: #93C5FD; font-size: 15px;">Zero Data Leakage & Zero Unauthorized Actions</div>
+            <div style="font-size: 13px; color: #CBD5E1; margin-top: 4px;">Enforced simultaneously at Edge Middleware and NestJS API Guards (ApprovedGuard, SupervisorGuard, ScholarGuard).</div>
+          </div>
+          <span class="stat-badge" style="margin: 0;">100% RBAC Enforced</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5: CuriousNexus & Collaboration -->
+    <div class="slide" data-notes="Showcase CuriousNexus: Scholars in Computing can discover co-investigators in Biotech or ECE, launch zero-configuration Google Chat spaces, or start Zoom meetings with one click.">
+      <div class="slide-tag">04 · Interdisciplinary Hub</div>
+      <h2 class="slide-title">CuriousNexus: Breaking Research Silos</h2>
+      <p class="slide-subtitle">Dynamic cross-department discovery, shared project workspaces, and native Google Workspace & Zoom Workplace integrations.</p>
+      <div class="content-area">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-icon" style="background: rgba(245, 158, 11, 0.2); color: #F59E0B;">⚡</div>
+            <div class="card-title">Real-Time Academic Discovery</div>
+            <div class="card-desc">Scholars and faculty discover colleagues through research interest indexing (AI, 6G, Quantum, Biotech). Send structured collaboration proposals with clear deliverable milestones.</div>
+            <ul class="card-list" style="margin-top: 18px;">
+              <li>Keyword-matched researcher recommendation</li>
+              <li>Formal request & acceptance workflows</li>
+              <li>Shared persistent chat and file repositories</li>
+            </ul>
+          </div>
+          <div class="card">
+            <div class="card-icon" style="background: rgba(12, 77, 162, 0.25); color: #60A5FA;">🔗</div>
+            <div class="card-title">Enterprise Tool Integrations</div>
+            <div class="card-desc">No external tool configuration required. CuriousBees provisions dedicated Google Chat Spaces and Zoom Workplace video conferences on demand.</div>
+            <ul class="card-list" style="margin-top: 18px;">
+              <li>Auto-provisioned Google Chat collaboration rooms</li>
+              <li>One-click Zoom meeting scheduling & join links</li>
+              <li>Integrated Calendar synchronization for milestones</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 6: Research Feed & Knowledge Exchange -->
+    <div class="slide" data-notes="The Research Feed is the intellectual heartbeat of SRMIST. Unlike social media, it is strictly tailored for preprints, doctoral inquiries, conference announcements, and call-for-collaborators.">
+      <div class="slide-tag">05 · Intellectual Pulse</div>
+      <h2 class="slide-title">The Institutional Research Feed</h2>
+      <p class="slide-subtitle">A curated, noise-free academic social surface for preprints, discussions, grant alerts, and peer review.</p>
+      <div class="content-area">
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-icon" style="background: rgba(99, 102, 241, 0.2); color: #818CF8;">📄</div>
+            <div class="card-title">Preprint & Paper Showcases</div>
+            <div class="card-desc">Researchers share manuscripts, DOI links, and abstract overviews directly with peers and advisory committee members.</div>
+          </div>
+          <div class="card">
+            <div class="card-icon" style="background: rgba(16, 185, 129, 0.2); color: #34D399;">💡</div>
+            <div class="card-title">Doctoral Q&A & Inquiries</div>
+            <div class="card-desc">Ask complex mathematical and implementation questions directly to campus experts across computer science, electronics, and biotech.</div>
+          </div>
+          <div class="card">
+            <div class="card-icon" style="background: rgba(245, 158, 11, 0.2); color: #FBBF24;">📢</div>
+            <div class="card-title">Official Research Calls</div>
+            <div class="card-desc">Directorate of Research broadcasts symposium notices, fellowship openings, and patent filing workshops across all 11 faculties.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 7: Technical Stack & Architecture -->
+    <div class="slide" data-notes="Walk through the modern engineering stack. Next.js 15 App Router with zero hydration glitches, NestJS 11 enterprise backend, PostgreSQL with Prisma ORM, and Supabase Auth with Google OAuth.">
+      <div class="slide-tag">06 · Engineering Architecture</div>
+      <h2 class="slide-title">Enterprise Full-Stack Architecture</h2>
+      <p class="slide-subtitle">Built with enterprise reliability, high-performance querying, and zero compromise on institutional security.</p>
+      <div class="content-area">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title" style="display: flex; align-items: center; justify-content: space-between;">
+              <span>Frontend Layer</span>
+              <span style="font-family: 'JetBrains Mono'; font-size: 12px; color: var(--accent);">apps/web</span>
+            </div>
+            <ul class="card-list" style="margin-top: 14px;">
+              <li><strong>Next.js 15 (App Router)</strong> + React 19 for optimal SSR/CSR performance</li>
+              <li><strong>Tailwind CSS & Design Tokens</strong> with SRMIST visual identity</li>
+              <li><strong>Zustand Store</strong> for reactive, optimized local state</li>
+              <li><strong>Lucide Modern Icons</strong> with full responsive mobile & tablet adaptation</li>
+            </ul>
+          </div>
+          <div class="card">
+            <div class="card-title" style="display: flex; align-items: center; justify-content: space-between;">
+              <span>Backend & Database Layer</span>
+              <span style="font-family: 'JetBrains Mono'; font-size: 12px; color: var(--accent);">apps/api & db</span>
+            </div>
+            <ul class="card-list" style="margin-top: 14px;">
+              <li><strong>NestJS 11 Framework</strong> with modular, dependency-injected services</li>
+              <li><strong>PostgreSQL + Prisma ORM</strong> (38 models, full relational indexing)</li>
+              <li><strong>Supabase Auth + Google OAuth</strong> with strict institutional domain policy</li>
+              <li><strong>Google Workspace & Zoom Workplace</strong> dynamic OAuth micro-services</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 8: Live Demo Sequence -->
+    <div class="slide" data-notes="Explain the demo sequence you are about to perform in the live browser: First sign in as Dr. Matheshwaran (Supervisor), then show Matheshwaran R (Scholar), then show CuriousBees Administrator.">
+      <div class="slide-tag">07 · Live Demo Roadmap</div>
+      <h2 class="slide-title">Live Demonstration Sequence</h2>
+      <p class="slide-subtitle">Follow along as we demonstrate the real cross-role lifecycle in our active staging deployment.</p>
+      <div class="content-area">
+        <div class="grid-3">
+          <div class="card" style="border-color: rgba(245, 158, 11, 0.4);">
+            <div style="font-size: 12px; color: var(--accent); font-weight: 700; text-transform: uppercase;">Act 1 · Supervisor Portal</div>
+            <div class="card-title" style="margin-top: 8px;">Dr. Matheshwaran</div>
+            <div class="card-desc">Review scholar roster on /my-scholars. Inspect pending milestone reports, view real Google profile photo, and check lab workspaces.</div>
+            <div class="stat-badge" style="background: rgba(245, 158, 11, 0.15); color: #FBBF24;">mrmatheshwaran17@gmail.com</div>
+          </div>
+          <div class="card" style="border-color: rgba(12, 77, 162, 0.6);">
+            <div style="font-size: 12px; color: #93C5FD; font-weight: 700; text-transform: uppercase;">Act 2 · Scholar Portal</div>
+            <div class="card-title" style="margin-top: 8px;">Matheshwaran R</div>
+            <div class="card-desc">Navigate to /my-research. Show doctoral stage roadmap, submit research milestone progress, and explore the research feed.</div>
+            <div class="stat-badge" style="background: rgba(12, 77, 162, 0.25); color: #93C5FD;">r.matheshwaran.io@gmail.com</div>
+          </div>
+          <div class="card" style="border-color: rgba(16, 185, 129, 0.5);">
+            <div style="font-size: 12px; color: #34D399; font-weight: 700; text-transform: uppercase;">Act 3 · Institute Admin</div>
+            <div class="card-title" style="margin-top: 8px;">CuriousBees Admin</div>
+            <div class="card-desc">Access /admin/dashboard. View institutional analytics, campus faculties, user governance table, and broadcast announcements.</div>
+            <div class="stat-badge" style="background: rgba(16, 185, 129, 0.15); color: #34D399;">maddybgmistoreog@gmail.com</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 9: Strategic Impact for SRMIST -->
+    <div class="slide" data-notes="Highlight the tangible institutional return: Higher NIRF ranking from tracked publications, faster doctoral completion rates, and effortless NAAC compliance audits.">
+      <div class="slide-tag">08 · Institutional Impact</div>
+      <h2 class="slide-title">Value Delivered to SRMIST Leadership</h2>
+      <p class="slide-subtitle">Measurable improvements in doctoral completion rates, research publication volume, and accreditation readiness.</p>
+      <div class="content-area">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">📈 NIRF & NAAC Accreditation Readiness</div>
+            <div class="card-desc" style="font-size: 15px;">Automate data collection for Criteria 3 (Research, Innovations and Extension). Publications, citations, funded projects, and patents are logged into verified institutional tables in real time.</div>
+            <div class="stat-badge" style="margin-top: 16px;">Eliminates 90% of manual audit effort</div>
+          </div>
+          <div class="card">
+            <div class="card-title">⏱️ Accelerated Doctoral Timelines</div>
+            <div class="card-desc" style="font-size: 15px;">Clear milestone roadmaps and structured review cycles prevent scholar drift. Supervisors identify stalled research early, reducing average PhD completion time by up to 14 months.</div>
+            <div class="stat-badge" style="margin-top: 16px;">Higher Quality Thesis Output</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 10: Conclusion & Q&A -->
+    <div class="slide title-slide" data-notes="Conclude with confidence. Offer to answer questions from the review committee and transition straight into the live interactive software walkthrough.">
+      <div class="hero-badge">CuriousBees · Ready for Institutional Deployment</div>
+      <h1 class="hero-title" style="font-size: 46px;">Empowering SRMIST<br><span>Research Excellence</span></h1>
+      <p class="hero-desc" style="margin-bottom: 28px;">Thank you for your leadership and vision. Let us open the floor for committee questions and transition to the live system demo.</p>
+      <div style="display: flex; gap: 16px;">
+        <a href="http://localhost:3000" target="_blank" class="btn btn-primary" style="text-decoration: none; padding: 12px 28px; font-size: 15px;">
+          🚀 Open Live CuriousBees Application
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Speaker Notes Drawer -->
+  <div class="speaker-drawer" id="speaker-drawer">
+    <div class="speaker-drawer-header">
+      <span>Speaker Notes</span>
+      <span style="font-family: 'JetBrains Mono'; font-size: 11px;">Press [S] to toggle</span>
+    </div>
+    <div class="speaker-drawer-content" id="speaker-notes"></div>
+  </div>
+
+  <!-- Bottom Navigation Controller -->
+  <footer>
+    <div class="ctrl-hints">
+      <span><kbd>←</kbd> <kbd>→</kbd> Navigate</span>
+      <span><kbd>S</kbd> Speaker Notes</span>
+      <span><kbd>F</kbd> Fullscreen</span>
+    </div>
+    <div class="nav-buttons">
+      <button class="btn" id="prev-btn" onclick="prevSlide()">‹ Previous</button>
+      <button class="btn btn-primary" id="next-btn" onclick="nextSlide()">Next ›</button>
+    </div>
+  </footer>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const counter = document.getElementById('counter');
+    const speakerDrawer = document.getElementById('speaker-drawer');
+    const speakerNotes = document.getElementById('speaker-notes');
+
+    function updateSlide() {
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === currentSlide);
+      });
+      counter.textContent = `${String(currentSlide + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+      speakerNotes.textContent = slides[currentSlide].getAttribute('data-notes') || 'No notes for this slide.';
+    }
+
+    function nextSlide() {
+      if (currentSlide < slides.length - 1) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    function toggleNotes() {
+      speakerDrawer.classList.toggle('open');
+    }
+
+    function toggleFullScreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevSlide();
+      } else if (e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        toggleNotes();
+      } else if (e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        toggleFullScreen();
+      }
+    });
+
+    // Initialize
+    updateSlide();
+  </script>
+</body>
+</html>

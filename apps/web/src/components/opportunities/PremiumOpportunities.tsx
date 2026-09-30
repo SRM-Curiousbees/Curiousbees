@@ -139,7 +139,7 @@ function CheckOption({ label, count, checked, onChange }: { label: string; count
     <label className="flex cursor-pointer items-center gap-2.5 rounded-md py-1.5 text-sm text-ink-secondary hover:text-ink">
       <input type="checkbox" checked={checked} onChange={onChange} className="size-4 shrink-0 rounded border-line-strong accent-[rgb(var(--brand-solid))]" />
       <span className="min-w-0 flex-1 truncate">{label}</span>
-      {count !== undefined && <span className="text-xs tabular-nums text-ink-muted">{count}</span>}
+      {count !== undefined && <span className="shrink-0 text-xs tabular-nums text-ink-muted">{count}</span>}
     </label>
   );
 }
@@ -390,15 +390,15 @@ export function PremiumOpportunities() {
         <fieldset>
           <legend className="mb-1.5 text-sm font-medium text-ink">Type</legend>
           <label className="flex cursor-pointer items-center gap-2.5 py-1.5 text-sm text-ink-secondary hover:text-ink">
-            <input type="radio" name="opp-type" checked={!filters.type} onChange={() => setFilters((f) => ({ ...f, type: '' }))} className="size-4 accent-[rgb(var(--brand-solid))]" />
-            <span className="flex-1">All types</span>
-            <span className="text-xs tabular-nums text-ink-muted">{all.length}</span>
+            <input type="radio" name="opp-type" checked={!filters.type} onChange={() => setFilters((f) => ({ ...f, type: '' }))} className="size-4 shrink-0 accent-[rgb(var(--brand-solid))]" />
+            <span className="min-w-0 flex-1 truncate">All types</span>
+            <span className="shrink-0 text-xs tabular-nums text-ink-muted">{all.length}</span>
           </label>
           {facets.type.map(([t, n]) => (
             <label key={t} className="flex cursor-pointer items-center gap-2.5 py-1.5 text-sm text-ink-secondary hover:text-ink">
-              <input type="radio" name="opp-type" checked={filters.type === t} onChange={() => setFilters((f) => ({ ...f, type: t }))} className="size-4 accent-[rgb(var(--brand-solid))]" />
+              <input type="radio" name="opp-type" checked={filters.type === t} onChange={() => setFilters((f) => ({ ...f, type: t }))} className="size-4 shrink-0 accent-[rgb(var(--brand-solid))]" />
               <span className="min-w-0 flex-1 truncate">{t}</span>
-              <span className="text-xs tabular-nums text-ink-muted">{n}</span>
+              <span className="shrink-0 text-xs tabular-nums text-ink-muted">{n}</span>
             </label>
           ))}
         </fieldset>
@@ -455,8 +455,8 @@ export function PremiumOpportunities() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
-        <aside className="hidden lg:block" aria-label="Filters">
+      <div className="grid grid-cols-1 gap-x-10 gap-y-8 lg:grid-cols-[17rem_minmax(0,1fr)]">
+        <aside className="hidden min-w-0 overflow-hidden lg:block" aria-label="Filters">
           <div className="sticky top-24">{filterPanel}</div>
         </aside>
 

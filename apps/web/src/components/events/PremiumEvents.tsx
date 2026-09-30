@@ -264,7 +264,8 @@ export function PremiumEvents() {
         </div>
       </div>
 
-      <div className="mt-5 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="mt-5 space-y-5">
+        {/* ── Full-width calendar ── */}
         <div className="min-w-0 overflow-hidden rounded-2xl border border-line bg-surface shadow-xs">
           {loading && events.length === 0 ? (
             <div className="p-4" role="status" aria-label="Loading events">
@@ -290,30 +291,28 @@ export function PremiumEvents() {
           )}
         </div>
 
-        <aside aria-labelledby="upcoming-title" className="rounded-2xl border border-line bg-surface shadow-xs">
-          <h2 id="upcoming-title" className="border-b border-line px-4 py-3 text-sm font-semibold text-ink">Upcoming</h2>
-          {upcoming.length === 0 ? (
-            <p className="px-4 py-6 text-sm text-ink-muted">
-              {activeCategory === 'All' && !searchQuery ? 'No upcoming events yet.' : 'No upcoming events match these filters.'}
-            </p>
-          ) : (
-            <ul className="divide-y divide-line">
-              {upcoming.map((event) => {
-                const d = new Date(event.date);
-                const cat = eventCategory(event.eventType);
-                return (
-                  <li key={event.id}>
+        {/* ── Upcoming events strip ── */}
+        {upcoming.length > 0 && (
+          <section aria-labelledby="upcoming-title">
+            <h2 id="upcoming-title" className="mb-3 text-sm font-semibold text-ink">Upcoming events</h2>
+            <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+              <div className="flex min-w-max gap-3 pb-1">
+                {upcoming.map((event) => {
+                  const d = new Date(event.date);
+                  const cat = eventCategory(event.eventType);
+                  return (
                     <button
+                      key={event.id}
                       type="button"
                       onClick={() => setSelectedEvent(event as PrismaEvent)}
-                      className="flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-muted"
+                      className="group flex w-64 shrink-0 gap-3 rounded-xl border border-line bg-surface p-3 text-left shadow-xs transition-all duration-base hover:border-brand/40 hover:shadow-md"
                     >
-                      <span className="flex w-10 shrink-0 flex-col items-center rounded-lg border border-line py-1 text-center">
+                      <span className="flex w-11 shrink-0 flex-col items-center rounded-lg border border-line bg-surface-muted py-1 text-center">
                         <span className="text-2xs font-medium uppercase text-danger-700">{d.toLocaleDateString(undefined, { month: 'short' })}</span>
                         <span className="text-base font-semibold leading-tight tabular-nums text-ink">{d.getDate()}</span>
                       </span>
-                      <span className="min-w-0">
-                        <span className="line-clamp-2 text-sm font-medium text-ink">{event.title}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="line-clamp-2 text-sm font-medium text-ink group-hover:text-brand">{event.title}</span>
                         <span className="mt-0.5 flex items-center gap-1 text-xs text-ink-muted">
                           <Clock className="size-3" aria-hidden />
                           {event.time}
@@ -321,12 +320,12 @@ export function PremiumEvents() {
                         {cat && <Badge tone={cat.tone} className="mt-1.5">{cat.label}</Badge>}
                       </span>
                     </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </aside>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
       </div>
 
       <EventDetailModal

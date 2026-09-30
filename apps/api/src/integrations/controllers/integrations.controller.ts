@@ -82,6 +82,14 @@ export class IntegrationsController {
   }
 
   /**
+   * Connects an integration directly for active user
+   */
+  @Post(':provider/connect')
+  async connectDirectly(@Req() req: any, @Param('provider') provider: IntegrationProvider) {
+    return this.integrationsService.connectDirectly(req.user.id, provider, req.user.email);
+  }
+
+  /**
    * Disconnects an integration
    */
   @Post(':provider/disconnect')

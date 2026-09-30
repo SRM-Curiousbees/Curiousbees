@@ -208,6 +208,7 @@ interface AppState {
   addWorkspaceMilestone: (workspaceId: string, title: string, description?: string, dueDate?: string) => Promise<WorkspaceMilestone>;
   toggleWorkspaceMilestone: (workspaceId: string, milestoneId: string, completed: boolean) => Promise<WorkspaceMilestone>;
   addWorkspaceAnnouncement: (workspaceId: string, title: string, content: string) => Promise<WorkspaceAnnouncement>;
+  leaveWorkspace: (workspaceId: string) => Promise<{ success: boolean; workspaceDeleted: boolean }>;
 
   // Controlled Research Collaborations
   fetchCollabStatus: (targetUserId: string, threadId?: string) => Promise<CollaborationStatusResponse>;
@@ -228,6 +229,7 @@ interface AppState {
   handleGoogleCallback: (code: string, redirectUri: string) => Promise<any>;
   getZoomAuthUrl: (redirectUri: string) => Promise<{ authUrl: string }>;
   handleZoomCallback: (code: string, redirectUri: string) => Promise<any>;
+  connectIntegration: (provider: IntegrationProvider) => Promise<any>;
   disconnectIntegration: (provider: IntegrationProvider) => Promise<any>;
   fetchWorkspaceMeetings: (workspaceId: string) => Promise<ResearchMeeting[]>;
   createWorkspaceMeeting: (workspaceId: string, dto: { title: string; description?: string; provider: MeetingProvider; scheduledAt: string | Date; duration?: number; externalMeetingUrl?: string }) => Promise<ResearchMeeting>;
@@ -1854,6 +1856,29 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
+  leaveWorkspace: async (workspaceId: string) => {
+    set({ isLoading: true });
+    try {
+      const res = await apiFetch(`/api/workspaces/${workspaceId}/leave`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error(await readApiError(res));
+      const data = await res.json();
+      // Remove the workspace from local state
+      set((state) => ({
+        workspaces: state.workspaces.filter((w) => w.id !== workspaceId),
+        activeWorkspace: state.activeWorkspace?.id === workspaceId ? null : state.activeWorkspace,
+      }));
+      get().addToast('You have left the workspace.', 'info');
+      return data;
+    } catch (err: any) {
+      get().addToast(err.message || 'Could not leave workspace.', 'error');
+      throw err;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
   // ─── INTEGRATIONS & MEETINGS ────────────────────────────────────────────────
   integrationConnections: null,
   workspaceMeetings: {},
@@ -1925,6 +1950,18 @@ export const useStore = create<AppState>((set, get) => ({
     }
     const errData = await res.json().catch(() => ({}));
     throw new Error(errData.message || 'Failed to complete Zoom Workplace connection.');
+  },
+
+  connectIntegration: async (provider: IntegrationProvider) => {
+    const res = await apiFetch(`/api/integrations/${provider}/connect`, {
+      method: 'POST',
+    });
+    if (res.ok) {
+      await (get() as any).fetchIntegrationStatus();
+      return res.json();
+    }
+    const errData = await res.json().catch(() => ({}));
+    throw new Error(errData.message || `Failed to connect ${provider}.`);
   },
 
   disconnectIntegration: async (provider: IntegrationProvider) => {

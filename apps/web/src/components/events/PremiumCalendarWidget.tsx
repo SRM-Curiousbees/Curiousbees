@@ -195,7 +195,7 @@ export function PremiumCalendarWidget({
           </div>
 
           {/* Timetable Vertical Grid Container */}
-          <div className="flex relative overflow-y-auto max-h-[700px]">
+          <div className="flex relative overflow-y-auto max-h-[calc(100vh-280px)] min-h-[500px]">
             {/* Time Column */}
             <div className="w-20 shrink-0 border-r border-line bg-surface-muted/60">
               {HOURS.map(hObj => (
@@ -296,7 +296,7 @@ export function PremiumCalendarWidget({
             </div>
 
             {/* Timetable Grid Canvas */}
-            <div className="flex relative overflow-y-auto max-h-[700px]">
+            <div className="flex relative overflow-y-auto max-h-[calc(100vh-280px)] min-h-[500px]">
               {/* Time Column */}
               <div className="w-16 shrink-0 border-r border-line bg-surface-muted/60">
                 {HOURS.map(hObj => (
@@ -368,7 +368,7 @@ export function PremiumCalendarWidget({
           <div className="grid grid-cols-7 [&>*]:border-b [&>*]:border-r [&>*]:border-line [&>*:nth-child(7n)]:border-r-0">
             {monthDays.map((date, i) => {
               if (!date) {
-                return <div key={`empty-${i}`} className="min-h-[72px] bg-surface-muted/60 sm:min-h-[112px]" />;
+                return <div key={`empty-${i}`} className="min-h-[88px] bg-surface-muted/60 sm:min-h-[128px]" />;
               }
 
               const key = getEventDateKey(date);
@@ -383,7 +383,7 @@ export function PremiumCalendarWidget({
               return (
                 <div
                   key={i}
-                  className={`group flex min-h-[72px] flex-col p-1 transition-colors sm:min-h-[112px] sm:p-1.5 ${isSelected ? 'bg-brand-50/50' : 'bg-surface hover:bg-surface-muted/70'}`}
+                  className={`group flex min-h-[88px] flex-col p-1.5 transition-colors sm:min-h-[128px] sm:p-2 ${isSelected ? 'bg-brand-50/50' : 'bg-surface hover:bg-surface-muted/70'}`}
                 >
                   <button
                     type="button"

@@ -378,4 +378,53 @@ export class WorkspacesService {
 
     return announcement;
   }
+
+  async leaveWorkspace(userId: string, workspaceId: string) {
+    const member = await this.prisma.workspaceMember.findUnique({
+      where: {
+        workspaceId_userId: { workspaceId, userId },
+      },
+    });
+
+    if (!member) {
+      throw new NotFoundException('You are not a member of this workspace.');
+    }
+
+    // Count how many members the workspace has
+    const memberCount = await this.prisma.workspaceMember.count({
+      where: { workspaceId },
+    });
+
+    // If the user is the OWNER and there are other members, prevent leaving
+    if (member.role === 'OWNER' && memberCount > 1) {
+      throw new BadRequestException(
+        'As the workspace owner, you cannot leave while other members remain. Remove all members first or transfer ownership.',
+      );
+    }
+
+    // Remove the member
+    await this.prisma.workspaceMember.delete({
+      where: {
+        workspaceId_userId: { workspaceId, userId },
+      },
+    });
+
+    // If this was the last member, delete the workspace entirely
+    if (memberCount === 1) {
+      await this.prisma.workspace.delete({
+        where: { id: workspaceId },
+      });
+    }
+
+    // Audit log
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        action: 'WORKSPACE_LEAVE',
+        details: `User left workspace ${workspaceId}${memberCount === 1 ? ' (workspace deleted — last member)' : ''}`,
+      },
+    });
+
+    return { success: true, workspaceDeleted: memberCount === 1 };
+  }
 }

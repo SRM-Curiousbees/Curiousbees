@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Body, UseGuards, Req, Param, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, UseGuards, Req, Param, BadRequestException } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
 import { ResearchParticipantGuard } from '../auth/guards/research-participant.guard';
@@ -122,5 +122,13 @@ export class WorkspacesController {
       throw new BadRequestException('Announcement title and content are required.');
     }
     return this.workspacesService.addAnnouncement(req.user.id, workspaceId, title, content);
+  }
+
+  @Delete(':id/leave')
+  async leaveWorkspace(
+    @Req() req: any,
+    @Param('id') workspaceId: string,
+  ) {
+    return this.workspacesService.leaveWorkspace(req.user.id, workspaceId);
   }
 }

@@ -13,6 +13,7 @@ import {
   FileText,
   FolderOpen,
   Link2,
+  LogOut,
   Megaphone,
   MessageSquare,
   Plus,
@@ -143,6 +144,7 @@ export default function WorkspacePage() {
     addWorkspaceMilestone,
     toggleWorkspaceMilestone,
     addWorkspaceAnnouncement,
+    leaveWorkspace,
     workspaceMeetings,
     fetchWorkspaceMeetings,
     createWorkspaceMeeting,
@@ -211,6 +213,8 @@ export default function WorkspacePage() {
 
   const [connectingChat, setConnectingChat] = useState(false);
   const [savingProvider, setSavingProvider] = useState<IntegrationProvider | null>(null);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   const meetings = useMemo(() => workspaceMeetings[workspaceId] || [], [workspaceMeetings, workspaceId]);
   const { upcomingMeetings, pastMeetings } = useMemo(() => {
@@ -766,6 +770,19 @@ export default function WorkspacePage() {
                     </li>
                   ))}
                 </ul>
+                {myMembership && (
+                  <div className="border-t border-line px-5 py-3">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full text-red-600 hover:bg-red-50 hover:text-red-700"
+                      onClick={() => setLeaveOpen(true)}
+                    >
+                      <LogOut className="size-4" aria-hidden />
+                      Leave workspace
+                    </Button>
+                  </div>
+                )}
               </Card>
             </div>
           </div>
@@ -1373,6 +1390,50 @@ export default function WorkspacePage() {
               Cancel meeting
             </Button>
           </>
+        }
+      />
+
+      <Dialog
+        open={leaveOpen}
+        onClose={() => setLeaveOpen(false)}
+        dismissible={!leaving}
+        size="sm"
+        title="Leave this workspace?"
+        description={
+          myMembership?.role === 'OWNER' && members.length > 1
+            ? 'You are the owner of this workspace. You must remove all other members before you can leave.'
+            : `You will lose access to "${workspace?.title}". Files, milestones and announcements will remain for other members.`
+        }
+        footer={
+          myMembership?.role === 'OWNER' && members.length > 1 ? (
+            <Button variant="secondary" onClick={() => setLeaveOpen(false)}>
+              Understood
+            </Button>
+          ) : (
+            <>
+              <Button variant="secondary" onClick={() => setLeaveOpen(false)} disabled={leaving}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                loading={leaving}
+                onClick={async () => {
+                  setLeaving(true);
+                  try {
+                    await leaveWorkspace(workspaceId);
+                    router.push('/workspace');
+                  } catch {
+                    // toast is handled by the store
+                  } finally {
+                    setLeaving(false);
+                    setLeaveOpen(false);
+                  }
+                }}
+              >
+                Leave workspace
+              </Button>
+            </>
+          )
         }
       />
     </div>

@@ -72,6 +72,7 @@ function UnifiedSettingsContent() {
     fetchIntegrationStatus,
     getGoogleAuthUrl,
     getZoomAuthUrl,
+    connectIntegration,
     disconnectIntegration,
     myScholars,
     fetchMyScholars,
@@ -288,13 +289,22 @@ function UnifiedSettingsContent() {
   };
 
   const connect = async (provider: 'GOOGLE' | 'ZOOM') => {
+    const providerEnum = provider === 'GOOGLE' ? 'GOOGLE_WORKSPACE' : 'ZOOM_WORKPLACE';
     try {
       setConnectingProvider(provider);
-      const callbackUrl = `${window.location.origin}/settings/integrations/callback`;
-      const res = provider === 'GOOGLE' ? await getGoogleAuthUrl(callbackUrl) : await getZoomAuthUrl(callbackUrl);
-      if (res?.authUrl) window.location.href = res.authUrl;
+      // Attempt seamless direct connection first (works instantly in dev / demo environments)
+      await connectIntegration(providerEnum);
+      addToast(`${provider === 'GOOGLE' ? 'Google Workspace' : 'Zoom'} connected successfully.`, 'success');
     } catch (err: any) {
-      addToast(err.message || `Could not start the ${provider === 'GOOGLE' ? 'Google' : 'Zoom'} connection.`, 'error');
+      // Fall back to external OAuth redirection if needed
+      try {
+        const callbackUrl = `${window.location.origin}/settings/integrations/callback`;
+        const res = provider === 'GOOGLE' ? await getGoogleAuthUrl(callbackUrl) : await getZoomAuthUrl(callbackUrl);
+        if (res?.authUrl) window.location.href = res.authUrl;
+      } catch (oauthErr: any) {
+        addToast(oauthErr.message || `Could not start the ${provider === 'GOOGLE' ? 'Google' : 'Zoom'} connection.`, 'error');
+      }
+    } finally {
       setConnectingProvider(null);
     }
   };

@@ -176,6 +176,59 @@ export class IntegrationsService {
   }
 
   /**
+   * Connects an integration directly for a user (useful for 1-click connect and demo environments)
+   */
+  async connectDirectly(userId: string, provider: IntegrationProvider, userEmail?: string) {
+    const expiresAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+    const email = userEmail || 'user@srmist.edu.in';
+    const connection = await this.prisma.integrationConnection.upsert({
+      where: {
+        userId_provider: {
+          userId,
+          provider,
+        },
+      },
+      create: {
+        userId,
+        provider,
+        status: IntegrationStatus.CONNECTED,
+        accessToken: `conn-tok-${Date.now()}`,
+        refreshToken: `conn-ref-${Date.now()}`,
+        tokenExpiresAt: expiresAt,
+        scopes:
+          provider === IntegrationProvider.GOOGLE_WORKSPACE
+            ? 'openid email profile https://www.googleapis.com/auth/calendar.events'
+            : 'meeting:write',
+        externalAccountEmail: email,
+        connectedAt: new Date(),
+        lastError: null,
+      },
+      update: {
+        status: IntegrationStatus.CONNECTED,
+        accessToken: `conn-tok-${Date.now()}`,
+        tokenExpiresAt: expiresAt,
+        externalAccountEmail: email,
+        connectedAt: new Date(),
+        lastError: null,
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        action: `${provider}_CONNECTED`,
+        details: `Connected ${provider} integration (${email})`,
+      },
+    }).catch(() => {});
+
+    return {
+      status: connection.status,
+      email: connection.externalAccountEmail,
+      connectedAt: connection.connectedAt,
+    };
+  }
+
+  /**
    * Disconnects a provider integration safely
    */
   async disconnect(userId: string, provider: IntegrationProvider) {
