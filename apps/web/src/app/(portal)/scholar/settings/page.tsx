@@ -1,5 +1,0 @@
-import UnifiedSettingsPage from '../../settings/page';
-
-export default function ScholarSettingsPage() {
-  return <UnifiedSettingsPage />;
-}
