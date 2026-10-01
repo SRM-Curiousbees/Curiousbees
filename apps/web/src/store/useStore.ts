@@ -200,7 +200,11 @@ interface AppState {
     researchTopic?: string;
     researchTopicId?: string;
     scholarIds?: string[];
+    memberIds?: string[];
+    supervisorId?: string;
   }) => Promise<Workspace>;
+  addWorkspaceMember: (workspaceId: string, userId: string) => Promise<any>;
+  removeWorkspaceMember: (workspaceId: string, memberId: string) => Promise<any>;
   fetchWorkspaceDetails: (workspaceId: string) => Promise<Workspace>;
   addWorkspaceFile: (workspaceId: string, name: string, url: string, size?: number) => Promise<WorkspaceFile>;
   uploadWorkspaceFile: (workspaceId: string, file: File, displayName?: string) => Promise<WorkspaceFile>;
@@ -1645,6 +1649,8 @@ export const useStore = create<AppState>((set, get) => ({
     researchTopic?: string;
     researchTopicId?: string;
     scholarIds?: string[];
+    memberIds?: string[];
+    supervisorId?: string;
   }) => {
     set({ isLoading: true });
     try {
@@ -1873,6 +1879,44 @@ export const useStore = create<AppState>((set, get) => ({
       return data;
     } catch (err: any) {
       get().addToast(err.message || 'Could not leave workspace.', 'error');
+      throw err;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  addWorkspaceMember: async (workspaceId: string, userId: string) => {
+    set({ isLoading: true });
+    try {
+      const res = await apiFetch(`/api/workspaces/${workspaceId}/members`, {
+        method: 'POST',
+        body: JSON.stringify({ userId }),
+      });
+      if (!res.ok) throw new Error(await readApiError(res));
+      const member = await res.json();
+      await get().fetchWorkspaceDetails(workspaceId);
+      get().addToast('Member added to workspace.', 'success');
+      return member;
+    } catch (err: any) {
+      get().addToast(err.message || 'Could not add member.', 'error');
+      throw err;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  removeWorkspaceMember: async (workspaceId: string, memberId: string) => {
+    set({ isLoading: true });
+    try {
+      const res = await apiFetch(`/api/workspaces/${workspaceId}/members/${memberId}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error(await readApiError(res));
+      await get().fetchWorkspaceDetails(workspaceId);
+      get().addToast('Member removed from workspace.', 'info');
+      return true;
+    } catch (err: any) {
+      get().addToast(err.message || 'Could not remove member.', 'error');
       throw err;
     } finally {
       set({ isLoading: false });

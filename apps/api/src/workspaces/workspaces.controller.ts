@@ -27,6 +27,8 @@ export class WorkspacesController {
     @Body('researchTopic') researchTopic?: string,
     @Body('researchTopicId') researchTopicId?: string,
     @Body('scholarIds') scholarIds?: string[],
+    @Body('memberIds') memberIds?: string[],
+    @Body('supervisorId') supervisorId?: string,
   ) {
     if (!title) {
       throw new BadRequestException('Workspace title is required.');
@@ -39,7 +41,32 @@ export class WorkspacesController {
       researchTopic,
       researchTopicId,
       scholarIds,
+      memberIds,
+      supervisorId,
     });
+  }
+
+  @Post(':id/members')
+  @UseGuards(ResearchParticipantGuard)
+  async addMember(
+    @Req() req: any,
+    @Param('id') workspaceId: string,
+    @Body('userId') memberUserId: string,
+  ) {
+    if (!memberUserId) {
+      throw new BadRequestException('userId is required.');
+    }
+    return this.workspacesService.addMember(req.user.id, workspaceId, memberUserId);
+  }
+
+  @Delete(':id/members/:memberId')
+  @UseGuards(ResearchParticipantGuard)
+  async removeMember(
+    @Req() req: any,
+    @Param('id') workspaceId: string,
+    @Param('memberId') memberId: string,
+  ) {
+    return this.workspacesService.removeMember(req.user.id, workspaceId, memberId);
   }
 
   @Get(':id')

@@ -43,6 +43,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog } from '@/components/ui/dialog';
 import { Field } from '@/components/ui/field';
+import { CreateWorkspaceModal } from '@/components/workspace/CreateWorkspaceModal';
 
 export function GoogleIcon({ className = 'size-5' }: { className?: string }) {
   return (
@@ -944,6 +945,8 @@ export function CuriousNexusHub({
 
 /** Every workspace you are a member of. */
 function WorkspacesView({ workspaces, loading, currentUserId }: { workspaces: any[]; loading: boolean; currentUserId?: string }) {
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+
   return (
     <div>
       <PageHeader
@@ -951,10 +954,16 @@ function WorkspacesView({ workspaces, loading, currentUserId }: { workspaces: an
         title="Research workspaces"
         description="Shared spaces for files, milestones, announcements and meetings. Only members can see a workspace."
         actions={
-          <Link href="/nexus" className={buttonVariants({ variant: 'secondary' })}>
-            <MessageSquare aria-hidden />
-            Curious Nexus
-          </Link>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <Button variant="primary" onClick={() => setCreateModalOpen(true)}>
+              <Plus className="size-4" aria-hidden />
+              Create workspace
+            </Button>
+            <Link href="/nexus" className={buttonVariants({ variant: 'secondary' })}>
+              <MessageSquare aria-hidden />
+              Curious Nexus
+            </Link>
+          </div>
         }
       />
       {loading ? (
@@ -967,11 +976,17 @@ function WorkspacesView({ workspaces, loading, currentUserId }: { workspaces: an
           <EmptyState
             icon={FolderGit2}
             title="No workspaces yet"
-            description="A workspace is created when a supervision or collaboration begins. You'll see it here once you're a member."
+            description="Create a research workspace for your thesis, project, or lab group, or collaborate with fellow scholars and supervisors."
             action={
-              <Link href="/nexus" className={buttonVariants({ variant: 'secondary' })}>
-                Go to Curious Nexus
-              </Link>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Button variant="primary" onClick={() => setCreateModalOpen(true)}>
+                  <Plus className="size-4" aria-hidden />
+                  Create workspace
+                </Button>
+                <Link href="/nexus" className={buttonVariants({ variant: 'secondary' })}>
+                  Go to Curious Nexus
+                </Link>
+              </div>
             }
           />
         </Card>
@@ -1026,6 +1041,11 @@ function WorkspacesView({ workspaces, loading, currentUserId }: { workspaces: an
           })}
         </ul>
       )}
+
+      <CreateWorkspaceModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+      />
     </div>
   );
 }

@@ -33,6 +33,8 @@ export class WorkspacesService {
       researchTopic?: string;
       researchTopicId?: string;
       scholarIds?: string[];
+      memberIds?: string[];
+      supervisorId?: string;
     }
   ) {
     if (!data.title?.trim()) {
@@ -45,6 +47,7 @@ export class WorkspacesService {
     }
 
     const isSupervisor = user.role === 'RESEARCH_SUPERVISOR' || (user.role as any) === 'SUPERVISOR';
+    const resolvedSupervisorId = isSupervisor ? userId : (data.supervisorId || user.supervisorId || null);
 
     return this.prisma.$transaction(async (tx) => {
       const ws = await tx.workspace.create({
@@ -55,7 +58,7 @@ export class WorkspacesService {
           researchDomainId: data.researchDomainId || null,
           researchTopic: data.researchTopic?.trim() || null,
           researchTopicId: data.researchTopicId || null,
-          supervisorId: isSupervisor ? userId : null,
+          supervisorId: resolvedSupervisorId,
         }
       });
 
@@ -68,22 +71,31 @@ export class WorkspacesService {
         }
       });
 
-      // Add scholar members
-      if (Array.isArray(data.scholarIds) && data.scholarIds.length > 0) {
-        for (const sId of data.scholarIds) {
-          if (sId && sId !== userId) {
-            await tx.workspaceMember.upsert({
-              where: {
-                workspaceId_userId: { workspaceId: ws.id, userId: sId }
-              },
-              create: {
-                workspaceId: ws.id,
-                userId: sId,
-                role: 'MEMBER',
-              },
-              update: {}
-            });
-          }
+      // Add scholar, supervisor, and collaborator members
+      const targetMemberIds = new Set<string>();
+      if (Array.isArray(data.scholarIds)) {
+        data.scholarIds.forEach((id) => id && targetMemberIds.add(id));
+      }
+      if (Array.isArray(data.memberIds)) {
+        data.memberIds.forEach((id) => id && targetMemberIds.add(id));
+      }
+      if (data.supervisorId && data.supervisorId !== userId) {
+        targetMemberIds.add(data.supervisorId);
+      }
+
+      for (const mId of targetMemberIds) {
+        if (mId && mId !== userId) {
+          await tx.workspaceMember.upsert({
+            where: {
+              workspaceId_userId: { workspaceId: ws.id, userId: mId }
+            },
+            create: {
+              workspaceId: ws.id,
+              userId: mId,
+              role: 'MEMBER',
+            },
+            update: {}
+          });
         }
       }
 
@@ -427,4 +439,62 @@ export class WorkspacesService {
 
     return { success: true, workspaceDeleted: memberCount === 1 };
   }
+
+  async addMember(requesterId: string, workspaceId: string, targetUserId: string) {
+    const requester = await this.checkMembership(requesterId, workspaceId);
+    if (requester.role !== 'OWNER') {
+      throw new ForbiddenException('Only the workspace owner can add members.');
+    }
+
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+      select: { id: true, name: true, email: true, image: true, role: true, department: true },
+    });
+    if (!targetUser) {
+      throw new NotFoundException('User not found.');
+    }
+
+    return this.prisma.workspaceMember.upsert({
+      where: {
+        workspaceId_userId: { workspaceId, userId: targetUserId },
+      },
+      create: {
+        workspaceId,
+        userId: targetUserId,
+        role: 'MEMBER',
+      },
+      update: {},
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+            role: true,
+            department: true,
+          },
+        },
+      },
+    });
+  }
+
+  async removeMember(requesterId: string, workspaceId: string, targetUserId: string) {
+    const requester = await this.checkMembership(requesterId, workspaceId);
+    if (requester.role !== 'OWNER' && requesterId !== targetUserId) {
+      throw new ForbiddenException('Only the workspace owner can remove members.');
+    }
+    if (requester.role === 'OWNER' && targetUserId === requesterId) {
+      throw new BadRequestException('Workspace owner cannot be removed. Transfer ownership or delete workspace.');
+    }
+
+    await this.prisma.workspaceMember.delete({
+      where: {
+        workspaceId_userId: { workspaceId, userId: targetUserId },
+      },
+    });
+
+    return { success: true };
+  }
 }
+

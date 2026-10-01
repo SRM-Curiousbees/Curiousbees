@@ -18,15 +18,18 @@ import {
   MessageSquare,
   Plus,
   RefreshCw,
+  Search,
   Settings2,
   UploadCloud,
   User,
   Video,
+  X,
 } from 'lucide-react';
 import type { IntegrationProvider, MeetingProvider, ResearchMeeting, Workspace } from '@curiousbees/types';
 import { useStore } from '@/store/useStore';
 import { cn } from '@/lib/utils';
-import { handleAvatarError } from '@/lib/avatar';
+import { getProfileImageUrl, handleAvatarError } from '@/lib/avatar';
+import { apiGet } from '@/lib/api-client';
 import { PageHeader } from '@/components/ui/page-header';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -145,6 +148,8 @@ export default function WorkspacePage() {
     toggleWorkspaceMilestone,
     addWorkspaceAnnouncement,
     leaveWorkspace,
+    addWorkspaceMember,
+    removeWorkspaceMember,
     workspaceMeetings,
     fetchWorkspaceMeetings,
     createWorkspaceMeeting,
@@ -198,6 +203,14 @@ export default function WorkspacePage() {
   const [updateTitle, setUpdateTitle] = useState('');
   const [updateContent, setUpdateContent] = useState('');
   const [postingUpdate, setPostingUpdate] = useState(false);
+
+  // Member management
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [memberSearchResults, setMemberSearchResults] = useState<any[]>([]);
+  const [searchingMembers, setSearchingMembers] = useState(false);
+  const [addingMemberId, setAddingMemberId] = useState<string | null>(null);
+  const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
 
   const [meetingOpen, setMeetingOpen] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState('');
@@ -270,6 +283,55 @@ export default function WorkspacePage() {
   const files = workspace.files || [];
   const announcements = workspace.announcements || [];
   const provider: IntegrationProvider = workspace.collaborationProvider || 'GOOGLE_WORKSPACE';
+
+  useEffect(() => {
+    if (!addMemberOpen || !memberSearchQuery.trim() || memberSearchQuery.trim().length < 2) {
+      setMemberSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearchingMembers(true);
+      try {
+        const res = await apiGet<any>(`/api/users/researchers?q=${encodeURIComponent(memberSearchQuery.trim())}&limit=8`);
+        const items = res?.items || res || [];
+        if (Array.isArray(items)) {
+          const currentMemberIds = new Set(members.map((m: any) => m.userId));
+          setMemberSearchResults(items.filter((u: any) => !currentMemberIds.has(u.id)));
+        }
+      } catch (err) {
+        console.error('Failed to search members', err);
+      } finally {
+        setSearchingMembers(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [addMemberOpen, memberSearchQuery, members]);
+
+  const handleAddMember = async (userId: string) => {
+    setAddingMemberId(userId);
+    try {
+      await addWorkspaceMember(workspaceId, userId);
+      setMemberSearchResults((prev) => prev.filter((u) => u.id !== userId));
+      setAddMemberOpen(false);
+      setMemberSearchQuery('');
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setAddingMemberId(null);
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!confirm('Are you sure you want to remove this member from the workspace?')) return;
+    setRemovingMemberId(userId);
+    try {
+      await removeWorkspaceMember(workspaceId, userId);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRemovingMemberId(null);
+    }
+  };
   const googleConnected = integrationConnections?.google?.status === 'CONNECTED';
   const zoomConnected = integrationConnections?.zoom?.status === 'CONNECTED';
   const domain = workspace.researchDomainRef?.name || workspace.researchDomain;
@@ -754,7 +816,17 @@ export default function WorkspacePage() {
               </Card>
 
               <Card>
-                <CardHeader title="Members" />
+                <CardHeader
+                  title="Members"
+                  actions={
+                    canAddMilestones ? (
+                      <Button variant="ghost" size="sm" onClick={() => setAddMemberOpen(true)}>
+                        <Plus className="size-3.5" aria-hidden />
+                        Add member
+                      </Button>
+                    ) : null
+                  }
+                />
                 <ul className="divide-y divide-line">
                   {members.map((m) => (
                     <li key={m.userId} className="flex items-center gap-3 px-5 py-3">
@@ -766,7 +838,20 @@ export default function WorkspacePage() {
                         </p>
                         {m.user?.department && <p className="truncate text-xs text-ink-muted">{m.user.department}</p>}
                       </div>
-                      <Badge tone={m.role === 'OWNER' ? 'brand' : 'neutral'}>{m.role === 'OWNER' ? 'Owner' : 'Member'}</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge tone={m.role === 'OWNER' ? 'brand' : 'neutral'}>{m.role === 'OWNER' ? 'Owner' : 'Member'}</Badge>
+                        {canAddMilestones && m.role !== 'OWNER' && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveMember(m.userId)}
+                            disabled={removingMemberId === m.userId}
+                            aria-label={`Remove ${m.user?.name || 'member'}`}
+                            className="rounded-lg p-1 text-ink-muted transition-colors hover:bg-neutral-100 hover:text-danger-600"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>
@@ -1425,6 +1510,69 @@ export default function WorkspacePage() {
           )
         }
       />
+
+      {/* Add member dialog */}
+      <Dialog
+        open={addMemberOpen}
+        onClose={() => {
+          setAddMemberOpen(false);
+          setMemberSearchQuery('');
+          setMemberSearchResults([]);
+        }}
+        title="Add Workspace Member"
+        description="Invite a research supervisor or peer scholar to this workspace."
+      >
+        <div className="space-y-4 pt-2">
+          <Field label="Search Researcher" htmlFor="add-member-search">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-2.5 size-4 text-ink-muted" />
+              <input
+                id="add-member-search"
+                type="text"
+                value={memberSearchQuery}
+                onChange={(e) => setMemberSearchQuery(e.target.value)}
+                placeholder="Search by name, email, or department..."
+                className="w-full rounded-xl border border-line bg-surface pl-9 pr-3.5 py-2 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/10"
+              />
+              {searchingMembers && (
+                <RefreshCw className="absolute right-3 top-2.5 size-4 animate-spin text-ink-muted" />
+              )}
+            </div>
+          </Field>
+          {memberSearchResults.length > 0 && (
+            <ul className="max-h-56 divide-y divide-line overflow-y-auto rounded-xl border border-line bg-surface">
+              {memberSearchResults.map((u) => (
+                <li key={u.id} className="flex items-center justify-between gap-3 p-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <img
+                      src={getProfileImageUrl(u)}
+                      alt=""
+                      onError={(e) => handleAvatarError(e, u.name)}
+                      className="size-8 rounded-full border border-line bg-surface-muted object-cover"
+                    />
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-ink">{u.name || u.email}</p>
+                      <p className="truncate text-xs text-ink-muted">
+                        {u.role === 'RESEARCH_SUPERVISOR' ? 'Supervisor' : 'Scholar'}
+                        {u.department ? ` · ${u.department}` : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    disabled={addingMemberId === u.id}
+                    onClick={() => handleAddMember(u.id)}
+                  >
+                    <Plus className="size-3.5" />
+                    Add
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Dialog>
     </div>
   );
 }
