@@ -5,12 +5,14 @@ services:
     image: postgres:15-alpine
     container_name: srm_curiousbees_postgres_dev
     restart: always
+    # POSTGRES_PASSWORD comes from .env.docker (git-ignored; see .env.docker.example).
+    env_file: .env.docker
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
       POSTGRES_DB: srm_curiousbees_db
-    ports:
-      - "5432:5432"
+    # Not published to the host: the API reaches it on the compose network. Port
+    # 5432 on this machine belongs to the local Homebrew server; if you need host
+    # access, publish "127.0.0.1:5433:5432", never 5432 or all interfaces.
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data
     healthcheck:
@@ -38,11 +40,11 @@ services:
     command: sh -c "npm install --legacy-peer-deps && npm run db:generate && npm run dev:api"
     ports:
       - "4000:4000"
+    # DATABASE_URL / DIRECT_URL for the compose database come from .env.docker.
+    env_file: .env.docker
     environment:
       NODE_ENV: development
       PORT: 4000
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/srm_curiousbees_db?schema=public
-      DIRECT_URL: postgresql://postgres:postgres@postgres:5432/srm_curiousbees_db?schema=public
       REDIS_HOST: redis
       REDIS_PORT: 6379
       DEVELOPMENT_MODE: "true"

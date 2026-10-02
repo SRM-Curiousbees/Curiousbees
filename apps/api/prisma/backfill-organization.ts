@@ -2,7 +2,8 @@ import { PrismaClient } from '@prisma/client';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+// Never under NODE_ENV=test: tests must not pick up the development database.
+if (process.env.NODE_ENV !== 'test') dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 const prisma = new PrismaClient();
 
 const SRM_ORGANIZATION_DATA = {

@@ -3,7 +3,8 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 
 // Load root .env absolutely
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+// Never under NODE_ENV=test: tests must not pick up the development database.
+if (process.env.NODE_ENV !== 'test') dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 import { SRM_ORGANIZATION_DATA, RESEARCH_INTERESTS } from '../src/database/reference-data';
 

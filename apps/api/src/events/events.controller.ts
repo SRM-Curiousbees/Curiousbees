@@ -13,6 +13,7 @@ export class EventsController {
 
   @Get()
   async getEvents(
+    @Req() req: any,
     @Query('status') status?: EventStatus,
     @Query('limit') limit?: string,
     @Query('skip') skip?: string
@@ -21,12 +22,12 @@ export class EventsController {
       status,
       limit: limit ? parseInt(limit, 10) : undefined,
       skip: skip ? parseInt(skip, 10) : undefined,
-    });
+    }, req.user);
   }
 
   @Get('review')
-  async getReviewEvents() {
-    return this.eventsService.getReviewEvents();
+  async getReviewEvents(@Req() req: any) {
+    return this.eventsService.getReviewEvents(req.user);
   }
 
 

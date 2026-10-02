@@ -3,14 +3,16 @@ import * as path from 'path';
 import * as fs from 'fs';
 
 // Local development reads the monorepo root .env. Production containers get
-// their configuration only from the task definition (env + SSM secrets).
+// their configuration only from the task definition (env + SSM secrets). Tests
+// set their own environment, which the root .env must never override (it
+// would point integration tests at the development database).
 const envCandidates = [
   path.resolve(__dirname, '../../.env'),
   path.resolve(__dirname, '../../../.env'),
   path.resolve(__dirname, '../../../../.env'),
   path.join(process.cwd(), '.env'),
 ];
-const envPath = process.env.NODE_ENV === 'production'
+const envPath = process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test'
   ? undefined
   : envCandidates.find((candidate) => fs.existsSync(candidate));
 if (envPath) {

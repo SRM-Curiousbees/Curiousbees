@@ -30,6 +30,7 @@ supabase/.temp/
 .env
 .env.*
 !.env.example
+!.env.docker.example
 
 # 📑 System Diagnostics, Processes & Logs
 logs/

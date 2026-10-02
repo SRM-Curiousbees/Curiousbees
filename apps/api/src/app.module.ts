@@ -13,6 +13,7 @@ import { ThreadsModule } from './threads/threads.module';
 import { CommentsModule } from './comments/comments.module';
 import { OpportunitiesModule } from './opportunities/opportunities.module';
 import { EventsModule } from './events/events.module';
+import { EventIngestionModule } from './event-ingestion/event-ingestion.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { SupervisorsModule } from './supervisors/supervisors.module';
@@ -39,7 +40,9 @@ import { SearchModule } from './search/search.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      ignoreEnvFile: process.env.NODE_ENV === 'production',
+      // Production gets its configuration from the task definition; tests set their
+      // own, and must never pick up the development database from the root .env.
+      ignoreEnvFile: process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test',
       envFilePath: [
         path.resolve(process.cwd(), '.env'),
         path.resolve(__dirname, '../../.env'),
@@ -63,6 +66,7 @@ import { SearchModule } from './search/search.module';
     CommentsModule,
     OpportunitiesModule,
     EventsModule,
+    EventIngestionModule,
     NotificationsModule,
     WorkspacesModule,
     SupervisorsModule,

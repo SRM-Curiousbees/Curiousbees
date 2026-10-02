@@ -37,15 +37,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
+      # The integration suite resets its database and refuses anything but this
+      # dedicated endpoint (apps/api/test/e2e-safety.ts): cbtest@127.0.0.1:55432/curiousbees.
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_USER: ci
-          POSTGRES_PASSWORD: ci_only
-          POSTGRES_DB: curiousbees_ci
-        ports: ["5432:5432"]
+          POSTGRES_USER: cbtest
+          POSTGRES_PASSWORD: cbtest_local_only
+          POSTGRES_DB: curiousbees
+        ports: ["55432:5432"]
         options: >-
-          --health-cmd "pg_isready -U ci -d curiousbees_ci"
+          --health-cmd "pg_isready -U cbtest -d curiousbees"
           --health-interval 5s --health-timeout 5s --health-retries 10
       s3:
         image: localstack/localstack:4
@@ -54,8 +56,8 @@ jobs:
           S3_SKIP_SIGNATURE_VALIDATION: "0"
         ports: ["4566:4566"]
     env:
-      DATABASE_URL: postgresql://ci:ci_only@localhost:5432/curiousbees_ci?schema=public
-      DIRECT_URL: postgresql://ci:ci_only@localhost:5432/curiousbees_ci?schema=public
+      DATABASE_URL: postgresql://cbtest:cbtest_local_only@127.0.0.1:55432/curiousbees?schema=public
+      DIRECT_URL: postgresql://cbtest:cbtest_local_only@127.0.0.1:55432/curiousbees?schema=public
       # Public placeholders so the Next.js build-time validation passes in CI.
       NEXT_PUBLIC_SITE_URL: https://srmcuriousbees.in
       NEXT_PUBLIC_API_URL: https://srmcuriousbees.in

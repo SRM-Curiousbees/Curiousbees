@@ -247,7 +247,7 @@ npm run dev
 | Command | What it runs |
 | :--- | :--- |
 | `npm test --workspace apps/api` | API unit tests (Jest) |
-| `npx jest -c test/jest-e2e.config.js` (in `apps/api`) | API integration tests against a real PostgreSQL and an S3-compatible store. Set `E2E_DATABASE_URL` and `E2E_S3_ENDPOINT`; the suite applies migrations with `prisma migrate deploy` |
+| `npx jest -c test/jest-e2e.config.js` (in `apps/api`) | API integration tests against a real PostgreSQL and an S3-compatible store. Start them with `docker compose -f docker-compose.test.yml up -d`, then set `E2E_DATABASE_URL=postgresql://cbtest:cbtest_local_only@127.0.0.1:55432/curiousbees?schema=public` and `E2E_S3_ENDPOINT=http://127.0.0.1:59000`. The suite **drops and recreates the database schema**, so it refuses to start against any other database, never reads `.env`, and blocks network connections that leave the machine |
 | `npm run lint` / `npm run typecheck` | ESLint and TypeScript across workspaces |
 
 ---

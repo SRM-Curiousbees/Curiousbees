@@ -3,6 +3,9 @@ import { z } from 'zod';
 const nonEmptyCommaList = (message: string) =>
   z.string().refine((val) => val.split(',').some((v) => v.trim().length > 0), message);
 
+// Treats `NAME=` (an unset value copied from .env.example) the same as a missing variable.
+const blankToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v);
+
 const baseSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().default(4000),
@@ -33,6 +36,10 @@ const baseSchema = z.object({
   ZOOM_CLIENT_SECRET: z.string().optional(),
   ENABLE_CRON: z.enum(['true', 'false']).optional(),
   ENABLE_SWAGGER: z.enum(['true', 'false']).optional(),
+  // n8n email → event ingestion. Optional: with no token the integration endpoints refuse all requests.
+  N8N_INTEGRATION_TOKEN: z.preprocess(blankToUndefined, z.string().min(32, 'N8N_INTEGRATION_TOKEN must be at least 32 characters').optional()),
+  N8N_INTEGRATION_TOKEN_PREVIOUS: z.preprocess(blankToUndefined, z.string().min(32, 'N8N_INTEGRATION_TOKEN_PREVIOUS must be at least 32 characters').optional()),
+  EVENT_INGESTION_TRUSTED_SENDERS: z.string().optional(),
 });
 
 /**

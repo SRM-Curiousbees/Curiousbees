@@ -9,6 +9,7 @@ import { PrismaClient, Role, UserStatus } from '@prisma/client';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/main';
 import { SupabaseService } from '../src/auth/supabase.service';
+import { assertDisposableTestDatabase } from './e2e-safety';
 
 /**
  * Fake Supabase: a bearer token "tok:<email>" is a valid, verified session for
@@ -63,6 +64,13 @@ describe('CuriousBees API (integration)', () => {
   let workspaceId: string;
 
   beforeAll(async () => {
+    // The reset below is destructive. Check again, immediately before it, that the
+    // connection the reset, migrations and seed will use is the dedicated test database.
+    assertDisposableTestDatabase(process.env.DATABASE_URL, process.env.NODE_ENV);
+    if (process.env.DATABASE_URL !== process.env.E2E_DATABASE_URL) {
+      throw new Error('Refusing to reset the database: DATABASE_URL no longer matches E2E_DATABASE_URL.');
+    }
+
     // Fresh schema exactly as production gets it: migrate deploy + production seed.
     const env = { ...process.env };
     execSync(`psql "${process.env.DATABASE_URL!.split('?')[0]}" -qc "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;"`, { env, stdio: 'pipe' });
@@ -96,11 +104,11 @@ describe('CuriousBees API (integration)', () => {
 
   // ─── Database / seed ───────────────────────────────────────────────────────
   describe('fresh database + production seed', () => {
-    it('created all 53 application tables via prisma migrate deploy', async () => {
+    it('created all 54 application tables via prisma migrate deploy', async () => {
       const [{ count }] = await prisma.$queryRaw<{ count: bigint }[]>`
         SELECT count(*) FROM information_schema.tables
         WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name <> '_prisma_migrations'`;
-      expect(Number(count)).toBe(53);
+      expect(Number(count)).toBe(54);
     });
 
     it('seeded reference data and exactly one bootstrap admin, no other users', async () => {
@@ -492,6 +500,236 @@ describe('CuriousBees API (integration)', () => {
       await as('scholar.one@gmail.com').get(`/api/threads/${post.id}`).expect(200);
       await as('dr.srm@srmist.edu.in').get(`/api/threads/${post.id}`).expect(404);
       await http.get(`/api/threads/public/${post.id}`).expect(404);
+    });
+  });
+
+  // ─── Email → event ingestion (n8n) ─────────────────────────────────────────
+  describe('email → event ingestion (n8n)', () => {
+    const TOKEN = 'n8n-test-token-' + 'x'.repeat(40);
+    const n8n = () => as(null, TOKEN);
+    let seq = 0;
+    const messageId = () => `msg-${Date.now()}-${++seq}`;
+
+    // Dates relative to now so the suite never ages into "already passed".
+    const inDays = (n: number) => {
+      const d = new Date(Date.now() + n * 86_400_000);
+      return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+    };
+    const EVENT_DAY = inDays(20);
+
+    const extraction = (o: Record<string, unknown> = {}) => ({
+      isEvent: true,
+      confidence: 0.96,
+      title: 'International Research Symposium 2026',
+      description: 'Talks and posters from doctoral scholars across faculties.',
+      startDate: EVENT_DAY,
+      startTime: '10:00',
+      endDate: EVENT_DAY,
+      endTime: '16:00',
+      timezone: 'Asia/Kolkata',
+      location: 'University Auditorium',
+      organizer: 'Directorate of Research',
+      category: 'Research Event',
+      eventUrl: 'https://srmist.edu.in/symposium',
+      registrationUrl: 'https://forms.gle/register-symposium',
+      meetingUrl: 'https://meet.google.com/abc-defg-hij',
+      ...o,
+    });
+    const payload = (id: string, o: Record<string, unknown> = {}, from = 'Directorate of Research <research@srmist.edu.in>') => ({
+      source: { provider: 'gmail', messageId: id, threadId: `thread-${id}`, from, subject: 'Invitation: International Research Symposium', receivedAt: new Date().toISOString() },
+      extraction: extraction(o),
+      ai: { model: 'gemini-2.5-flash', inputTokens: 1800, outputTokens: 210 },
+      prefilter: { score: 7 },
+    });
+
+    beforeAll(() => {
+      process.env.N8N_INTEGRATION_TOKEN = TOKEN;
+      process.env.EVENT_INGESTION_TRUSTED_SENDERS = 'srmist.edu.in';
+    });
+    afterAll(() => {
+      delete process.env.N8N_INTEGRATION_TOKEN;
+      delete process.env.EVENT_INGESTION_TRUSTED_SENDERS;
+    });
+
+    it('refuses requests without the integration token, and refuses everything when none is configured', async () => {
+      await as(null).post('/api/integrations/n8n/events').send(payload(messageId())).expect(401);
+      await as(null, 'wrong-token-' + 'y'.repeat(40)).post('/api/integrations/n8n/events').send(payload(messageId())).expect(401);
+      // A user's session token is not an integration token.
+      await as('admin@srmist.edu.in').post('/api/integrations/n8n/events').send(payload(messageId())).expect(401);
+      delete process.env.N8N_INTEGRATION_TOKEN;
+      await n8n().post('/api/integrations/n8n/events').send(payload(messageId())).expect(503);
+      process.env.N8N_INTEGRATION_TOKEN = TOKEN;
+    });
+
+    it('rejects a request without a Gmail message ID', async () => {
+      const res = await n8n().post('/api/integrations/n8n/events').send({ source: { provider: 'gmail' }, extraction: extraction() }).expect(400);
+      expect(res.body.message).toMatch(/source\.messageId/);
+    });
+
+    let createdEventId: string;
+    const firstMessage = messageId();
+
+    it('creates a confident, complete event and every signed-in member sees it in the calendar', async () => {
+      expect((await n8n().post('/api/integrations/n8n/events/check').send({ messageId: firstMessage }).expect(200)).body).toEqual({ processed: false });
+
+      const res = await n8n().post('/api/integrations/n8n/events').send(payload(firstMessage)).expect(200);
+      expect(res.body).toMatchObject({ status: 'created', duplicate: false });
+      createdEventId = res.body.eventId;
+
+      const event = await prisma.event.findUniqueOrThrow({ where: { id: createdEventId } });
+      expect(event).toMatchObject({
+        status: 'PUBLISHED',
+        time: '10:00',
+        endTime: '16:00',
+        timezone: 'Asia/Kolkata',
+        venue: 'University Auditorium',
+        registrationLink: 'https://forms.gle/register-symposium',
+        eventUrl: 'https://srmist.edu.in/symposium',
+        meetingUrl: 'https://meet.google.com/abc-defg-hij',
+        source: 'email',
+        sourceProvider: 'gmail',
+        sourceMessageId: firstMessage,
+        sourceThreadId: `thread-${firstMessage}`,
+        createdByType: 'automation',
+        createdBy: 'n8n',
+        authorId: null,
+      });
+      expect(event.date.toISOString().slice(0, 10)).toBe(EVENT_DAY);
+
+      const calendar = await as('scholar.one@gmail.com').get('/api/events').expect(200);
+      expect(calendar.body.map((e: any) => e.id)).toContain(createdEventId);
+      const supervisorView = await as('dr.srm@srmist.edu.in').get('/api/events').expect(200);
+      expect(supervisorView.body.map((e: any) => e.id)).toContain(createdEventId);
+
+      const check = await n8n().post('/api/integrations/n8n/events/check').send({ messageId: firstMessage }).expect(200);
+      expect(check.body).toMatchObject({ processed: true, status: 'created', eventId: createdEventId });
+    });
+
+    it('is idempotent when n8n retries the same message', async () => {
+      const before = await prisma.event.count();
+      const again = await n8n().post('/api/integrations/n8n/events').send(payload(firstMessage)).expect(200);
+      expect(again.body).toMatchObject({ status: 'duplicate', eventId: createdEventId, originalStatus: 'created', duplicate: true });
+      expect(await prisma.event.count()).toBe(before);
+      expect(await prisma.eventIngestion.count({ where: { sourceMessageId: firstMessage } })).toBe(1);
+    });
+
+    it('creates one event when two deliveries of the same message race', async () => {
+      const id = messageId();
+      const body = payload(id, { title: 'Faculty Development Programme on Research Methods', startTime: '11:00', endTime: '13:00' });
+      const [a, b] = await Promise.all([
+        n8n().post('/api/integrations/n8n/events').send(body),
+        n8n().post('/api/integrations/n8n/events').send(body),
+      ]);
+      const statuses = [a.body.status, b.body.status].sort();
+      expect(statuses).toEqual(['created', 'duplicate']);
+      expect(await prisma.event.count({ where: { sourceMessageId: id } })).toBe(1);
+      expect(a.body.eventId).toBe(b.body.eventId);
+    });
+
+    it('recognises the same event arriving in a different email', async () => {
+      const before = await prisma.event.count();
+      const res = await n8n()
+        .post('/api/integrations/n8n/events')
+        .send(payload(messageId(), { title: 'Fwd: International research symposium 2026' }))
+        .expect(200);
+      expect(res.body).toMatchObject({ status: 'duplicate', eventId: createdEventId });
+      expect(await prisma.event.count()).toBe(before);
+    });
+
+    it('sends incomplete, uncertain or untrusted events to review, and keeps them out of the calendar', async () => {
+      const noTime = await n8n().post('/api/integrations/n8n/events').send(payload(messageId(), { title: 'Research Committee Meeting', startTime: null, endTime: null })).expect(200);
+      expect(noTime.body).toMatchObject({ status: 'review_required', reason: 'Missing a reliable start time' });
+
+      const noDate = await n8n().post('/api/integrations/n8n/events').send(payload(messageId(), { title: 'Orientation for new scholars', startDate: null, endDate: null })).expect(200);
+      expect(noDate.body.reasons).toContain('Missing a reliable date');
+
+      const unsure = await n8n().post('/api/integrations/n8n/events').send(payload(messageId(), { title: 'Webinar on reproducible ML', confidence: 0.8 })).expect(200);
+      expect(unsure.body.status).toBe('review_required');
+
+      const untrusted = await n8n()
+        .post('/api/integrations/n8n/events')
+        .send(payload(messageId(), { title: 'Workshop on scientific writing', startTime: '15:00', endTime: '17:00' }, 'Someone <someone@gmail.com>'))
+        .expect(200);
+      expect(untrusted.body.reasons).toContain('The sender is not on the trusted list');
+
+      // Nothing waiting for review reaches the calendar, even if a member asks for it.
+      const calendar = await as('scholar.one@gmail.com').get('/api/events?status=REVIEW_REQUIRED').expect(200);
+      expect(calendar.body.every((e: any) => e.status === 'PUBLISHED')).toBe(true);
+      expect(calendar.body.map((e: any) => e.title)).not.toContain('Research Committee Meeting');
+      await as('scholar.one@gmail.com').get('/api/events/review').expect(401);
+    });
+
+    it('records non-events and low-confidence results without creating anything', async () => {
+      const id = messageId();
+      const res = await n8n().post('/api/integrations/n8n/events').send(payload(id, { isEvent: false, confidence: 0.98 })).expect(200);
+      expect(res.body.status).toBe('not_event');
+      const low = await n8n().post('/api/integrations/n8n/events').send(payload(messageId(), { confidence: 0.4 })).expect(200);
+      expect(low.body.status).toBe('not_event');
+      expect((await n8n().post('/api/integrations/n8n/events/check').send({ messageId: id })).body.processed).toBe(true);
+    });
+
+    it('never guesses from a malformed AI response, and lets the workflow retry it', async () => {
+      const id = messageId();
+      const bad = await n8n()
+        .post('/api/integrations/n8n/events')
+        .send({ ...payload(id), extraction: { isEvent: 'yes', title: 'Seminar', startDate: '2026-13-45' } })
+        .expect(200);
+      expect(bad.body.status).toBe('ai_failed');
+      expect(await prisma.event.count({ where: { sourceMessageId: id } })).toBe(0);
+
+      const check = await n8n().post('/api/integrations/n8n/events/check').send({ messageId: id }).expect(200);
+      expect(check.body).toMatchObject({ processed: false, retryable: true });
+
+      const retry = await n8n().post('/api/integrations/n8n/events').send(payload(id, { title: 'Seminar on AI for climate research', startTime: '09:30', endTime: '11:00' })).expect(200);
+      expect(retry.body.status).toBe('created');
+      expect((await prisma.eventIngestion.findUniqueOrThrow({ where: { sourceMessageId: id } })).attempts).toBe(2);
+    });
+
+    it('records emails the pre-filter rejected, so they are counted and never reprocessed', async () => {
+      const id = messageId();
+      const res = await n8n()
+        .post('/api/integrations/n8n/events/skipped')
+        .send({ source: { provider: 'gmail', messageId: id, from: 'no-reply@accounts.example.com', subject: 'Password reset' }, stage: 'prefilter', prefilter: { score: -6 } })
+        .expect(200);
+      expect(res.body.status).toBe('skipped');
+      const later = await n8n().post('/api/integrations/n8n/events').send(payload(id)).expect(200);
+      expect(later.body).toMatchObject({ status: 'duplicate', originalStatus: 'skipped' });
+    });
+
+    it('lets institute admins complete and approve, or dismiss, emails in the review queue', async () => {
+      await as('scholar.one@gmail.com').get('/api/admin/event-ingestion?status=REVIEW_REQUIRED').expect(403);
+
+      const queue = await as('admin@srmist.edu.in').get('/api/admin/event-ingestion?status=REVIEW_REQUIRED').expect(200);
+      const meeting = queue.body.items.find((i: any) => i.extracted?.title === 'Research Committee Meeting');
+      expect(meeting).toBeTruthy();
+      expect(meeting.extracted.startTime).toBeNull();
+
+      // Still missing the time: approval is refused rather than inventing one.
+      await as('admin@srmist.edu.in').post(`/api/admin/event-ingestion/${meeting.id}/approve`).send({}).expect(400);
+      const approved = await as('admin@srmist.edu.in')
+        .post(`/api/admin/event-ingestion/${meeting.id}/approve`)
+        .send({ startTime: '2:30 pm', location: 'Senate Hall' })
+        .expect(201);
+      expect(approved.body.status).toBe('created');
+      const event = await prisma.event.findUniqueOrThrow({ where: { id: approved.body.eventId } });
+      expect(event).toMatchObject({ title: 'Research Committee Meeting', time: '14:30', venue: 'Senate Hall', status: 'PUBLISHED' });
+      expect((await as('scholar.one@gmail.com').get('/api/events').expect(200)).body.map((e: any) => e.id)).toContain(event.id);
+      await as('admin@srmist.edu.in').post(`/api/admin/event-ingestion/${meeting.id}/approve`).send({}).expect(409);
+
+      const another = (await as('admin@srmist.edu.in').get('/api/admin/event-ingestion?status=REVIEW_REQUIRED').expect(200)).body.items[0];
+      const dismissed = await as('admin@srmist.edu.in').post(`/api/admin/event-ingestion/${another.id}/dismiss`).send({ note: 'Internal meeting' }).expect(201);
+      expect(dismissed.body.status).toBe('dismissed');
+      expect(await prisma.auditLog.count({ where: { action: { in: ['EVENT_INGESTION_APPROVED', 'EVENT_INGESTION_DISMISSED'] } } })).toBe(2);
+    });
+
+    it('reports how many emails reached each stage and the AI tokens used', async () => {
+      const stats = (await as('admin@srmist.edu.in').get('/api/admin/event-ingestion/stats').expect(200)).body;
+      expect(stats.incoming).toBe(stats.skippedByFilter + stats.sentToAi);
+      expect(stats.skippedByFilter).toBe(1);
+      expect(stats.created).toBeGreaterThanOrEqual(3);
+      expect(stats.duplicates).toBeGreaterThanOrEqual(1);
+      expect(stats.notEvents).toBe(2);
+      expect(stats.aiInputTokens).toBeGreaterThan(0);
     });
   });
 

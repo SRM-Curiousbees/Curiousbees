@@ -87,6 +87,7 @@ model User {
   connectionsRequested ResearchConnection[] @relation("ConnectionRequester")
   connectionsReceived  ResearchConnection[] @relation("ConnectionReceiver")
   hostedEvents         Event[]
+  reviewedEventIngestions EventIngestion[] @relation("EventIngestionReviewer")
   // Researcher Network Follow Relations
   following            UserFollow[]   @relation("UserFollowing")
   followers            UserFollow[]   @relation("UserFollowers")
@@ -361,8 +362,6 @@ model SystemAnnouncement {
   @@index([authorId])
 }
 
-
-
 enum EventStatus {
   DRAFT
   PUBLISHED
@@ -387,7 +386,8 @@ model Event {
   departmentRef     Department?    @relation(fields: [departmentId], references: [id], onDelete: SetNull)
   date              DateTime
   time              String
-  venue             String
+  // Optional so events whose location isn't known don't get an invented one.
+  venue             String?
   topic             String?
   organizerEmail    String?
   status            EventStatus
@@ -406,9 +406,70 @@ model Event {
   authorId          String?
   author            User?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
 
+  // Extra details extracted from institutional emails (all optional).
+  organizer         String?
+  eventUrl          String?
+  meetingUrl        String?
+  endDate           DateTime?
+  endTime           String?
+  timezone          String?
+
+  // Where the event came from. Events created by people leave these empty.
+  source            String?        // "email"
+  sourceProvider    String?        // "gmail"
+  sourceMessageId   String?        @unique
+  sourceThreadId    String?
+  createdByType     String?        // "user" | "automation"
+  createdBy         String?        // e.g. "n8n"
+
   notifications     Notification[]
+  ingestions        EventIngestion[]
 
   @@index([departmentId])
+}
+
+/// Outcome of each institutional email the event-ingestion workflow looked at.
+/// One row per Gmail message: it makes ingestion idempotent, holds the review
+/// queue, and records how many emails reached each stage (and AI token use).
+enum EventIngestionStatus {
+  SKIPPED // Rejected by the n8n pre-filter; never sent to the AI
+  AI_FAILED // Extraction failed; the workflow may retry it
+  NOT_EVENT // Not an event, or confidence too low to use
+  REVIEW_REQUIRED // Waiting for an administrator
+  CREATED // An event was created
+  DUPLICATE // Matched an event that already exists
+  DISMISSED // An administrator decided not to create it
+}
+
+model EventIngestion {
+  id              String               @id @default(cuid())
+  provider        String               @default("gmail")
+  sourceMessageId String               @unique
+  sourceThreadId  String?
+  senderEmail     String?
+  senderDomain    String?
+  subject         String?
+  receivedAt      DateTime?
+  trustedSender   Boolean              @default(false)
+  status          EventIngestionStatus
+  reason          String?
+  confidence      Float?
+  extracted       Json?
+  prefilterScore  Int?
+  aiModel         String?
+  aiInputTokens   Int?
+  aiOutputTokens  Int?
+  attempts        Int                  @default(1)
+  eventId         String?
+  event           Event?               @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  reviewedById    String?
+  reviewedBy      User?                @relation("EventIngestionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  reviewedAt      DateTime?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([status, createdAt])
+  @@index([eventId])
 }
 
 model Notification {
@@ -457,8 +518,6 @@ model UserPreference {
 
   @@index([departmentId])
 }
-
-
 
 model CollaborationRequest {
   id             String         @id @default(cuid())
@@ -707,7 +766,6 @@ model ScholarSupervisorRequest {
   @@index([supervisorId])
   @@index([scholarId, supervisorId, status])
 }
-
 
 model Publication {
   id          String   @id @default(cuid())
@@ -1152,4 +1210,3 @@ model SystemSetting {
 
   @@index([category])
 }
-

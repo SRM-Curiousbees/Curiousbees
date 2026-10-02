@@ -13,17 +13,15 @@ export class EventsService {
   ) {}
 
   /**
-   * Retrieves events with optional filtering and pagination.
+   * Retrieves events with optional filtering and pagination. The calendar only
+   * ever shows published events; other statuses are for administrators.
    */
-  async getEvents(filters?: { status?: EventStatus; limit?: number; skip?: number }) {
+  async getEvents(filters?: { status?: EventStatus; limit?: number; skip?: number }, viewer?: { role?: string }) {
     try {
-      const where: Prisma.EventWhereInput = {};
-      if (filters?.status) {
-        where.status = filters.status;
-      } else {
-        // By default, don't return FAILED events in the main calendar
-        where.status = { not: EventStatus.FAILED };
-      }
+      const isAdmin = viewer?.role === Role.INSTITUTE_ADMIN || viewer?.role === 'ADMIN';
+      const where: Prisma.EventWhereInput = {
+        status: filters?.status && isAdmin ? filters.status : EventStatus.PUBLISHED,
+      };
 
       return await this.prisma.event.findMany({
         where,
@@ -43,10 +41,13 @@ export class EventsService {
   }
 
   /**
-   * Specifically returns events requiring human review.
+   * Specifically returns events requiring human review (administrators only).
    */
-  async getReviewEvents() {
-    return this.getEvents({ status: EventStatus.REVIEW_REQUIRED });
+  async getReviewEvents(viewer: { role?: string }) {
+    if (viewer?.role !== Role.INSTITUTE_ADMIN && viewer?.role !== 'ADMIN') {
+      throw new UnauthorizedException('Only administrators can see events awaiting review.');
+    }
+    return this.getEvents({ status: EventStatus.REVIEW_REQUIRED }, viewer);
   }
 
   /**
@@ -109,16 +110,88 @@ export class EventsService {
   }
 
   /**
-   * Updates full event details.
+   * Creates an event from an institutional email (the n8n workflow, or an
+   * administrator approving one from the review queue). Runs inside the caller's
+   * transaction so the event and its ingestion record are written together.
+   */
+  async createFromEmail(
+    tx: Prisma.TransactionClient,
+    input: {
+      title: string;
+      startDate: string;
+      startTime: string;
+      endDate?: string | null;
+      endTime?: string | null;
+      timezone: string;
+      location?: string | null;
+      description?: string | null;
+      organizer?: string | null;
+      category?: string | null;
+      eventUrl?: string | null;
+      registrationUrl?: string | null;
+      meetingUrl?: string | null;
+      senderEmail?: string | null;
+      sourceMessageId: string;
+      sourceThreadId?: string | null;
+    },
+  ) {
+    return tx.event.create({
+      data: {
+        title: input.title,
+        date: new Date(`${input.startDate}T00:00:00.000Z`),
+        time: input.startTime,
+        endDate: input.endDate ? new Date(`${input.endDate}T00:00:00.000Z`) : null,
+        endTime: input.endTime || null,
+        timezone: input.timezone,
+        venue: input.location || null,
+        description: input.description || null,
+        organizer: input.organizer || null,
+        organizerEmail: input.senderEmail || null,
+        category: input.category || null,
+        eventType: input.category || 'Institutional event',
+        eventUrl: input.eventUrl || null,
+        registrationLink: input.registrationUrl || null,
+        meetingUrl: input.meetingUrl || null,
+        status: EventStatus.PUBLISHED,
+        source: 'email',
+        sourceProvider: 'gmail',
+        sourceMessageId: input.sourceMessageId,
+        sourceThreadId: input.sourceThreadId || null,
+        createdByType: 'automation',
+        createdBy: 'n8n',
+      },
+    });
+  }
+
+  /** Tells interested people about a newly published event (same routing as publishing by hand). */
+  announcePublished(event: any) {
+    this.notificationsService.routeEvent(event).catch((e) => {
+      this.logger.error(`Failed to route published event ${event.id}: ${e.message}`);
+    });
+  }
+
+  /**
+   * Updates event details. Only descriptive fields can change; status, authorship
+   * and where the event came from are set by the system.
    */
   async updateEvent(user: any, id: string, input: Prisma.EventUpdateInput) {
     const event = await this.getEventById(id);
     this.checkEditPermissions(user, event);
 
+    const EDITABLE = [
+      'title', 'eventType', 'speaker', 'date', 'time', 'venue', 'topic', 'description', 'category',
+      'posterUrl', 'registrationLink', 'tags', 'priority', 'organizer', 'eventUrl', 'meetingUrl',
+      'endDate', 'endTime', 'timezone',
+    ] as const;
+    const data: Record<string, unknown> = {};
+    for (const key of EDITABLE) {
+      if (input && Object.prototype.hasOwnProperty.call(input, key)) data[key] = (input as any)[key];
+    }
+
     try {
       return await this.prisma.event.update({
         where: { id },
-        data: input
+        data: data as Prisma.EventUpdateInput
       });
     } catch (e) {
       throw new NotFoundException('Event not found.');

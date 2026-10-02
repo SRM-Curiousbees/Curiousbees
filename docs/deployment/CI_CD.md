@@ -42,8 +42,8 @@ Because CuriousBees enforces environment variable integrity using Zod at compile
 
 - `NODE_ENV`: `production`
 - `DEVELOPMENT_MODE`: `"true"` (Bypasses Firebase key validation requirements)
-- `DATABASE_URL`: `postgresql://postgres:postgres@localhost:5432/srm_curiousbees_db?schema=public`
-- `DIRECT_URL`: `postgresql://postgres:postgres@localhost:5432/srm_curiousbees_db?schema=public`
+- `DATABASE_URL`: `postgresql://cbtest:cbtest_local_only@127.0.0.1:55432/curiousbees?schema=public` (the disposable CI service database; the integration suite refuses to reset any other)
+- `DIRECT_URL`: same as `DATABASE_URL`
 - `REDIS_HOST`: `localhost`
 - `REDIS_PORT`: `6379`
 - `FRONTEND_URL`: `http://localhost:3000`
