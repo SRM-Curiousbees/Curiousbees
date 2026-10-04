@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Calendar, Edit2, ExternalLink, MapPin, Share2, Trash2, User } from 'lucide-react';
+import { Calendar, Edit2, ExternalLink, Link2, Mail, MapPin, Share2, Trash2, User, Video } from 'lucide-react';
 import { Event } from '@curiousbees/types';
 import { useStore } from '@/store/useStore';
 import { formatVenueDisplay } from '@/constants/srmVenues';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ROLE_LABEL } from '@/lib/navigation';
 import { eventCategory } from '@/lib/event-categories';
+import { meetingProvider, safeExternalUrl, timeZoneLabel } from '@/lib/event-links';
 
 type PrismaEvent = Event & {
   status: 'DRAFT' | 'PUBLISHED' | 'REVIEW_REQUIRED' | 'FAILED';
@@ -65,14 +66,14 @@ export default function EventDetailModal({
   };
 
   const eventDateObj = parseSafeDate(event.date);
-  const formattedEventDate = eventDateObj 
-    ? eventDateObj.toLocaleDateString('en-US', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric'
-      })
+  const formatDay = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const endDateObj = parseSafeDate(event.endDate);
+  const formattedEventDate = eventDateObj
+    ? endDateObj && endDateObj.toDateString() !== eventDateObj.toDateString()
+      ? `${formatDay(eventDateObj)} – ${formatDay(endDateObj)}`
+      : formatDay(eventDateObj)
     : 'Date TBD';
+  const zoneLabel = event.time ? timeZoneLabel(event.timezone, eventDateObj ?? undefined) : null;
 
   const postedDateObj = parseSafeDate(event.createdAt);
   const formattedPostedDate = postedDateObj 
@@ -85,10 +86,12 @@ export default function EventDetailModal({
       })
     : null;
 
-  // Author details
-  const authorName = event.author?.name || event.speaker || null;
-  const authorRole = event.author?.role ? ROLE_LABEL[event.author.role] || null : null;
-  const authorDept = event.author?.department || event.department || null;
+  // Organiser: the organising body when known (events from email), otherwise the author.
+  const authorName = event.organizer || event.author?.name || event.speaker || null;
+  const authorRole = !event.organizer && event.author?.role ? ROLE_LABEL[event.author.role] || null : null;
+  const authorDept = !event.organizer ? event.author?.department || event.department || null : null;
+  const meetingUrl = safeExternalUrl(event.meetingUrl);
+  const detailsUrl = safeExternalUrl(event.eventUrl);
 
   const registrationUrl = event.registrationLink 
     ? (event.registrationLink.startsWith('http://') || event.registrationLink.startsWith('https://') 
@@ -114,8 +117,19 @@ export default function EventDetailModal({
 
   const category = eventCategory(event.eventType);
 
+  const linkClass = 'inline-flex items-center gap-1 text-brand underline-offset-4 hover:underline';
+
   const rows: { label: string; icon: React.ElementType; value: React.ReactNode }[] = [
-    { label: 'When', icon: Calendar, value: <>{formattedEventDate}{event.time && <span className="block text-ink-secondary">{event.time}</span>}</> },
+    {
+      label: 'When',
+      icon: Calendar,
+      value: (
+        <>
+          {formattedEventDate}
+          {event.time && <span className="block text-ink-secondary">{event.time}{zoneLabel && ` (${zoneLabel})`}</span>}
+        </>
+      ),
+    },
     {
       label: 'Where',
       icon: MapPin,
@@ -125,8 +139,32 @@ export default function EventDetailModal({
           {venueInfo.subtitle && <span className="block text-ink-secondary">{venueInfo.subtitle}</span>}
           {venueInfo.details && <span className="block text-ink-muted">{venueInfo.details}</span>}
         </>
-      ) : 'Venue to be announced',
+      ) : meetingUrl ? 'Online' : 'Venue to be announced',
     },
+    ...(meetingUrl
+      ? [{
+          label: 'Join',
+          icon: Video,
+          value: (
+            <a href={meetingUrl} target="_blank" rel="noopener noreferrer" className={linkClass}>
+              Join on {meetingProvider(meetingUrl)}
+              <ExternalLink className="size-3.5" aria-hidden />
+            </a>
+          ),
+        }]
+      : []),
+    ...(detailsUrl
+      ? [{
+          label: 'Details',
+          icon: Link2,
+          value: (
+            <a href={detailsUrl} target="_blank" rel="noopener noreferrer" className={`${linkClass} break-all`}>
+              Event page
+              <ExternalLink className="size-3.5 shrink-0" aria-hidden />
+            </a>
+          ),
+        }]
+      : []),
     {
       label: 'Organiser',
       icon: User,
@@ -191,6 +229,12 @@ export default function EventDetailModal({
           </div>
         ))}
       </dl>
+      {event.source === 'email' && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-ink-muted">
+          <Mail className="size-3.5" aria-hidden />
+          Added from an institutional email announcement.
+        </p>
+      )}
       {event.description && (
         <div className="mt-5">
           <h3 className="text-sm font-semibold text-ink">About this event</h3>

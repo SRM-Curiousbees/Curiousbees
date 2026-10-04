@@ -205,7 +205,8 @@ export interface Event {
   title: string;
   description?: string;
   department?: string;
-  venue: string;
+  /** Null when the source didn't state one (e.g. an email event); never filled with a default. */
+  venue?: string | null;
   date: string;
   time: string;
   category?: string;
@@ -219,6 +220,20 @@ export interface Event {
   authorId?: string;
   eventType?: string;
   priority?: 'HIGH' | 'MEDIUM' | 'LOW' | string;
+  status?: 'DRAFT' | 'PUBLISHED' | 'REVIEW_REQUIRED' | 'FAILED';
+  organizer?: string | null;
+  /** Page with the event's details. */
+  eventUrl?: string | null;
+  /** Online meeting link (Google Meet, Zoom, Microsoft Teams…). */
+  meetingUrl?: string | null;
+  endDate?: string | null;
+  /** HH:mm (24-hour), when known. */
+  endTime?: string | null;
+  /** IANA timezone the date and time are in, e.g. Asia/Kolkata. */
+  timezone?: string | null;
+  /** Where the event came from: 'email' for events created from institutional email. */
+  source?: string | null;
+  createdByType?: string | null;
 }
 
 export interface CreateEventInput {

@@ -91,6 +91,11 @@ jobs:
       - name: Unit tests
         run: npm test -- --silent
 
+      - name: Web helper and n8n workflow tests (no network, Gemini mocked)
+        run: |
+          npm run test:web
+          npm run test:n8n
+
       - name: Migration has no drift from schema.prisma
         run: |
           npx prisma migrate deploy --schema apps/api/prisma/schema.prisma

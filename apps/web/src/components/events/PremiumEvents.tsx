@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
-import { EVENT_CATEGORIES, eventCategory, eventMatchesCategory } from '@/lib/event-categories';
+import { EVENT_CATEGORIES, EVENT_TYPE_OPTIONS, eventCategory, eventMatchesCategory } from '@/lib/event-categories';
 
 type PrismaEvent = Event & {
   status: 'DRAFT' | 'PUBLISHED' | 'REVIEW_REQUIRED' | 'FAILED';
@@ -361,7 +361,7 @@ export function PremiumEvents() {
             date: new Date(event.date).toISOString().split('T')[0],
             startTime: st,
             endTime: et,
-            venue: event.venue,
+            venue: event.venue || '',
             description: event.description || '',
             eventType: event.eventType || 'Conferences',
             registrationLink: event.registrationLink || ''
@@ -423,14 +423,9 @@ export function PremiumEvents() {
           <div className="space-y-1.5">
             <label htmlFor="ev-type" className="block text-sm font-medium text-ink">Category</label>
             <select id="ev-type" {...register('eventType')} className="cb-input">
-              <option value="Conferences">Conference</option>
-              <option value="Seminars">Seminar</option>
-              <option value="Workshops">Workshop</option>
-              <option value="Webinars">Webinar</option>
-              <option value="Research Talks">Research talk</option>
-              <option value="Faculty Development">Faculty development</option>
-              <option value="PhD / Research Scholar Events">PhD / research scholar event</option>
-              <option value="Other">Other</option>
+              {EVENT_TYPE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
             </select>
             {fieldError(errors.eventType?.message)}
           </div>

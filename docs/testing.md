@@ -22,6 +22,22 @@ npm test
 npm run test --workspace=apps/api -- --coverage
 ```
 
+### 2.1a Integration tests (real PostgreSQL + S3 emulator)
+The integration suite **drops and recreates its database schema**, so it only runs against the dedicated, disposable test endpoint `cbtest@127.0.0.1:55432/curiousbees`. Anything else aborts the run before any connection is made; there is no override. It never reads `.env`, removes database and external-service credentials from its environment, and blocks network connections that leave the machine.
+```bash
+docker compose -f docker-compose.test.yml up -d
+cd apps/api && E2E_DATABASE_URL="postgresql://cbtest:cbtest_local_only@127.0.0.1:55432/curiousbees?schema=public" \
+  E2E_S3_ENDPOINT=http://127.0.0.1:59000 npm run test:e2e
+docker compose -f docker-compose.test.yml down
+```
+
+### 2.1b Web helper and n8n workflow tests
+```bash
+npm run test:web   # apps/web/tests (Node's built-in runner)
+npm run test:n8n   # integrations/n8n/event-ingestion: workflow logic, workflow.json, Gemini mocked
+```
+No automated test calls Gemini, Gmail, Brevo, Google, Zoom, OpenSearch or AWS.
+
 ### 2.2 Run Monorepo Typechecking
 ```bash
 npm run typecheck

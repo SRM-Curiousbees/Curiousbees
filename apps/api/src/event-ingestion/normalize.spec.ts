@@ -1,13 +1,18 @@
 import {
   cleanText,
+  displayTime,
+  displayTimeRange,
   emailAddress,
   emailDomain,
   isTrustedSender,
   isValidTimeZone,
+  normalizeCategory,
   normalizeDate,
   normalizeTime,
   normalizeUrl,
+  startTimeOf,
   titleKey,
+  urlKey,
 } from './normalize';
 
 describe('event ingestion: normalising extracted values', () => {
@@ -105,5 +110,42 @@ describe('event ingestion: normalising extracted values', () => {
     expect(cleanText('  Seminar  ', 50)).toBe('Seminar');
     expect(cleanText('   ', 50)).toBeNull();
     expect(cleanText('x'.repeat(20), 10)).toHaveLength(10);
+  });
+  it('compares links by host, path and query, ignoring case, fragments and trailing slashes', () => {
+    expect(urlKey('https://Forms.GLE/abc/')).toBe(urlKey('https://forms.gle/abc'));
+    expect(urlKey('https://srmist.edu.in/events#register')).toBe(urlKey('https://srmist.edu.in/events'));
+    expect(urlKey('https://zoom.us/j/123?pwd=a')).not.toBe(urlKey('https://zoom.us/j/123?pwd=b'));
+    expect(urlKey('https://zoom.us/j/123')).not.toBe(urlKey('https://zoom.us/j/124'));
+    expect(urlKey('javascript:alert(1)')).toBeNull();
+  });
+
+  it('writes times the way the event form does', () => {
+    expect(displayTime('09:05')).toBe('09:05 AM');
+    expect(displayTime('12:30')).toBe('12:30 PM');
+    expect(displayTime('00:15')).toBe('12:15 AM');
+    expect(displayTime('16:00')).toBe('04:00 PM');
+    expect(displayTimeRange('10:00', '16:00')).toBe('10:00 AM - 04:00 PM');
+    expect(displayTimeRange('10:00', null)).toBe('10:00 AM');
+  });
+
+  it('reads the start time from either stored format', () => {
+    expect(startTimeOf('10:00 AM - 04:00 PM')).toBe('10:00');
+    expect(startTimeOf('02:30\u202fPM - 04:00\u202fPM')).toBe('14:30');
+    expect(startTimeOf('14:30')).toBe('14:30');
+    expect(startTimeOf('TBA')).toBeNull();
+    expect(startTimeOf(null)).toBeNull();
+  });
+
+  it("maps categories onto the event form's list", () => {
+    expect(normalizeCategory('Workshops')).toBe('Workshops');
+    expect(normalizeCategory('seminars')).toBe('Seminars');
+    expect(normalizeCategory('International Symposium')).toBe('Conferences');
+    expect(normalizeCategory('Hands-on workshop')).toBe('Workshops');
+    expect(normalizeCategory('FDP on research methods')).toBe('Faculty Development');
+    expect(normalizeCategory('PhD viva voce')).toBe('PhD / Research Scholar Events');
+    expect(normalizeCategory('Guest lecture')).toBe('Research Talks');
+    expect(normalizeCategory('Webinar')).toBe('Webinars');
+    expect(normalizeCategory('Cultural fest')).toBe('Other');
+    expect(normalizeCategory('  ')).toBeNull();
   });
 });

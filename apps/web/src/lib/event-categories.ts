@@ -12,6 +12,21 @@ export const EVENT_CATEGORIES: { label: string; keyword: string; tone: EventTone
   { label: 'Competitions', keyword: 'competition|hackathon', tone: 'success' },
 ];
 
+/**
+ * Values the event form saves as `eventType`. Events created from email use the
+ * same list (the API maps the AI's category onto it).
+ */
+export const EVENT_TYPE_OPTIONS: { value: string; label: string }[] = [
+  { value: 'Conferences', label: 'Conference' },
+  { value: 'Seminars', label: 'Seminar' },
+  { value: 'Workshops', label: 'Workshop' },
+  { value: 'Webinars', label: 'Webinar' },
+  { value: 'Research Talks', label: 'Research talk' },
+  { value: 'Faculty Development', label: 'Faculty development' },
+  { value: 'PhD / Research Scholar Events', label: 'PhD / research scholar event' },
+  { value: 'Other', label: 'Other' },
+];
+
 export function eventCategory(eventType?: string | null) {
   const t = (eventType || '').toLowerCase();
   return EVENT_CATEGORIES.find((c) => new RegExp(c.keyword).test(t));

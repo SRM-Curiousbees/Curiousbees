@@ -95,6 +95,67 @@ export function normalizeUrl(input: unknown): string | null {
   }
 }
 
+/**
+ * Comparison key for a link: lower-case scheme and host, no fragment, no trailing
+ * slash. Used to check that every link the AI returns really appears in the email.
+ */
+export function urlKey(input: unknown): string | null {
+  const normalized = normalizeUrl(input);
+  if (!normalized) return null;
+  const url = new URL(normalized);
+  const path = url.pathname.length > 1 ? url.pathname.replace(/\/+$/, '') : url.pathname;
+  return `${url.protocol}//${url.host}${path}${url.search}`;
+}
+
+/** "14:30" → "02:30 PM": the format the event form writes (toLocaleTimeString en-US, 2-digit). */
+export function displayTime(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map(Number);
+  return `${String(h % 12 || 12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+}
+
+/** Stored event time, matching events posted from the form: "10:00 AM - 04:00 PM" or "10:00 AM". */
+export function displayTimeRange(start: string, end?: string | null): string {
+  return end ? `${displayTime(start)} - ${displayTime(end)}` : displayTime(start);
+}
+
+/** Start time (HH:mm) of a stored event time, whichever format it was written in. */
+export function startTimeOf(stored: string | null | undefined): string | null {
+  if (!stored) return null;
+  return normalizeTime(stored.split(/\s+[-–]\s+/)[0]);
+}
+
+/** Categories offered by the event form (apps/web PremiumEvents); email events use the same values. */
+export const EVENT_CATEGORIES = [
+  'Conferences',
+  'Seminars',
+  'Workshops',
+  'Webinars',
+  'Research Talks',
+  'Faculty Development',
+  'PhD / Research Scholar Events',
+  'Other',
+] as const;
+
+const CATEGORY_KEYWORDS: [RegExp, (typeof EVENT_CATEGORIES)[number]][] = [
+  [/conference|symposium|summit|congress/, 'Conferences'],
+  [/webinar/, 'Webinars'],
+  [/workshop|hands-on|bootcamp|training/, 'Workshops'],
+  [/faculty development|\bfdp\b/, 'Faculty Development'],
+  [/ph\.?\s?d|doctoral|thesis|viva|research scholar|synopsis|defen[cs]e/, 'PhD / Research Scholar Events'],
+  [/seminar|colloquium/, 'Seminars'],
+  [/talk|lecture|keynote/, 'Research Talks'],
+];
+
+/** Maps a category to one of the form's categories; anything unrecognised is "Other". */
+export function normalizeCategory(input: unknown): string | null {
+  const text = cleanText(input, 100);
+  if (!text) return null;
+  const lower = text.toLowerCase();
+  const exact = EVENT_CATEGORIES.find((c) => c.toLowerCase() === lower);
+  if (exact) return exact;
+  return CATEGORY_KEYWORDS.find(([pattern]) => pattern.test(lower))?.[1] ?? 'Other';
+}
+
 /** Trimmed single-line-friendly text, or null when empty. Long values are cut at `max`. */
 export function cleanText(input: unknown, max: number): string | null {
   if (typeof input !== 'string') return null;

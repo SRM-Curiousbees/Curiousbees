@@ -295,6 +295,7 @@ For in-depth guides and specifications, visit our documentation portal:
 * 🚀 **[Developer Quick Start Guide](./docs/guides/QUICK_START.md)** — 5-minute setup and onboarding guide.
 * 🎨 **[Design System](./docs/design/DESIGN_SYSTEM.md)** — Tokens, components, motion, dark mode and content rules.
 * 🧾 **[Redesign Audit](./docs/design/REDESIGN_AUDIT.md)** — Route status, fixed issues and open risks.
+* 📬 **[Email → Events with n8n](./docs/integrations/n8n-event-ingestion.md)** — Setting up the workflow that turns institutional emails into calendar events.
 
 ---
 

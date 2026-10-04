@@ -3,9 +3,11 @@ import {
   DEFAULT_TIMEZONE,
   cleanText,
   isValidTimeZone,
+  normalizeCategory,
   normalizeDate,
   normalizeTime,
   normalizeUrl,
+  urlKey,
 } from './normalize';
 
 /** At or above: eligible for automatic creation. */
@@ -34,6 +36,8 @@ export const extractionSchema = z.object({
   eventUrl: optionalText,
   registrationUrl: optionalText,
   meetingUrl: optionalText,
+  /** True when the email gave a day and month but no year, and the year was worked out from when it arrived. */
+  yearInferred: z.boolean().nullish(),
 });
 
 export type Extraction = z.infer<typeof extractionSchema>;
@@ -99,7 +103,7 @@ export function normalizeExtraction(x: Extraction): { event: NormalizedEvent; pr
     timezone,
     location: cleanText(x.location, 300),
     organizer: cleanText(x.organizer, 200),
-    category: cleanText(x.category, 100),
+    category: normalizeCategory(x.category),
     eventUrl: normalizeUrl(x.eventUrl),
     registrationUrl: normalizeUrl(x.registrationUrl),
     meetingUrl: normalizeUrl(x.meetingUrl),
@@ -107,14 +111,38 @@ export function normalizeExtraction(x: Extraction): { event: NormalizedEvent; pr
   return { event, problems };
 }
 
+const LINK_FIELDS = ['eventUrl', 'registrationUrl', 'meetingUrl'] as const;
+
+/**
+ * Removes links that don't appear in the email itself, so a link the AI made up
+ * can never be published. Returns whether anything was removed.
+ */
+function dropUnverifiedLinks(event: NormalizedEvent, allowedUrls: string[]): boolean {
+  const allowed = new Set(allowedUrls.map(urlKey).filter((k): k is string => Boolean(k)));
+  let dropped = false;
+  for (const field of LINK_FIELDS) {
+    const key = urlKey(event[field]);
+    if (event[field] && (!key || !allowed.has(key))) {
+      event[field] = null;
+      dropped = true;
+    }
+  }
+  return dropped;
+}
+
 /**
  * Decides what happens to one extraction. Automatic creation needs high
  * confidence, a trusted sender and a complete, plausible date and start time;
  * anything less goes to review, and weak or negative classifications are dropped.
+ *
+ * `allowedUrls` is every link found in the email; links outside it are removed.
  */
-export function decide(x: Extraction, ctx: { trustedSender: boolean; now?: Date }): Decision {
+export function decide(x: Extraction, ctx: { trustedSender: boolean; now?: Date; allowedUrls?: string[] }): Decision {
   const now = ctx.now ?? new Date();
   const { event, problems } = normalizeExtraction(x);
+  if (ctx.allowedUrls && dropUnverifiedLinks(event, ctx.allowedUrls)) {
+    problems.push("A link the AI returned isn't in the email, so it was left out");
+  }
 
   if (!x.isEvent) return { outcome: 'not_event', reasons: ['The email does not describe an event'], event };
   if (x.confidence < REVIEW_CONFIDENCE) {
@@ -125,6 +153,8 @@ export function decide(x: Extraction, ctx: { trustedSender: boolean; now?: Date 
   if (!event.title) reasons.push('Missing title');
   if (!event.startDate) {
     if (!x.startDate) reasons.push('Missing a reliable date');
+  } else if (x.yearInferred) {
+    reasons.push("The email doesn't state the year");
   }
   if (!event.startTime) {
     if (!x.startTime) reasons.push('Missing a reliable start time');

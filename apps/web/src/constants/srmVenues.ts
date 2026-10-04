@@ -188,7 +188,8 @@ export const SRM_TECH_PARK_2_VENUES: SRMVenue[] = [
 export const ALL_SRM_VENUES = [...SRM_MAJOR_VENUES, ...SRM_TECH_PARK_2_VENUES];
 
 export function formatVenueDisplay(venueString: string | undefined | null) {
-  if (!venueString) return { title: 'Main Auditorium', subtitle: 'SRM KTR', details: '' };
+  // No venue stays empty (shown as "Venue to be announced"); never substitute a default place.
+  if (!venueString) return { title: '', subtitle: '', details: '' };
 
   if (venueString.startsWith('{') && venueString.endsWith('}')) {
     try {

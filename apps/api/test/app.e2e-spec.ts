@@ -535,8 +535,23 @@ describe('CuriousBees API (integration)', () => {
       meetingUrl: 'https://meet.google.com/abc-defg-hij',
       ...o,
     });
+    // Every link the workflow found in the email; extracted links must come from this list.
+    const EMAIL_URLS = [
+      'https://srmist.edu.in/symposium',
+      'https://forms.gle/register-symposium',
+      'https://meet.google.com/abc-defg-hij',
+      'https://srmist.edu.in/privacy',
+    ];
     const payload = (id: string, o: Record<string, unknown> = {}, from = 'Directorate of Research <research@srmist.edu.in>') => ({
-      source: { provider: 'gmail', messageId: id, threadId: `thread-${id}`, from, subject: 'Invitation: International Research Symposium', receivedAt: new Date().toISOString() },
+      source: {
+        provider: 'gmail',
+        messageId: id,
+        threadId: `thread-${id}`,
+        from,
+        subject: 'Invitation: International Research Symposium',
+        receivedAt: new Date().toISOString(),
+        urls: EMAIL_URLS,
+      },
       extraction: extraction(o),
       ai: { model: 'gemini-2.5-flash', inputTokens: 1800, outputTokens: 210 },
       prefilter: { score: 7 },
@@ -561,9 +576,11 @@ describe('CuriousBees API (integration)', () => {
       process.env.N8N_INTEGRATION_TOKEN = TOKEN;
     });
 
-    it('rejects a request without a Gmail message ID', async () => {
-      const res = await n8n().post('/api/integrations/n8n/events').send({ source: { provider: 'gmail' }, extraction: extraction() }).expect(400);
+    it("rejects a request without a Gmail message ID or the email's link list", async () => {
+      const res = await n8n().post('/api/integrations/n8n/events').send({ source: { provider: 'gmail', urls: [] }, extraction: extraction() }).expect(400);
       expect(res.body.message).toMatch(/source\.messageId/);
+      const noLinks = await n8n().post('/api/integrations/n8n/events').send({ source: { provider: 'gmail', messageId: messageId() }, extraction: extraction() }).expect(400);
+      expect(noLinks.body.message).toMatch(/source\.urls/);
     });
 
     let createdEventId: string;
@@ -579,8 +596,11 @@ describe('CuriousBees API (integration)', () => {
       const event = await prisma.event.findUniqueOrThrow({ where: { id: createdEventId } });
       expect(event).toMatchObject({
         status: 'PUBLISHED',
-        time: '10:00',
+        // Stored like events posted from the form, so the calendar and editor treat both alike.
+        time: '10:00 AM - 04:00 PM',
         endTime: '16:00',
+        eventType: 'Other',
+        category: 'Other',
         timezone: 'Asia/Kolkata',
         venue: 'University Auditorium',
         registrationLink: 'https://forms.gle/register-symposium',
@@ -659,6 +679,41 @@ describe('CuriousBees API (integration)', () => {
       await as('scholar.one@gmail.com').get('/api/events/review').expect(401);
     });
 
+    it('never publishes a link that is not in the email', async () => {
+      const id = messageId();
+      const res = await n8n()
+        .post('/api/integrations/n8n/events')
+        .send(payload(id, { title: 'Doctoral colloquium on materials science', registrationUrl: 'https://forms.gle/not-in-the-email' }))
+        .expect(200);
+      expect(res.body.status).toBe('review_required');
+      expect(res.body.reasons).toContain("A link the AI returned isn't in the email, so it was left out");
+      const rec = await prisma.eventIngestion.findUniqueOrThrow({ where: { sourceMessageId: id } });
+      expect((rec.extracted as any).registrationUrl).toBeNull();
+      expect((rec.extracted as any).eventUrl).toBe('https://srmist.edu.in/symposium');
+      expect(await prisma.event.count({ where: { sourceMessageId: id } })).toBe(0);
+    });
+
+    it('sends an event to review when the email did not state the year', async () => {
+      const res = await n8n()
+        .post('/api/integrations/n8n/events')
+        .send(payload(messageId(), { title: 'Research ethics workshop', startTime: '14:00', endTime: '15:00', yearInferred: true }))
+        .expect(200);
+      expect(res.body).toMatchObject({ status: 'review_required' });
+      expect(res.body.reasons).toContain("The email doesn't state the year");
+    });
+
+    it('recognises an event that was already posted from the event form', async () => {
+      const posted = await prisma.event.create({
+        data: { title: 'Guest Lecture on Quantum Sensing', date: new Date(`${EVENT_DAY}T00:00:00.000Z`), time: '11:30 AM - 01:00 PM', venue: 'TP Ganesan Auditorium', eventType: 'Research Talks', status: 'PUBLISHED' },
+      });
+      const res = await n8n()
+        .post('/api/integrations/n8n/events')
+        .send(payload(messageId(), { title: 'Guest lecture on quantum sensing', startTime: '11:30', endTime: '13:00', organizer: null }))
+        .expect(200);
+      expect(res.body).toMatchObject({ status: 'duplicate', eventId: posted.id });
+      expect(await prisma.event.count({ where: { title: { equals: 'Guest lecture on quantum sensing', mode: 'insensitive' } } })).toBe(1);
+    });
+
     it('records non-events and low-confidence results without creating anything', async () => {
       const id = messageId();
       const res = await n8n().post('/api/integrations/n8n/events').send(payload(id, { isEvent: false, confidence: 0.98 })).expect(200);
@@ -712,7 +767,7 @@ describe('CuriousBees API (integration)', () => {
         .expect(201);
       expect(approved.body.status).toBe('created');
       const event = await prisma.event.findUniqueOrThrow({ where: { id: approved.body.eventId } });
-      expect(event).toMatchObject({ title: 'Research Committee Meeting', time: '14:30', venue: 'Senate Hall', status: 'PUBLISHED' });
+      expect(event).toMatchObject({ title: 'Research Committee Meeting', time: '02:30 PM', venue: 'Senate Hall', status: 'PUBLISHED' });
       expect((await as('scholar.one@gmail.com').get('/api/events').expect(200)).body.map((e: any) => e.id)).toContain(event.id);
       await as('admin@srmist.edu.in').post(`/api/admin/event-ingestion/${meeting.id}/approve`).send({}).expect(409);
 
@@ -722,10 +777,52 @@ describe('CuriousBees API (integration)', () => {
       expect(await prisma.auditLog.count({ where: { action: { in: ['EVENT_INGESTION_APPROVED', 'EVENT_INGESTION_DISMISSED'] } } })).toBe(2);
     });
 
+    it('accepts exactly what the n8n workflow sends (the workflow\'s own code, Gemini mocked)', async () => {
+      const dir = path.resolve(__dirname, '../../../integrations/n8n/event-ingestion');
+      /* eslint-disable @typescript-eslint/no-var-requires */
+      const { normalizeEmail } = require(`${dir}/src/normalize-email`);
+      const { scoreCandidate } = require(`${dir}/src/candidate-filter`);
+      const { parseGeminiResponse } = require(`${dir}/src/parse-gemini`);
+      const { ingestPayload, skippedPayload } = require(`${dir}/src/payloads`);
+      const fx = require(`${dir}/test/fixtures`);
+      /* eslint-enable @typescript-eslint/no-var-requires */
+      const settings = { trustedSenderDomains: ['srmist.edu.in'] };
+
+      const email = normalizeEmail({ ...fx.SEMINAR_HTML, id: messageId() }, settings);
+      const filter = scoreCandidate(email, settings);
+      expect(filter.candidate).toBe(true);
+      const day = inDays(25);
+      const parsed = parseGeminiResponse(fx.geminiResponse({ ...fx.SEMINAR_EXTRACTION, startDate: day, endDate: day }));
+      expect(parsed.ok).toBe(true);
+
+      const res = await n8n().post('/api/integrations/n8n/events').send(ingestPayload(email, parsed.extraction, parsed.ai, filter)).expect(200);
+      expect(res.body.status).toBe('created');
+      const event = await prisma.event.findUniqueOrThrow({ where: { id: res.body.eventId } });
+      expect(event).toMatchObject({
+        title: 'Guest Lecture on Quantum Sensing',
+        time: '10:30 AM - 12:00 PM',
+        timezone: 'Asia/Kolkata',
+        venue: 'TP Ganesan Auditorium, Mini Hall 2',
+        organizer: 'Directorate of Research',
+        eventType: 'Research Talks',
+        registrationLink: 'https://forms.gle/qs-lecture-2026',
+        meetingUrl: 'https://meet.google.com/abc-defg-hij',
+        eventUrl: 'https://www.srmist.edu.in/events/quantum-sensing/',
+        organizerEmail: 'research.office@srmist.edu.in',
+      });
+      expect(event.date.toISOString().slice(0, 10)).toBe(day);
+
+      const reset = normalizeEmail({ ...fx.PASSWORD_RESET, id: messageId() }, settings);
+      const rejected = scoreCandidate(reset, settings);
+      expect(rejected.candidate).toBe(false);
+      const skipped = await n8n().post('/api/integrations/n8n/events/skipped').send(skippedPayload(reset, 'prefilter', rejected.reason, rejected)).expect(200);
+      expect(skipped.body.status).toBe('skipped');
+    });
+
     it('reports how many emails reached each stage and the AI tokens used', async () => {
       const stats = (await as('admin@srmist.edu.in').get('/api/admin/event-ingestion/stats').expect(200)).body;
       expect(stats.incoming).toBe(stats.skippedByFilter + stats.sentToAi);
-      expect(stats.skippedByFilter).toBe(1);
+      expect(stats.skippedByFilter).toBe(2);
       expect(stats.created).toBeGreaterThanOrEqual(3);
       expect(stats.duplicates).toBeGreaterThanOrEqual(1);
       expect(stats.notEvents).toBe(2);

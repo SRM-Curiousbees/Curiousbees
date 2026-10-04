@@ -152,5 +152,40 @@ describe('event ingestion: deciding what happens to an email', () => {
       expect(d.outcome).toBe('create');
       expect(d.event.registrationUrl).toBeNull();
     });
+ 
+    const emailLinks = ['https://srmist.edu.in/symposium', 'https://forms.gle/register-symposium', 'https://meet.google.com/abc-defg-hij'];
+
+    it('keeps links that appear in the email', () => {
+      const d = decide(extraction({ meetingUrl: 'https://meet.google.com/abc-defg-hij/' }), { ...trusted, allowedUrls: emailLinks });
+      expect(d.outcome).toBe('create');
+      expect(d.event.meetingUrl).toBe('https://meet.google.com/abc-defg-hij/');
+    });
+
+    it('removes a link that is not in the email and sends the event to review', () => {
+      const d = decide(extraction({ registrationUrl: 'https://forms.gle/made-up' }), { ...trusted, allowedUrls: emailLinks });
+      expect(d.outcome).toBe('review');
+      expect(d.event.registrationUrl).toBeNull();
+      expect(d.event.eventUrl).toBe('https://srmist.edu.in/symposium');
+      expect(d.reasons).toContain("A link the AI returned isn't in the email, so it was left out");
+    });
+
+    it('removes every link when the email had none', () => {
+      const d = decide(extraction(), { ...trusted, allowedUrls: [] });
+      expect(d.event).toMatchObject({ eventUrl: null, registrationUrl: null, meetingUrl: null });
+      expect(d.outcome).toBe('review');
+    });
+  });
+
+  it('never publishes a date whose year had to be inferred', () => {
+    const d = decide(extraction({ yearInferred: true }), trusted);
+    expect(d.outcome).toBe('review');
+    expect(d.reasons).toContain("The email doesn't state the year");
+    expect(d.event.startDate).toBe('2026-10-15');
+    expect(decide(extraction({ yearInferred: false }), trusted).outcome).toBe('create');
+  });
+
+  it("uses the event form's categories", () => {
+    expect(decide(extraction({ category: 'Research Event' }), trusted).event.category).toBe('Other');
+    expect(decide(extraction({ category: 'Workshop' }), trusted).event.category).toBe('Workshops');
   });
 });

@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventsService } from '../events/events.service';
 import { decide, extractionSchema, hasRequiredFields, normalizeExtraction, NormalizedEvent } from './decision';
-import { cleanText, emailAddress, emailDomain, isTrustedSender, parseList, titleKey } from './normalize';
+import { cleanText, emailAddress, emailDomain, isTrustedSender, parseList, startTimeOf, titleKey } from './normalize';
 
 const sourceSchema = z.object({
   provider: z.literal('gmail').default('gmail'),
@@ -26,7 +26,9 @@ const aiSchema = z
 const prefilterSchema = z.object({ score: z.number().int().min(-1000).max(1000).nullish() }).nullish();
 
 const ingestSchema = z.object({
-  source: sourceSchema,
+  // `urls` is every link found in the email (required, may be empty): extracted
+  // links are only kept if they appear in it.
+  source: sourceSchema.extend({ urls: z.array(z.string().max(2048)).max(500) }),
   // Validated separately so a malformed AI response is recorded instead of rejected.
   extraction: z.unknown(),
   ai: aiSchema,
@@ -175,13 +177,18 @@ export class EventIngestionService {
     }
   }
 
-  /** An existing event with the same date, start time and (near-)identical title and organizer. */
+  /**
+   * An existing event with the same date, start time and (near-)identical title
+   * and organizer. Covers events posted from the form, whose time is stored as
+   * "10:00 AM - 12:00 PM", as well as earlier email events.
+   */
   private async findContentDuplicate(e: NormalizedEvent & { title: string; startDate: string; startTime: string }) {
-    const candidates = await this.prisma.event.findMany({
-      where: { date: new Date(`${e.startDate}T00:00:00.000Z`), time: e.startTime, status: { not: EventStatus.FAILED } },
-      select: { id: true, title: true, organizer: true },
-      take: 50,
+    const sameDay = await this.prisma.event.findMany({
+      where: { date: new Date(`${e.startDate}T00:00:00.000Z`), status: { not: EventStatus.FAILED } },
+      select: { id: true, title: true, organizer: true, time: true },
+      take: 200,
     });
+    const candidates = sameDay.filter((c) => startTimeOf(c.time) === e.startTime);
     const key = titleKey(e.title);
     const organizerKey = e.organizer ? titleKey(e.organizer) : null;
     return (
@@ -225,7 +232,7 @@ export class EventIngestionService {
       return { status: 'ai_failed', ingestionId: rec.id, reason, duplicate: false };
     }
 
-    const decision = decide(parsed.data, { trustedSender: trusted });
+    const decision = decide(parsed.data, { trustedSender: trusted, allowedUrls: input.source.urls });
     let reasons = decision.reasons;
     let status: EventIngestionStatus =
       decision.outcome === 'create' ? 'CREATED' : decision.outcome === 'review' ? 'REVIEW_REQUIRED' : 'NOT_EVENT';

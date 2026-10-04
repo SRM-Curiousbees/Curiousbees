@@ -11,6 +11,7 @@ import {
   FolderGit2,
   GraduationCap,
   History,
+  Inbox,
   LayoutDashboard,
   Lock,
   Mail,
@@ -81,6 +82,7 @@ const ADMIN_NAV: NavSection[] = [
     items: [
       { name: 'Announcements', href: '/admin/announcements', icon: FileText },
       { name: 'Email Delivery', href: '/admin/email-delivery', icon: Mail },
+      { name: 'Event Inbox', href: '/admin/event-inbox', icon: Inbox },
     ],
   },
   {

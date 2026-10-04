@@ -8,6 +8,7 @@ import {
   MapPin, 
   Calendar as CalendarIcon, 
   ExternalLink,
+  Video,
   X
 } from 'lucide-react';
 import { Event } from '@curiousbees/types';
@@ -582,6 +583,12 @@ export function PremiumCalendarWidget({
                                       <span className="inline-flex items-center gap-1">
                                         <MapPin className="size-3.5" aria-hidden />
                                         {venueInfo.title}
+                                      </span>
+                                    )}
+                                    {!venueInfo.title && event.meetingUrl && (
+                                      <span className="inline-flex items-center gap-1">
+                                        <Video className="size-3.5" aria-hidden />
+                                        Online
                                       </span>
                                     )}
                                     {(event as any).registrationLink && (

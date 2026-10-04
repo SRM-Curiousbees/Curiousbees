@@ -50,6 +50,12 @@ Production deployment configurations, containerization, hosting platforms, and C
 
 ---
 
+## 🔌 Integrations
+
+* [Institutional email → events (n8n)](./integrations/n8n-event-ingestion.md) — Beginner setup and operations guide for the n8n workflow that turns emails to curiousbees@srmist.edu.in into calendar events: credentials, import, testing, duplicate protection, AI cost control and troubleshooting.
+
+---
+
 ## 🔒 5. Security, Auth & Audits
 
 Security policies, role-based access control, telemetry, and system audits.

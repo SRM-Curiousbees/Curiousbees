@@ -20,6 +20,9 @@
 | `AWS_REGION` | AWS Region (e.g. `ap-south-1`) | Parameter Store |
 | `ENABLE_CRON` | Flag to enable cron on worker nodes (`true`/`false`) | Environment config |
 | `ADMIN_EMAILS` | Comma-separated admin whitelist | Parameter Store |
+| `N8N_INTEGRATION_TOKEN` | Machine token for the n8n email → event workflow (≥ 32 chars). Unset = integration off | AWS Secrets Manager / SSM SecureString |
+| `N8N_INTEGRATION_TOKEN_PREVIOUS` | Previous token, accepted during rotation only | AWS Secrets Manager / SSM SecureString |
+| `EVENT_INGESTION_TRUSTED_SENDERS` | Sender domains/addresses whose confident events publish automatically. Empty = everything goes to admin review | Parameter Store |
 
 ### 2.2 Frontend Public Variables (Next.js)
 | Variable | Description |

@@ -1,0 +1,10 @@
+{
+  "name": "curiousbees-n8n-event-ingestion",
+  "private": true,
+  "description": "n8n workflow that turns institutional emails into CuriousBees events. See docs/integrations/n8n-event-ingestion.md.",
+  "scripts": {
+    "build": "node build-workflow.js",
+    "check": "node build-workflow.js --check",
+    "test": "node --require ./test/no-network.js --test \"test/*.test.js\""
+  }
+}

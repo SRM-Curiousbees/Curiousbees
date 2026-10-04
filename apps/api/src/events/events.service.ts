@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, NotFoundException, Logger, Unauthorize
 import { PrismaService } from '../prisma/prisma.service';
 import { EventStatus, Prisma, Role } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
+import { displayTimeRange } from '../event-ingestion/normalize';
 
 @Injectable()
 export class EventsService {
@@ -139,7 +140,8 @@ export class EventsService {
       data: {
         title: input.title,
         date: new Date(`${input.startDate}T00:00:00.000Z`),
-        time: input.startTime,
+        // Same format as events posted from the form, so the calendar and editor read it alike.
+        time: displayTimeRange(input.startTime, (input.endDate ?? input.startDate) === input.startDate ? input.endTime : null),
         endDate: input.endDate ? new Date(`${input.endDate}T00:00:00.000Z`) : null,
         endTime: input.endTime || null,
         timezone: input.timezone,
@@ -148,7 +150,7 @@ export class EventsService {
         organizer: input.organizer || null,
         organizerEmail: input.senderEmail || null,
         category: input.category || null,
-        eventType: input.category || 'Institutional event',
+        eventType: input.category || 'Other',
         eventUrl: input.eventUrl || null,
         registrationLink: input.registrationUrl || null,
         meetingUrl: input.meetingUrl || null,
