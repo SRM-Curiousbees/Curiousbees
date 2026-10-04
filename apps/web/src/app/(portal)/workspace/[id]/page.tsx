@@ -241,6 +241,32 @@ export default function WorkspacePage() {
   }, [meetings]);
 
   const workspace = activeWorkspace && activeWorkspace.id === workspaceId ? (activeWorkspace as WorkspaceDetail) : null;
+  const workspaceMembers = workspace?.members;
+
+  // Debounced search for the "Add member" dialog. Declared before the early
+  // returns below so React always calls the same hooks in the same order.
+  useEffect(() => {
+    if (!addMemberOpen || !memberSearchQuery.trim() || memberSearchQuery.trim().length < 2) {
+      setMemberSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setSearchingMembers(true);
+      try {
+        const res = await apiGet<any>(`/api/users/researchers?q=${encodeURIComponent(memberSearchQuery.trim())}&limit=8`);
+        const items = res?.items || res || [];
+        if (Array.isArray(items)) {
+          const currentMemberIds = new Set((workspaceMembers || []).map((m: any) => m.userId));
+          setMemberSearchResults(items.filter((u: any) => !currentMemberIds.has(u.id)));
+        }
+      } catch (err) {
+        console.error('Failed to search members', err);
+      } finally {
+        setSearchingMembers(false);
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [addMemberOpen, memberSearchQuery, workspaceMembers]);
 
   if (loadState === 'error' && !workspace) {
     return (
@@ -283,29 +309,6 @@ export default function WorkspacePage() {
   const files = workspace.files || [];
   const announcements = workspace.announcements || [];
   const provider: IntegrationProvider = workspace.collaborationProvider || 'GOOGLE_WORKSPACE';
-
-  useEffect(() => {
-    if (!addMemberOpen || !memberSearchQuery.trim() || memberSearchQuery.trim().length < 2) {
-      setMemberSearchResults([]);
-      return;
-    }
-    const timer = setTimeout(async () => {
-      setSearchingMembers(true);
-      try {
-        const res = await apiGet<any>(`/api/users/researchers?q=${encodeURIComponent(memberSearchQuery.trim())}&limit=8`);
-        const items = res?.items || res || [];
-        if (Array.isArray(items)) {
-          const currentMemberIds = new Set(members.map((m: any) => m.userId));
-          setMemberSearchResults(items.filter((u: any) => !currentMemberIds.has(u.id)));
-        }
-      } catch (err) {
-        console.error('Failed to search members', err);
-      } finally {
-        setSearchingMembers(false);
-      }
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [addMemberOpen, memberSearchQuery, members]);
 
   const handleAddMember = async (userId: string) => {
     setAddingMemberId(userId);
