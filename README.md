@@ -158,7 +158,7 @@ CuriousBees_V2/
 │   ├── setup.js                    # Automated package build and Prisma generator
 │   ├── doctor.js                   # Preflight diagnostic health checker
 │   ├── health-check.js             # Live API & database connectivity probe
-│   └── db-setup.js                 # Complete database reset and seed runner
+│   └── db-setup.js                 # Guarded reset + seed of the disposable test database
 ├── .github/                        # GitHub Actions CI/CD workflows and PR templates
 ├── Dockerfile.api                  # Production multi-stage Docker build for NestJS API
 ├── Dockerfile.web                  # Production multi-stage Docker build for Next.js
@@ -225,7 +225,7 @@ npm run dev
 | `npm run db:generate` | `apps/api` | Generates typed Prisma Client from `schema.prisma`. |
 | `npm run db:migrate` | `apps/api` | Executes pending database migrations. |
 | `npm run db:seed` | `apps/api` | Seeds initial faculties, departments, and administrator accounts. |
-| `npm run db:setup` | Root | Resets the database and seeds fresh data. |
+| `npm run db:setup` | Root | Resets **only** the disposable test database given in `RESET_DATABASE_URL` (`cbtest@127.0.0.1:55432/curiousbees`) and seeds it. Refuses any other database. |
 | `npm run clean` | Root | Cleans all `node_modules`, `.next`, and `dist` build outputs. |
 | `npm run reset` | Root | Full factory reset: cleans caches, reinstalls dependencies, and runs setup. |
 

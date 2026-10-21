@@ -35,6 +35,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { FilesModule } from './files/files.module';
 import { SearchModule } from './search/search.module';
+import { throttlerOptions } from './common/throttling/rate-limits';
 
 @Module({
   imports: [
@@ -51,13 +52,9 @@ import { SearchModule } from './search/search.module';
       ].find((p) => fs.existsSync(p)) || '../../.env',
       validate: validateEnv,
     }),
-    ThrottlerModule.forRoot([
-      {
-        name: 'default',
-        ttl: 60000,
-        limit: 120, // 120 requests per minute baseline
-      },
-    ]),
+    // Per-session limits for signed-in traffic, per-IP for anonymous traffic,
+    // plus a per-IP total. See common/throttling/rate-limits.ts.
+    ThrottlerModule.forRoot(throttlerOptions()),
 
     PrismaModule,
     AuthModule,

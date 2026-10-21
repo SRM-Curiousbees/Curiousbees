@@ -6,6 +6,8 @@ const nonEmptyCommaList = (message: string) =>
 // Treats `NAME=` (an unset value copied from .env.example) the same as a missing variable.
 const blankToUndefined = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? undefined : v);
 
+const positiveInt = z.preprocess(blankToUndefined, z.coerce.number().int().positive().optional());
+
 const baseSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().default(4000),
@@ -40,6 +42,15 @@ const baseSchema = z.object({
   N8N_INTEGRATION_TOKEN: z.preprocess(blankToUndefined, z.string().min(32, 'N8N_INTEGRATION_TOKEN must be at least 32 characters').optional()),
   N8N_INTEGRATION_TOKEN_PREVIOUS: z.preprocess(blankToUndefined, z.string().min(32, 'N8N_INTEGRATION_TOKEN_PREVIOUS must be at least 32 characters').optional()),
   EVENT_INGESTION_TRUSTED_SENDERS: z.string().optional(),
+  // Supabase Auth call deadline (ms). See auth/supabase.service.ts.
+  SUPABASE_AUTH_TIMEOUT_MS: z.preprocess(blankToUndefined, z.coerce.number().int().min(500).max(30000).optional()),
+  // Rate limits. See common/throttling/rate-limits.ts and docs/operations/rate-limiting.md.
+  RATE_LIMIT_WINDOW_SECONDS: positiveInt,
+  RATE_LIMIT_USER_READ: positiveInt,
+  RATE_LIMIT_USER_WRITE: positiveInt,
+  RATE_LIMIT_ANONYMOUS: positiveInt,
+  RATE_LIMIT_SEARCH: positiveInt,
+  RATE_LIMIT_IP_TOTAL: positiveInt,
 });
 
 /**

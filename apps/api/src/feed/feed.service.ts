@@ -1,6 +1,7 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SearchService } from '../search/search.service';
+import { RESEARCH_ROLES } from '../users/discovery';
 
 @Injectable()
 export class FeedService {
@@ -22,6 +23,7 @@ export class FeedService {
     
     const threads = await this.prisma.thread.findMany({
       where: {
+        hidden: false,
         OR: [
           { title: { contains: term, mode: 'insensitive' } },
           { content: { contains: term, mode: 'insensitive' } },
@@ -50,6 +52,7 @@ export class FeedService {
 
     const publications = await this.prisma.publication.findMany({
       where: {
+        hidden: false,
         OR: [
           { title: { contains: term, mode: 'insensitive' } },
           { authors: { contains: term, mode: 'insensitive' } }
@@ -60,7 +63,8 @@ export class FeedService {
 
     const users = await this.prisma.user.findMany({
       where: {
-        NOT: { name: { contains: 'admin', mode: 'insensitive' } },
+        status: 'ACTIVE',
+        role: { in: RESEARCH_ROLES },
         OR: [
           { name: { contains: term, mode: 'insensitive' } },
           { department: { contains: term, mode: 'insensitive' } },

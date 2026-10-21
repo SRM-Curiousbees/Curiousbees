@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RESEARCH_ROLES } from '../users/discovery';
 
 export interface SearchFeedResult {
   threads: any[];
@@ -135,12 +136,12 @@ export class SearchService {
           : [],
         pubIds.length > 0
           ? this.prisma.publication.findMany({
-              where: { id: { in: pubIds } },
+              where: { id: { in: pubIds }, hidden: false },
             })
           : [],
         userIds.length > 0
           ? this.prisma.user.findMany({
-              where: { id: { in: userIds }, status: 'ACTIVE' },
+              where: { id: { in: userIds }, status: 'ACTIVE', role: { in: RESEARCH_ROLES } },
               select: {
                 id: true,
                 name: true,
@@ -199,6 +200,7 @@ export class SearchService {
 
       this.prisma.publication.findMany({
         where: {
+          hidden: false,
           OR: [
             { title: { contains: term, mode: 'insensitive' } },
             { authors: { contains: term, mode: 'insensitive' } },
@@ -210,7 +212,7 @@ export class SearchService {
       this.prisma.user.findMany({
         where: {
           status: 'ACTIVE',
-          NOT: { name: { contains: 'admin', mode: 'insensitive' } },
+          role: { in: RESEARCH_ROLES },
           OR: [
             { name: { contains: term, mode: 'insensitive' } },
             { department: { contains: term, mode: 'insensitive' } },

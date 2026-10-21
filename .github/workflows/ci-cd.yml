@@ -91,10 +91,11 @@ jobs:
       - name: Unit tests
         run: npm test -- --silent
 
-      - name: Web helper and n8n workflow tests (no network, Gemini mocked)
+      - name: Web helper, n8n workflow and safety-script tests (no network, Gemini mocked)
         run: |
           npm run test:web
           npm run test:n8n
+          npm run test:scripts
 
       - name: Migration has no drift from schema.prisma
         run: |

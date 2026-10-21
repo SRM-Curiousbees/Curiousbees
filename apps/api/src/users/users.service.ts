@@ -6,6 +6,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { MailService } from './mail.service';
 import { Role, UserStatus } from '@prisma/client';
 import { ROOT_ADMIN_EMAIL } from '../auth/email-policy';
+import { DISCOVERY_PROFILE_SELECT, RESEARCH_ROLES } from './discovery';
 
 @Injectable()
 export class UsersService {
@@ -240,8 +241,7 @@ export class UsersService {
     const users = await this.prisma.user.findMany({
       where: {
         id: { not: userId },
-        role: { in: ['RESEARCH_SCHOLAR', 'RESEARCH_SUPERVISOR'] },
-        NOT: { name: { contains: 'admin', mode: 'insensitive' } },
+        role: { in: RESEARCH_ROLES },
         ...(requesterInterestIds.length > 0 && {
           interests: {
             some: {
@@ -266,13 +266,8 @@ export class UsersService {
           ]
         })
       },
-      include: {
-        interests: {
-          include: {
-            interest: true
-          }
-        }
-      },
+      // Discovery shows profile fields only, never email or account details.
+      select: DISCOVERY_PROFILE_SELECT,
       take: 20
     });
 
@@ -514,7 +509,6 @@ export class UsersService {
     return this.prisma.user.findMany({
       where: {
         role: Role.RESEARCH_SUPERVISOR,
-        NOT: { name: { contains: 'admin', mode: 'insensitive' } },
         approved: true,
         status: UserStatus.ACTIVE,
       },
@@ -841,9 +835,7 @@ export class UsersService {
     const { q, role, department, departmentId, facultyId, campusId, interest, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      NOT: { name: { contains: 'admin', mode: 'insensitive' } }
-    };
+    const where: any = {};
     if (q) {
       where.OR = [
         { name: { contains: q, mode: 'insensitive' } },
@@ -853,11 +845,8 @@ export class UsersService {
         { bio: { contains: q, mode: 'insensitive' } },
       ];
     }
-    if (role) {
-      where.role = role;
-    } else {
-      where.role = { in: ['RESEARCH_SUPERVISOR', 'RESEARCH_SCHOLAR'] };
-    }
+    // Only research roles can be listed; any other ?role= value (e.g. INSTITUTE_ADMIN) is ignored.
+    where.role = role && (RESEARCH_ROLES as string[]).includes(role) ? role : { in: RESEARCH_ROLES };
 
     if (departmentId) {
       where.departmentId = departmentId;

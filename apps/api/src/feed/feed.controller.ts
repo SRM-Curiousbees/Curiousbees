@@ -1,4 +1,6 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import { SEARCH_THROTTLE } from '../common/throttling/rate-limits';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
 import { FeedService } from './feed.service';
 
@@ -8,6 +10,7 @@ export class FeedController {
   constructor(private readonly feedService: FeedService) {}
 
   @Get('search')
+  @Throttle({ default: SEARCH_THROTTLE })
   async searchFeed(@Query('q') q: string) {
     return this.feedService.searchFeed(q);
   }

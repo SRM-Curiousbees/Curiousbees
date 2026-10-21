@@ -45,6 +45,9 @@ temp/
 
 # 🔬 Testing Outputs
 coverage/
+# Load-test fixture (synthetic test tokens) and results
+scripts/load/.fixture/
+scripts/load/results/
 .nyc_output/
 .jest/
 

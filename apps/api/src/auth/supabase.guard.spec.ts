@@ -1,7 +1,8 @@
-import { ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { ExecutionContext, ForbiddenException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserStatus } from '@prisma/client';
 import { SupabaseAuthGuard, ALLOW_ACCESS_DENIAL_KEY } from './supabase.guard';
+import { TokenVerificationError } from './supabase.service';
 import { IS_PUBLIC_KEY } from './public.decorator';
 
 const makeContext = (headers: Record<string, string>, request: any = {}) => {
@@ -55,6 +56,30 @@ describe('SupabaseAuthGuard (provisioning & domain policy)', () => {
     await expect(guard.canActivate(makeContext({}).ctx)).rejects.toBeInstanceOf(UnauthorizedException);
     supabase.verifyToken.mockRejectedValue(new Error('bad jwt'));
     await expect(guard.canActivate(makeContext({ authorization: 'Bearer x' }).ctx)).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+
+  it('rejects a token Supabase refused with 401, without touching the database', async () => {
+    supabase.verifyToken.mockRejectedValue(new TokenVerificationError('INVALID_TOKEN', 'invalid JWT'));
+    await expect(guard.canActivate(makeContext({ authorization: 'Bearer x' }).ctx)).rejects.toMatchObject({
+      status: 401,
+      response: { code: 'SUPABASE_AUTH_FAILED' },
+    });
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('fails closed with 503 (not 401, which signs people out) when Supabase cannot be reached', async () => {
+    supabase.verifyToken.mockRejectedValue(new TokenVerificationError('AUTH_UNAVAILABLE', 'timeout'));
+    const { ctx, req } = makeContext({ authorization: 'Bearer x' });
+    await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(ServiceUnavailableException);
+    await expect(guard.canActivate(ctx)).rejects.toMatchObject({ status: 503, response: { code: 'AUTH_SERVICE_UNAVAILABLE' } });
+    expect(req.user).toBeUndefined();
+    expect(prisma.user.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('fails closed even on @AllowAccessDenial routes when Supabase cannot be reached', async () => {
+    metadata[ALLOW_ACCESS_DENIAL_KEY] = true;
+    supabase.verifyToken.mockRejectedValue(new TokenVerificationError('AUTH_UNAVAILABLE', 'timeout'));
+    await expect(guard.canActivate(makeContext({ authorization: 'Bearer x' }).ctx)).rejects.toMatchObject({ status: 503 });
   });
 
   it.each(['someone@gmail.com', 'scholar@srmist.edu.in'])('lets a provisioned, active %s through with the DB role', async (email) => {

@@ -23,10 +23,11 @@ graph LR
 2. Retrieve your connection strings from **Settings > Database > Connection Strings**:
    - **Transaction Connection Pooler (port 6543)**: Set this as `DATABASE_URL` (ensure `?pgbouncer=true` is appended).
    - **Direct Connection (port 5432)**: Set this as `DIRECT_URL`.
-3. Apply migrations and seed mockup database records locally:
+3. Apply migrations (non-destructive) and seed reference data:
    ```bash
-   # Run migrations and seed data on the remote Supabase database
-   npm run db:setup
+   # Never use db:reset / db:setup here: they only accept the disposable local test database.
+   DATABASE_URL="<direct connection string>" npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma
+   DATABASE_URL="<direct connection string>" npm run db:seed
    ```
 
 ### 2. Backend API Setup (Railway or Render Free Tier)

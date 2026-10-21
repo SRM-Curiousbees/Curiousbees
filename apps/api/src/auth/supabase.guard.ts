@@ -5,12 +5,13 @@ import {
   Logger,
   UnauthorizedException,
   ForbiddenException,
+  ServiceUnavailableException,
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role, UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { SupabaseService } from './supabase.service';
+import { SupabaseService, TokenVerificationError } from './supabase.service';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import { isEmailDomainAllowed, normalizeEmail, ROOT_ADMIN_EMAIL } from './email-policy';
 
@@ -85,6 +86,15 @@ export class SupabaseAuthGuard implements CanActivate {
     try {
       identity = await this.supabaseService.verifyToken(token);
     } catch (e: any) {
+      // Fail closed either way. An outage is a 503, not a 401: the frontend signs
+      // people out on 401, and their sessions are not what failed.
+      if (e instanceof TokenVerificationError && e.reason === 'AUTH_UNAVAILABLE') {
+        this.logger.error(`Supabase token verification unavailable: ${e.message}`);
+        throw new ServiceUnavailableException({
+          message: 'Your sign-in could not be verified right now. Please try again in a moment.',
+          code: 'AUTH_SERVICE_UNAVAILABLE',
+        });
+      }
       this.logger.warn(`Supabase token rejected: ${e.message}`);
       throw new UnauthorizedException({
         message: 'Your session is invalid or has expired. Please sign in again.',

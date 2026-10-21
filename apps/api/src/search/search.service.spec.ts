@@ -57,4 +57,35 @@ describe('SearchService', () => {
     expect(result.publications).toHaveLength(1);
     expect(result.users).toHaveLength(1);
   });
+
+  it('never returns publications hidden by moderation (PostgreSQL search)', async () => {
+    await service.searchFeed('graph');
+    expect(mockPrisma.publication.findMany.mock.calls[0][0].where).toMatchObject({ hidden: false });
+    expect(mockPrisma.thread.findMany.mock.calls[0][0].where).toMatchObject({ hidden: false });
+  });
+
+  it('finds people by role, not by whether their name contains "admin"', async () => {
+    await service.searchFeed('Padmini');
+    const where = mockPrisma.user.findMany.mock.calls[0][0].where;
+    expect(where.role).toEqual({ in: ['RESEARCH_SCHOLAR', 'RESEARCH_SUPERVISOR'] });
+    expect(where.NOT).toBeUndefined();
+  });
+
+  it('applies the same filters when hydrating OpenSearch hits', async () => {
+    process.env.OPENSEARCH_ENDPOINT = 'http://127.0.0.1:1';
+    const os = new SearchService(mockPrisma);
+    const fetchSpy = jest.spyOn(global, 'fetch').mockResolvedValueOnce(new Response(JSON.stringify({
+      hits: { hits: [
+        { _source: { docType: 'publication', id: 'p-hidden' } },
+        { _source: { docType: 'user', id: 'u-admin' } },
+      ] },
+    }), { status: 200 }));
+    try {
+      await os.searchFeed('anything');
+    } finally {
+      fetchSpy.mockRestore();
+    }
+    expect(mockPrisma.publication.findMany.mock.calls[0][0].where).toEqual({ id: { in: ['p-hidden'] }, hidden: false });
+    expect(mockPrisma.user.findMany.mock.calls[0][0].where).toMatchObject({ role: { in: ['RESEARCH_SCHOLAR', 'RESEARCH_SUPERVISOR'] } });
+  });
 });
