@@ -120,23 +120,24 @@ test('verifyDisposableDatabase does not rely on NODE_ENV: test mode alone is not
 // ─── Local-only developer tools ─────────────────────────────────────────────
 const localRefused = { code: 'LOCAL_DATABASE_REQUIRED' };
 
-test('data-writing developer tools accept databases on this machine', () => {
+test('data-writing developer tools accept databases on this machine and Supabase', () => {
   for (const url of [
     'postgresql://postgres:pw@127.0.0.1:5432/srm_curiousbees_db?schema=public',
     'postgresql://postgres:pw@localhost:5433/dev?schema=public&connection_limit=5',
     'postgres://u@[::1]:5432/dev',
+    'postgresql://postgres:pw@db.abcdefgh.supabase.co:5432/postgres',
+    'postgresql://postgres.abcdefgh:pw@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true',
   ]) {
     assert.equal(assertLocalDatabase(url, 'seed', {}), url);
   }
 });
 
-test('data-writing developer tools refuse remote, production and unknown databases', () => {
+test('data-writing developer tools refuse unauthorized remote, production and unknown databases', () => {
   for (const url of [
     undefined,
     '',
     'not a url',
     'postgresql://app:pw@curiousbees.abc123.ap-south-1.rds.amazonaws.com:5432/curiousbees?sslmode=require',
-    'postgresql://postgres:pw@db.abcdefgh.supabase.co:5432/postgres',
     'postgresql://postgres:pw@10.0.0.5:5432/app',
     'postgresql://postgres:pw@127.0.0.1:5432/app?host=prod.example.com', // libpq redirect
     'postgresql://postgres:pw@127.0.0.1:5432/app?hostaddr=10.0.0.5',
@@ -145,6 +146,7 @@ test('data-writing developer tools refuse remote, production and unknown databas
     assert.throws(() => assertLocalDatabase(url, 'seed', {}), localRefused, String(url));
   }
   assert.throws(() => assertLocalDatabase('postgresql://postgres:pw@127.0.0.1:5432/app', 'seed', { NODE_ENV: 'production' }), localRefused);
+  assert.throws(() => assertLocalDatabase('postgresql://postgres:pw@db.abcdefgh.supabase.co:5432/postgres', 'seed', { NODE_ENV: 'production' }), localRefused);
 });
 
 test('local-only refusals never echo the password', () => {

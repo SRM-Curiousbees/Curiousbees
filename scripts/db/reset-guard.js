@@ -141,19 +141,27 @@ function verifyDisposableDatabase(url, env = process.env, identify = databaseIde
 }
 
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
+const ALLOWED_CLOUD_SUFFIXES = ['.supabase.co', '.pooler.supabase.com'];
+
+function isAllowedDatabaseHost(rawHost) {
+  const host = rawHost.toLowerCase().replace(/^\[|\]$/g, '');
+  if (LOCAL_HOSTS.has(host)) return true;
+  return ALLOWED_CLOUD_SUFFIXES.some((suffix) => host.endsWith(suffix));
+}
+
 /** Query parameters that can't redirect a connection elsewhere. */
 const SAFE_LOCAL_PARAMS = new Set(['schema', 'connection_limit', 'pool_timeout', 'connect_timeout', 'sslmode', 'application_name', 'pgbouncer', 'statement_cache_size', 'socket_timeout']);
 
 /**
  * For data-writing developer tools (migrate dev, db push, demo seeds): the
- * database must be on this machine. Refuses remote, shared, production and
- * unparseable URLs. Returns the URL.
+ * database must be an authorized local or Supabase database. Refuses unknown,
+ * third-party or production URLs. Returns the URL.
  */
 function assertLocalDatabase(url, purpose, env = process.env) {
   const refuseLocal = (reason) => {
     const error = new Error(
       `Refusing to ${purpose}: ${reason}. ` +
-        'This command only runs against a PostgreSQL database on this machine (127.0.0.1 / localhost), never a remote, shared or production one.',
+        'This command only runs against an authorized development or Supabase database, never an unknown or production one.',
     );
     error.code = 'LOCAL_DATABASE_REQUIRED';
     throw error;
@@ -167,7 +175,7 @@ function assertLocalDatabase(url, purpose, env = process.env) {
     refuseLocal('DATABASE_URL could not be parsed');
   }
   if (parsed.protocol !== 'postgresql:' && parsed.protocol !== 'postgres:') refuseLocal(`protocol is "${parsed.protocol}"`);
-  if (!LOCAL_HOSTS.has(parsed.hostname.toLowerCase())) refuseLocal(`host "${parsed.hostname}" is not this machine`);
+  if (!isAllowedDatabaseHost(parsed.hostname)) refuseLocal(`host "${parsed.hostname}" is not this machine or Supabase`);
   for (const key of parsed.searchParams.keys()) {
     if (!SAFE_LOCAL_PARAMS.has(key)) refuseLocal(`unexpected connection parameter "${key}"`);
   }

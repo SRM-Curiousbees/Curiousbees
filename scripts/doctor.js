@@ -146,16 +146,17 @@ if (hasDb) {
       stdio: 'ignore',
       cwd: rootDir,
     });
-    reportSuccess('PostgreSQL connection ping succeeded! DB is active.');
+    const dbUrl = process.env.DATABASE_URL || '';
+    const isSupabase = dbUrl.includes('supabase.co') || dbUrl.includes('pooler.supabase.com');
+    if (isSupabase) {
+      reportSuccess('PostgreSQL connection ping succeeded! Supabase DB is active.');
+    } else {
+      reportSuccess('PostgreSQL connection ping succeeded!');
+      reportWarning('DATABASE_URL points to a local or non-Supabase host. Note: CuriousBees is configured for Supabase as its single database.');
+    }
   } catch (err) {
     reportError(`PostgreSQL connection failed: ${err.message}`);
-    const dbUrl = process.env.DATABASE_URL || '';
-    const isLocalDb = dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1');
-    if (isLocalDb) {
-      console.log('     -> Solution: Ensure your local PostgreSQL Docker container is running by executing: npm run docker:up');
-    } else {
-      console.log('     -> Solution: Ensure your internet connection is active, and verify that your cloud database (Supabase) credentials in the root .env are correct.');
-    }
+    console.log('     -> Solution: Verify that your Supabase credentials (DATABASE_URL and DIRECT_URL) in the root .env are correct and the Supabase database is active.');
   }
 } else {
   reportError('PostgreSQL test skipped due to missing DATABASE_URL config.');

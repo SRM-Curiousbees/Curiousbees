@@ -23,6 +23,13 @@ function resolveDatabaseUrl(env = process.env, rootDir = ROOT) {
   return require('dotenv').parse(fs.readFileSync(file)).DATABASE_URL;
 }
 
+function resolveDirectUrl(env = process.env, rootDir = ROOT) {
+  if (env.DIRECT_URL) return env.DIRECT_URL;
+  const file = path.join(rootDir, '.env');
+  if (!fs.existsSync(file)) return undefined;
+  return require('dotenv').parse(fs.readFileSync(file)).DIRECT_URL;
+}
+
 function main() {
   const command = process.argv.slice(2);
   if (command.length === 0) {
@@ -41,7 +48,16 @@ function main() {
     if (!key.startsWith('PG')) env[key] = value;
   }
   env.DATABASE_URL = url;
-  env.DIRECT_URL = url;
+  const rawDirect = resolveDirectUrl();
+  if (rawDirect) {
+    try {
+      env.DIRECT_URL = assertLocalDatabase(rawDirect, `verify directUrl for "${command.join(' ')}"`);
+    } catch {
+      env.DIRECT_URL = rawDirect;
+    }
+  } else {
+    env.DIRECT_URL = url;
+  }
   const result = spawnSync(command[0], command.slice(1), { stdio: 'inherit', env });
   if (result.error) {
     console.error(`\n❌ Could not run ${command[0]}: ${result.error.message}\n`);
@@ -52,4 +68,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { resolveDatabaseUrl };
+module.exports = { resolveDatabaseUrl, resolveDirectUrl };
