@@ -62,6 +62,20 @@ export function assertDisposableTestDatabase(url: string | undefined, nodeEnv: s
   }
 }
 
+// Shared with the root reset scripts (plain JavaScript, so it can't be imported as a TS module).
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const resetGuard = require('../../../scripts/db/reset-guard');
+
+/**
+ * Live check, immediately before a destructive reset: the server behind `url`
+ * must report the test database and user and carry the disposable marker
+ * (curiousbees.disposable_test_db = on), which real databases never have.
+ * Throws if it can't be reached or doesn't match.
+ */
+export function assertLiveDisposableDatabase(url: string): void {
+  resetGuard.assertDisposableIdentity(resetGuard.databaseIdentity(url));
+}
+
 /** Throws unless the S3 endpoint is a local emulator. */
 export function assertLocalS3Endpoint(url: string | undefined): void {
   if (!url) throw new Error('Refusing to run the integration suite: E2E_S3_ENDPOINT is not set.');

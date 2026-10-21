@@ -5,6 +5,11 @@ import * as path from 'path';
 // Never under NODE_ENV=test: tests must not pick up the development database.
 if (process.env.NODE_ENV !== 'test') dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
+// Deletes rows, so it only runs against the positively identified disposable test
+// database (URL check + live marker check). See scripts/db/reset-guard.js.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+require('../../../scripts/db/reset-guard').verifyDisposableDatabase(process.env.DATABASE_URL);
+
 const prisma = new PrismaClient();
 
 async function main() {

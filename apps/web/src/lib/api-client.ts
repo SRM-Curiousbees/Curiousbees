@@ -1,8 +1,20 @@
 import { supabase } from '@/lib/supabase/client';
 
-// Backend base URL — set in apps/web/.env.local
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+/**
+ * Resolves the API base URL.
+ * In server runtimes (Next.js server functions, Route Handlers, SSR), reads the
+ * bound variable injected by Vercel services (process.env.API_URL).
+ * In browser runtime, uses NEXT_PUBLIC_API_URL if configured, or empty string
+ * so calls hit the same origin via top-level Vercel rewrites (/api/(.*) -> api).
+ */
+export function getApiBaseUrl(): string {
+  if (typeof window === 'undefined') {
+    return (process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
+  }
+  return (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '');
+}
+
+export const API_URL = getApiBaseUrl();
 
 /**
  * Helper to fetch the Supabase session JWT access token.
@@ -115,9 +127,12 @@ export async function apiFetch(
 
   const authHeaders = skipAuth ? {} : await getAuthHeaders();
 
+  const baseUrl = getApiBaseUrl();
   const url = path.startsWith('http')
     ? path
-    : `${API_URL}${path}`;
+    : baseUrl
+    ? `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`
+    : path;
 
   const mergedHeaders: Record<string, string> = {
     ...authHeaders,

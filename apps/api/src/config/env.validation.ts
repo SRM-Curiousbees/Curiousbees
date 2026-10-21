@@ -78,8 +78,15 @@ export function validateEnv(config: Record<string, unknown>) {
   const mailFromName = config.MAIL_FROM_NAME || config.BREVO_SENDER_NAME;
   const directUrl = config.DIRECT_URL || config.DATABASE_URL;
 
+  const vercelFrontend = config.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${config.VERCEL_PROJECT_PRODUCTION_URL}`
+    : config.VERCEL_URL
+    ? `https://${config.VERCEL_URL}`
+    : undefined;
+
   const input = {
     ...config,
+    FRONTEND_URL: config.FRONTEND_URL || vercelFrontend,
     SUPABASE_URL: config.SUPABASE_URL || config.NEXT_PUBLIC_SUPABASE_URL,
     DIRECT_URL: directUrl,
     MAIL_FROM_EMAIL: mailFromEmail,

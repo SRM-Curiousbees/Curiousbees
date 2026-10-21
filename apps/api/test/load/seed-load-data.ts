@@ -15,7 +15,7 @@ import { mkdirSync, writeFileSync } from 'fs';
 import { randomBytes } from 'crypto';
 import * as path from 'path';
 import { Prisma, PrismaClient, Role, UserStatus, ThreadType, EventStatus, ConnectionStatus } from '@prisma/client';
-import { assertDisposableTestDatabase } from '../e2e-safety';
+import { assertDisposableTestDatabase, assertLiveDisposableDatabase } from '../e2e-safety';
 import { signLoadTestToken } from './token';
 
 const API_ROOT = path.resolve(__dirname, '../..');
@@ -67,6 +67,7 @@ async function main() {
   if (!FIXTURE) throw new Error('LOAD_TEST_FIXTURE is not set.');
   // Destructive reset below: re-check the exact connection it will use.
   assertDisposableTestDatabase(DATABASE_URL, 'test');
+  assertLiveDisposableDatabase(DATABASE_URL);
   const env = { ...process.env, DATABASE_URL, NODE_ENV: 'test' };
   console.log('Resetting the disposable test database (127.0.0.1:55432/curiousbees)...');
   execSync(`psql "${DATABASE_URL.split('?')[0]}" -qc "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;"`, { env, stdio: 'pipe' });

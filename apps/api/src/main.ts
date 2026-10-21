@@ -54,6 +54,8 @@ export function getAllowedOrigins(): string[] {
   return Array.from(new Set([
     ...parseCommaSeparated(process.env.FRONTEND_URL),
     ...parseCommaSeparated(process.env.ALLOWED_ORIGINS),
+    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : []),
+    ...(process.env.VERCEL_PROJECT_PRODUCTION_URL ? [`https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`] : []),
     ...(isProduction() ? [] : LOCAL_DEV_ORIGINS),
   ]));
 }

@@ -6,7 +6,9 @@
 #   docker compose -f docker-compose.test.yml down
 #
 # The suite drops and recreates the database schema, so it refuses to run
-# against anything except this endpoint (see apps/api/test/e2e-safety.ts).
+# against anything except this endpoint, and only after the live server shows
+# the disposable marker set below (see apps/api/test/e2e-safety.ts and
+# scripts/db/reset-guard.js).
 # Both services listen on 127.0.0.1 only, the database lives in memory, and the
 # credentials are test-only. A separate project name keeps `down` away from the
 # development stack.
@@ -15,6 +17,9 @@ name: curiousbees-test
 services:
   test-db:
     image: postgres:17-alpine
+    # Marks this server as a throwaway test database. Destructive test and reset
+    # scripts check for it on a live connection before they drop anything.
+    command: ["postgres", "-c", "curiousbees.disposable_test_db=on"]
     environment:
       POSTGRES_USER: cbtest
       POSTGRES_PASSWORD: cbtest_local_only

@@ -8,7 +8,7 @@ import { PrismaClient, Role, UserStatus } from '@prisma/client';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/main';
 import { SupabaseService } from '../src/auth/supabase.service';
-import { assertDisposableTestDatabase } from './e2e-safety';
+import { assertDisposableTestDatabase, assertLiveDisposableDatabase } from './e2e-safety';
 
 /**
  * Search and researcher discovery against a real PostgreSQL database:
@@ -39,6 +39,8 @@ describe('Search and discovery (integration)', () => {
     if (process.env.DATABASE_URL !== process.env.E2E_DATABASE_URL) {
       throw new Error('Refusing to reset the database: DATABASE_URL no longer matches E2E_DATABASE_URL.');
     }
+    // …and the live server must positively identify itself as the disposable test database.
+    assertLiveDisposableDatabase(process.env.DATABASE_URL!);
     const env = { ...process.env };
     execSync(`psql "${process.env.DATABASE_URL!.split('?')[0]}" -qc "DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;"`, { env, stdio: 'pipe' });
     execSync('npx prisma migrate deploy', { cwd: API_ROOT, env, stdio: 'pipe' });

@@ -9,7 +9,7 @@ import { PrismaClient, Role, UserStatus } from '@prisma/client';
 import { AppModule } from '../src/app.module';
 import { configureApp } from '../src/main';
 import { SupabaseService } from '../src/auth/supabase.service';
-import { assertDisposableTestDatabase } from './e2e-safety';
+import { assertDisposableTestDatabase, assertLiveDisposableDatabase } from './e2e-safety';
 
 /**
  * Fake Supabase: a bearer token "tok:<email>" is a valid, verified session for
@@ -70,6 +70,8 @@ describe('CuriousBees API (integration)', () => {
     if (process.env.DATABASE_URL !== process.env.E2E_DATABASE_URL) {
       throw new Error('Refusing to reset the database: DATABASE_URL no longer matches E2E_DATABASE_URL.');
     }
+    // …and the live server must positively identify itself as the disposable test database.
+    assertLiveDisposableDatabase(process.env.DATABASE_URL!);
 
     // Fresh schema exactly as production gets it: migrate deploy + production seed.
     const env = { ...process.env };

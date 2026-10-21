@@ -1,4 +1,4 @@
-import { assertDisposableTestDatabase, assertLocalS3Endpoint, scrubServiceEnvironment } from './e2e-safety';
+import { assertDisposableTestDatabase, assertLiveDisposableDatabase, assertLocalS3Endpoint, scrubServiceEnvironment } from './e2e-safety';
 
 const TEST_DB = 'postgresql://cbtest:cbtest_local_only@127.0.0.1:55432/curiousbees';
 
@@ -96,5 +96,22 @@ describe('scrubServiceEnvironment', () => {
     };
     scrubServiceEnvironment(env);
     expect(Object.keys(env).sort()).toEqual(['E2E_DATABASE_URL', 'E2E_S3_ENDPOINT', 'HOME', 'PATH']);
+  });
+});
+
+describe('assertLiveDisposableDatabase (checked immediately before every destructive reset)', () => {
+  it('refuses a database it cannot reach, because it cannot be positively identified', () => {
+    expect(() => assertLiveDisposableDatabase('postgresql://cbtest:x@127.0.0.1:1/curiousbees?schema=public')).toThrow(/positively identified/);
+  });
+
+  // Read-only SELECT against the real disposable database; reported as skipped without it.
+  const live = process.env.DISPOSABLE_TEST_DATABASE_URL;
+  (live ? it : it.skip)('accepts the marked disposable test database', () => {
+    expect(() => assertLiveDisposableDatabase(live!)).not.toThrow();
+  });
+  (live ? it : it.skip)('refuses the same server with wrong credentials', () => {
+    const wrong = new URL(live!);
+    wrong.password = 'not-the-password';
+    expect(() => assertLiveDisposableDatabase(wrong.toString())).toThrow(/positively identified/);
   });
 });

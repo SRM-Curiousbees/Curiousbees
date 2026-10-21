@@ -30,6 +30,25 @@ cd apps/api && E2E_DATABASE_URL="postgresql://cbtest:cbtest_local_only@127.0.0.1
   E2E_S3_ENDPOINT=http://127.0.0.1:59000 npm run test:e2e
 docker compose -f docker-compose.test.yml down
 ```
+Without Docker, `scripts/db/local-test-db.sh init` creates the same endpoint from the local PostgreSQL binaries, in its own directory. Docker is still needed for the S3 emulator.
+
+### 2.1a′ Destructive-command safeguards
+Every command that drops, resets or bulk-deletes data checks the target in two steps before acting. Neither step relies on `NODE_ENV`.
+1. The URL must be exactly `cbtest@127.0.0.1:55432/curiousbees`, with no connection parameters other than `schema=public`.
+2. A live connection must report that database and user, plus the setting `curiousbees.disposable_test_db = on`.
+
+Only throwaway test servers carry that setting: `docker-compose.test.yml`, the CI step and `local-test-db.sh` set it. If the server can't be reached or lacks the marker, the command is refused.
+
+| Command | Rule |
+|---|---|
+| `npm run db:reset`, `db:setup`, `team:reset`, `node scripts/db-setup.js` | Disposable test database only, passed explicitly as `RESET_DATABASE_URL`; `DATABASE_URL` and `.env` are ignored |
+| Integration suites, `npm run load:seed`, load-test server | Disposable test database only (URL rule + live marker) |
+| `apps/api/prisma/clean-demo-data.ts` (deletes rows) | Disposable test database only |
+| `npm run db:migrate` (`prisma migrate dev`), `prisma:push` (`prisma db push`) | A database on this machine only; refuses remote, shared and production URLs (`scripts/db/local-only.js`) |
+| `npm run db:seed` (named demo accounts), `seed-demo-data.ts`, `backfill-organization.ts` | A database on this machine only |
+| `prisma migrate deploy`, `src/scripts/seed-production.ts` | Unchanged: forward-only and idempotent, used for deployments |
+
+The guards' own tests: `npm run test:scripts`. Set `DISPOSABLE_TEST_DATABASE_URL` to the test endpoint to include the live, read-only identity checks; otherwise they are reported as skipped.
 
 ### 2.1b Web helper and n8n workflow tests
 ```bash

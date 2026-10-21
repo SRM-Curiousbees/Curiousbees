@@ -6,12 +6,14 @@
  * open a connection that leaves this machine, and has every real credential
  * removed. Supabase is replaced by locally signed test tokens (load-server.ts).
  */
-import { assertDisposableTestDatabase, scrubServiceEnvironment } from '../e2e-safety';
+import { assertDisposableTestDatabase, assertLiveDisposableDatabase, scrubServiceEnvironment } from '../e2e-safety';
 import { blockNonLocalConnections } from '../network-guard';
 
 const LOAD_DATABASE_URL = process.env.LOAD_DATABASE_URL;
 // Same rule as the integration suite: only cbtest@127.0.0.1:55432/curiousbees.
 assertDisposableTestDatabase(LOAD_DATABASE_URL, 'test');
+// …and the live server must carry the disposable marker.
+assertLiveDisposableDatabase(LOAD_DATABASE_URL!);
 
 const positive = (value: string | undefined, fallback: number) => {
   const n = Number(value);

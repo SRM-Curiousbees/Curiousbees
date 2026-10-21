@@ -7,13 +7,13 @@
  *     npm run db:reset          # reset + migrations
  *     npm run db:setup          # reset + migrations + seed
  *
- * Anything other than the dedicated test database is refused before Prisma
- * starts (see reset-guard.js). Development databases are migrated with
+ * Anything other than the dedicated, positively identified test database is
+ * refused before Prisma starts (see reset-guard.js). Development databases are migrated with
  * `npm run db:migrate`; production only ever uses `prisma migrate deploy`.
  */
 const { spawnSync } = require('child_process');
 const path = require('path');
-const { assertResetTarget, childEnvironment, TARGET_LABEL } = require('./reset-guard');
+const { verifyDisposableDatabase, childEnvironment, TARGET_LABEL } = require('./reset-guard');
 
 const ROOT = path.resolve(__dirname, '../..');
 const SCHEMA = 'apps/api/prisma/schema.prisma';
@@ -26,9 +26,15 @@ function run(command, args, env) {
 
 function main() {
   const seed = process.argv.includes('--seed');
+  if (!process.env.RESET_DATABASE_URL) {
+    console.error('\n❌ Refusing to reset the database: RESET_DATABASE_URL is not set. Resets never use DATABASE_URL or .env; ' +
+      'pass the disposable test database explicitly (see docs/testing.md).\n');
+    process.exit(1);
+  }
   let target;
   try {
-    target = assertResetTarget(process.env.RESET_DATABASE_URL);
+    // The URL must name the test database and the live server must confirm it.
+    target = verifyDisposableDatabase(process.env.RESET_DATABASE_URL);
   } catch (e) {
     console.error(`\n❌ ${e.message}\n`);
     process.exit(1);

@@ -6,6 +6,10 @@ import * as path from 'path';
 // Never under NODE_ENV=test: tests must not pick up the development database.
 if (process.env.NODE_ENV !== 'test') dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
+// Overwrites accounts and affiliations: only ever against a database on this machine.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+require('../../../scripts/db/reset-guard').assertLocalDatabase(process.env.DATABASE_URL, 'seed named demo accounts (prisma/seed.ts); production uses src/scripts/seed-production.ts');
+
 import { SRM_ORGANIZATION_DATA, RESEARCH_INTERESTS } from '../src/database/reference-data';
 
 const prisma = new PrismaClient();

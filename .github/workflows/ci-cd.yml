@@ -58,6 +58,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://cbtest:cbtest_local_only@127.0.0.1:55432/curiousbees?schema=public
       DIRECT_URL: postgresql://cbtest:cbtest_local_only@127.0.0.1:55432/curiousbees?schema=public
+      # Enables the live (read-only) identity tests of the reset guard.
+      DISPOSABLE_TEST_DATABASE_URL: postgresql://cbtest:cbtest_local_only@127.0.0.1:55432/curiousbees?schema=public
       # Public placeholders so the Next.js build-time validation passes in CI.
       NEXT_PUBLIC_SITE_URL: https://srmcuriousbees.in
       NEXT_PUBLIC_API_URL: https://srmcuriousbees.in
@@ -73,6 +75,11 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
+
+      # Destructive test steps only run after positively identifying this throwaway
+      # service database by this marker (scripts/db/reset-guard.js).
+      - name: Mark the CI test database as disposable
+        run: psql "postgresql://cbtest:cbtest_local_only@127.0.0.1:55432/curiousbees" -Xqc "ALTER DATABASE curiousbees SET curiousbees.disposable_test_db = 'on'"
 
       - name: Prisma validate + generate
         run: |

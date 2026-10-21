@@ -19,9 +19,12 @@ const isProductionBuild = process.env.NEXT_PHASE === 'phase-production-build';
 if (!process.env.NEXT_PUBLIC_SITE_URL && process.env.VERCEL_URL) {
   process.env.NEXT_PUBLIC_SITE_URL = `https://${process.env.VERCEL_URL}`;
 }
+if (!process.env.NEXT_PUBLIC_API_URL && process.env.VERCEL_URL) {
+  process.env.NEXT_PUBLIC_API_URL = `https://${process.env.VERCEL_URL}`;
+}
 
 const envSchema = z.object({
-  NEXT_PUBLIC_API_URL: z.string().url('NEXT_PUBLIC_API_URL must be a valid URL'),
+  NEXT_PUBLIC_API_URL: z.string().url('NEXT_PUBLIC_API_URL must be a valid URL').optional(),
   NEXT_PUBLIC_SUPABASE_URL: z.string().url('NEXT_PUBLIC_SUPABASE_URL must be a valid URL'),
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, 'NEXT_PUBLIC_SUPABASE_ANON_KEY is required'),
   NEXT_PUBLIC_SITE_URL: isProductionBuild
@@ -66,7 +69,7 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/api/:path*`,
+        destination: `${(process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '')}/api/:path*`,
       },
     ];
   },

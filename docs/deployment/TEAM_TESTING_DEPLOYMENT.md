@@ -25,9 +25,10 @@ graph LR
    - **Direct Connection (port 5432)**: Set this as `DIRECT_URL`.
 3. Apply migrations (non-destructive) and seed reference data:
    ```bash
-   # Never use db:reset / db:setup here: they only accept the disposable local test database.
+   # Never use db:reset / db:setup / db:seed here: reset scripts only accept the disposable local
+   # test database, and db:seed (named demo accounts) only a database on this machine.
    DATABASE_URL="<direct connection string>" npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma
-   DATABASE_URL="<direct connection string>" npm run db:seed
+   (cd apps/api && DATABASE_URL="<direct connection string>" npx ts-node --transpile-only src/scripts/seed-production.ts)
    ```
 
 ### 2. Backend API Setup (Railway or Render Free Tier)

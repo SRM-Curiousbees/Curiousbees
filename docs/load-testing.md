@@ -60,7 +60,8 @@ That is roughly one request every 4–5 s per virtual user: a very active person
 ## Running
 
 ```bash
-# 1. Disposable test database on 127.0.0.1:55432 (Docker: docker compose -f docker-compose.test.yml up -d)
+# 1. Disposable test database on 127.0.0.1:55432 with the disposable marker:
+#    docker compose -f docker-compose.test.yml up -d    (or, without Docker: scripts/db/local-test-db.sh init)
 export LOAD_DATABASE_URL='postgresql://cbtest:cbtest_local_only@127.0.0.1:55432/curiousbees?schema=public'
 
 # 2. Synthetic data: 1,500 users, 6,000 posts, 20,000 comments, 30,000 likes, 3,000 publications, …
