@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { SupabaseAuthGuard } from '../../auth/supabase.guard';
 import { ApprovedGuard } from '../../auth/approved.guard';
-import { MeetingsService, CreateMeetingDto } from '../services/meetings.service';
+import { MeetingsService, type CreateMeetingDto } from '../services/meetings.service';
 
 @Controller('workspaces/:workspaceId/meetings')
 @UseGuards(SupabaseAuthGuard, ApprovedGuard)

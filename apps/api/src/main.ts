@@ -24,12 +24,12 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { RequestMethod, ValidationPipe, Logger, INestApplication } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
-import * as express from 'express';
+import express, { Express } from 'express';
 import { IncomingMessage, ServerResponse } from 'http';
 import { WinstonModule } from 'nest-winston';
 import { winstonOptions } from './config/winston.config';
 import helmet from 'helmet';
-import * as compression from 'compression';
+import compression from 'compression';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
@@ -62,7 +62,7 @@ export function getAllowedOrigins(): string[] {
 
 // ─── Shared app bootstrap ────────────────────────────────────────────────────
 
-export async function createApp(expressInstance?: express.Express) {
+export async function createApp(expressInstance?: Express) {
   const app = expressInstance
     ? await NestFactory.create(AppModule, new ExpressAdapter(expressInstance), {
         logger: WinstonModule.createLogger(winstonOptions),
@@ -191,7 +191,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     serverHandler = expressApp;
     console.log('[CuriousBees] NestJS ready.');
   }
-  serverHandler(req, res);
+  serverHandler!(req, res);
 }
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
