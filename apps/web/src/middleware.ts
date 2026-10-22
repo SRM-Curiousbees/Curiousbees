@@ -49,6 +49,7 @@ export async function middleware(request: NextRequest) {
     pathname === '/apple-touch-icon.png' ||
     pathname === '/logo.png' ||
     pathname === '/logo_icon.png' ||
+    pathname.startsWith('/srm_') ||
     /\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$/i.test(pathname)
   ) {
     return NextResponse.next();
@@ -99,6 +100,6 @@ export const config = {
   // Node.js runtime: reads server-only configuration (APP_URL, ALLOWED_EMAIL_DOMAINS) at runtime.
   runtime: 'nodejs',
   matcher: [
-    '/((?!api|healthz|robots.txt|sitemap.xml|_next/static|_next/image|favicon.ico|icon.png|apple-touch-icon.png|logo.png|logo_icon.png|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)',
+    '/((?!api|healthz|robots.txt|sitemap.xml|_next/static|_next/image|favicon.ico|icon.png|apple-touch-icon.png|logo.png|logo_icon.png|srm_.*|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|eot)$).*)',
   ],
 };

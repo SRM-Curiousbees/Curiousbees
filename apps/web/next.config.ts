@@ -57,8 +57,11 @@ const nextConfig = {
   // Optional: a second local dev server (e.g. UI testing) can build into its own
   // directory instead of sharing .next with the main dev server.
   distDir: process.env.NEXT_DIST_DIR || '.next',
-  output: 'standalone',
+  output: process.env.VERCEL ? undefined : 'standalone',
   poweredByHeader: false,
+  images: {
+    unoptimized: true,
+  },
   transpilePackages: [
     "@curiousbees/constants",
     "@curiousbees/types",

@@ -40,6 +40,7 @@ export default function SRMLogo({
             height={height}
             className="h-full w-auto object-left object-cover max-w-none"
             priority
+            unoptimized
           />
         </div>
       </div>
@@ -59,6 +60,7 @@ export default function SRMLogo({
           height={height * 2}
           className="w-full h-full object-contain filter drop-shadow-xs"
           priority
+          unoptimized
         />
       </div>
     </div>

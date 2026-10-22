@@ -24,6 +24,7 @@ export default function Logo({ className, size = 32, showText = false, variant =
           style={{ width: onDark ? size - 8 : size, height: onDark ? size - 8 : size }}
           className="object-contain"
           priority
+          unoptimized
         />
       </span>
       {showText && (
