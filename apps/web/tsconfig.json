@@ -48,9 +48,8 @@
     ".next/types/**/*.ts",
     "next-env.d.ts",
     "node_modules/.cache/next-darkbuild/types/**/*.ts",
-    "node_modules/.cache/next-prodcheck/types/**/*.ts",
     "node_modules/.cache/next-uiharness/types/**/*.ts",
-    "build/next-shots/types/**/*.ts"
+    "node_modules/.cache/next-prodcheck/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"
