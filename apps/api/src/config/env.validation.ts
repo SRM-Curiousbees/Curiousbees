@@ -34,8 +34,6 @@ const baseSchema = z.object({
   OPENSEARCH_INDEX: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
-  ZOOM_CLIENT_ID: z.string().optional(),
-  ZOOM_CLIENT_SECRET: z.string().optional(),
   ENABLE_CRON: z.enum(['true', 'false']).optional(),
   ENABLE_SWAGGER: z.enum(['true', 'false']).optional(),
   // n8n email → event ingestion. Optional: with no token the integration endpoints refuse all requests.

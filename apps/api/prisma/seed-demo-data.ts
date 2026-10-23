@@ -367,7 +367,6 @@ async function main() {
       researchTopic: 'Autonomous Distributed Computing and AI Workload Optimization',
       collaborationProvider: IntegrationProvider.GOOGLE_WORKSPACE,
       googleChatSpaceUrl: 'https://chat.google.com/room/curiousbees-edge-ai',
-      zoomJoinUrl: 'https://zoom.us/j/9981245781',
       members: [
         { userId: supervisor.id, role: 'OWNER' },
         { userId: scholar.id, role: 'MEMBER' },
@@ -393,8 +392,8 @@ async function main() {
       supervisorId: supervisor.id,
       researchDomain: 'Information Security & Cryptography',
       researchTopic: 'Post-Quantum Verification',
-      collaborationProvider: IntegrationProvider.ZOOM_WORKPLACE,
-      zoomJoinUrl: 'https://zoom.us/j/9812401824',
+      collaborationProvider: IntegrationProvider.EXTERNAL,
+      externalMeetingUrl: 'https://teams.microsoft.com/l/meetup-join/quantum-crypto',
       members: [
         { userId: supervisor.id, role: 'OWNER' },
         ...(revathi ? [{ userId: revathi.id, role: 'MEMBER' }] : []),
@@ -422,8 +421,8 @@ async function main() {
           researchDomain: ws.researchDomain,
           researchTopic: ws.researchTopic,
           collaborationProvider: ws.collaborationProvider,
-          googleChatSpaceUrl: ws.googleChatSpaceUrl,
-          zoomJoinUrl: ws.zoomJoinUrl,
+          googleChatSpaceUrl: (ws as any).googleChatSpaceUrl,
+          externalMeetingUrl: (ws as any).externalMeetingUrl,
         },
       });
 
@@ -692,7 +691,7 @@ async function main() {
   }
 
   // 12. Seed Connected Integrations for both Supervisors and Scholars
-  console.log('🔌 Seeding Connected App Integrations (Google Workspace & Zoom)...');
+  console.log('🔌 Seeding Connected App Integrations (Google Workspace)...');
   const allUsersWithIntegrations = [
     supervisor,
     scholar,
@@ -723,31 +722,6 @@ async function main() {
         refreshToken: `refresh-google-token-${u.id}`,
         tokenExpiresAt: expiresAt,
         scopes: 'openid email profile https://www.googleapis.com/auth/calendar.events',
-        externalAccountEmail: u.email,
-        connectedAt: new Date(),
-      },
-      update: {
-        status: 'CONNECTED',
-        externalAccountEmail: u.email,
-      },
-    });
-
-    // Zoom Workplace
-    await prisma.integrationConnection.upsert({
-      where: {
-        userId_provider: {
-          userId: u.id,
-          provider: IntegrationProvider.ZOOM_WORKPLACE,
-        },
-      },
-      create: {
-        userId: u.id,
-        provider: IntegrationProvider.ZOOM_WORKPLACE,
-        status: 'CONNECTED',
-        accessToken: `active-zoom-token-${u.id}`,
-        refreshToken: `refresh-zoom-token-${u.id}`,
-        tokenExpiresAt: expiresAt,
-        scopes: 'meeting:write',
         externalAccountEmail: u.email,
         connectedAt: new Date(),
       },

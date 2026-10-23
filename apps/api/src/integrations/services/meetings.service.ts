@@ -2,7 +2,6 @@ import { Injectable, Logger, NotFoundException, ForbiddenException, BadRequestEx
 import { PrismaService } from '../../prisma/prisma.service';
 import { IntegrationsService } from './integrations.service';
 import { GoogleWorkspaceService } from './google-workspace.service';
-import { ZoomWorkplaceService } from './zoom-workplace.service';
 import { MeetingProvider, MeetingStatus, IntegrationProvider } from '@prisma/client';
 
 export interface CreateMeetingDto {
@@ -21,8 +20,7 @@ export class MeetingsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly integrationsService: IntegrationsService,
-    private readonly googleWorkspace: GoogleWorkspaceService,
-    private readonly zoomWorkplace: ZoomWorkplaceService
+    private readonly googleWorkspace: GoogleWorkspaceService
   ) {}
 
   /**
@@ -101,21 +99,6 @@ export class MeetingsService {
         IntegrationProvider.GOOGLE_WORKSPACE
       );
       const result = await this.googleWorkspace.createMeeting(accessToken, {
-        title: dto.title,
-        description: dto.description,
-        scheduledAt: scheduledDate,
-        duration,
-        hostEmail: user?.email || '',
-        participantEmails,
-      });
-      meetingUrl = result.joinUrl;
-      externalMeetingId = result.externalMeetingId;
-    } else if (dto.provider === MeetingProvider.ZOOM) {
-      const accessToken = await this.integrationsService.getValidAccessToken(
-        userId,
-        IntegrationProvider.ZOOM_WORKPLACE
-      );
-      const result = await this.zoomWorkplace.createMeeting(accessToken, {
         title: dto.title,
         description: dto.description,
         scheduledAt: scheduledDate,

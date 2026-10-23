@@ -91,7 +91,6 @@ describe('scrubServiceEnvironment', () => {
       GOOGLE_CLIENT_SECRET: 'x',
       GOOGLE_WORKSPACE_CLIENT_SECRET: 'x',
       GEMINI_API_KEY: 'x',
-      ZOOM_WORKPLACE_CLIENT_SECRET: 'x',
       N8N_INTEGRATION_TOKEN: 'x'.repeat(40),
     };
     scrubServiceEnvironment(env);

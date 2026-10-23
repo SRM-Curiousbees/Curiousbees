@@ -166,7 +166,7 @@ export class CollaborationsService {
       data: {
         title: `Collaboration: ${threadTitle}`,
         description: `Research collaboration workspace between ${request.requester.name || request.requester.email} and ${request.recipient.name || request.recipient.email}.`,
-        collaborationProvider: provider === 'ZOOM_WORKPLACE' ? 'ZOOM_WORKPLACE' : provider === 'EXTERNAL' ? 'EXTERNAL' : 'GOOGLE_WORKSPACE',
+        collaborationProvider: provider === 'EXTERNAL' ? 'EXTERNAL' : 'GOOGLE_WORKSPACE',
       },
     });
 

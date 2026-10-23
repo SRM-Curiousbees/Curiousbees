@@ -11,17 +11,17 @@ import { buttonVariants } from '@/components/ui/button';
 const SETTINGS_HREF = '/settings?tab=integrations';
 
 /**
- * Google and Zoom send people back here after they approve access. The code is
+ * Google sends people back here after they approve access. The code is
  * exchanged by the API; tokens never reach the browser.
  */
 export default function IntegrationsCallbackPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { handleGoogleCallback, handleZoomCallback, addToast } = useStore();
+  const { handleGoogleCallback, addToast } = useStore();
 
   const [status, setStatus] = useState<'working' | 'done' | 'failed'>('working');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [providerName, setProviderName] = useState('your account');
+  const providerName = 'Google Workspace';
   const processedRef = useRef(false);
 
   useEffect(() => {
@@ -29,18 +29,6 @@ export default function IntegrationsCallbackPage() {
     processedRef.current = true;
 
     const code = searchParams.get('code');
-    let provider = searchParams.get('provider');
-    const stateParam = searchParams.get('state');
-    if (!provider && stateParam) {
-      try {
-        provider = JSON.parse(atob(stateParam))?.provider || null;
-      } catch {
-        provider = null;
-      }
-    }
-    const isZoom = provider === 'ZOOM_WORKPLACE';
-    setProviderName(isZoom ? 'Zoom' : 'Google Workspace');
-
     const error = searchParams.get('error_description') || searchParams.get('error');
     if (error) {
       setStatus('failed');
@@ -56,9 +44,8 @@ export default function IntegrationsCallbackPage() {
     (async () => {
       try {
         const redirectUri = `${window.location.origin}/settings/integrations/callback`;
-        if (isZoom) await handleZoomCallback(code, redirectUri);
-        else await handleGoogleCallback(code, redirectUri);
-        addToast(`${isZoom ? 'Zoom' : 'Google Workspace'} connected.`, 'success');
+        await handleGoogleCallback(code, redirectUri);
+        addToast('Google Workspace connected.', 'success');
         setStatus('done');
         setTimeout(() => router.replace(SETTINGS_HREF), 1200);
       } catch (err: any) {
@@ -66,7 +53,7 @@ export default function IntegrationsCallbackPage() {
         setErrorMessage(err?.message || 'The connection could not be completed.');
       }
     })();
-  }, [searchParams, handleGoogleCallback, handleZoomCallback, addToast, router]);
+  }, [searchParams, handleGoogleCallback, addToast, router]);
 
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-md items-center">

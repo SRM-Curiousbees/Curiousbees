@@ -555,8 +555,6 @@ model Workspace {
   collaborationProvider IntegrationProvider     @default(GOOGLE_WORKSPACE)
   googleChatSpaceId     String?
   googleChatSpaceUrl    String?
-  zoomMeetingId         String?
-  zoomJoinUrl           String?
   externalMeetingUrl    String?
   createdAt             DateTime                @default(now())
   updatedAt             DateTime                @updatedAt
@@ -1082,12 +1080,11 @@ model ResearcherExternalLink {
 }
 
 // ============================================
-// Google Workspace & Zoom Integration Models
+// Google Workspace & External Integration Models
 // ============================================
 
 enum IntegrationProvider {
   GOOGLE_WORKSPACE
-  ZOOM_WORKPLACE
   EXTERNAL
 }
 
@@ -1103,7 +1100,6 @@ enum IntegrationStatus {
 
 enum MeetingProvider {
   GOOGLE_MEET
-  ZOOM
   EXTERNAL
 }
 
@@ -1162,7 +1158,6 @@ model ResearchMeeting {
 model InstitutionIntegrationSetting {
   id                     String   @id @default(cuid())
   googleWorkspaceEnabled Boolean  @default(true)
-  zoomWorkplaceEnabled   Boolean  @default(true)
   externalLinksEnabled   Boolean  @default(true)
   updatedAt              DateTime @updatedAt
 }

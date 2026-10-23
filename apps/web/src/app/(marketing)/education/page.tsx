@@ -33,7 +33,7 @@ export default function SupervisorsPage() {
           },
           {
             title: 'Work in shared workspaces',
-            body: 'Private files (up to 50 MB each), milestones you set, updates and meetings on Google Meet, Zoom or any video link.',
+            body: 'Private files (up to 50 MB each), milestones you set, updates and meetings on Google Meet or any video link.',
           },
           {
             title: 'Post opportunities',

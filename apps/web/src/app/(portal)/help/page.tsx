@@ -133,7 +133,7 @@ const SECTIONS: Section[] = [
       },
       {
         q: 'What can I do in a workspace?',
-        a: 'Share files (uploads up to 50 MB, or links), post updates, schedule meetings on Google Meet or any external video link (Zoom, Teams), and track milestones. The workspace owner adds milestones; any member can mark one complete.',
+        a: 'Share files (uploads up to 50 MB, or links), post updates, schedule meetings on Google Meet or any external video link (Teams, etc.), and track milestones. The workspace owner adds milestones; any member can mark one complete.',
       },
       {
         q: 'Why can’t I schedule a Google Meet meeting?',

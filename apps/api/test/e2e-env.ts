@@ -28,7 +28,7 @@ Object.assign(process.env, {
   AWS_SECRET_ACCESS_KEY: 'test',
   BOOTSTRAP_ADMIN_EMAIL: 'admin@srmist.edu.in',
   BOOTSTRAP_ADMIN_NAME: 'Bootstrap Admin',
-  // Supabase is replaced by a fake in the suite; mail, search, Google and Zoom stay unconfigured.
+  // Supabase is replaced by a fake in the suite; mail, search, and Google stay unconfigured.
   BREVO_API_KEY: '',
   ENABLE_CRON: 'false',
   LOG_TO_FILE: 'false',

@@ -170,7 +170,7 @@ Dr. Priya Subramanian',
 INSERT INTO comments (id, content, thread_id, author_id, created_at)
 VALUES
 ('c1', 'Dr. Anand, my PhD scholar Divya Nambiar is currently running molecular modeling using very heavy Graph Neural Networks. Our current local RTX 3090s are taking weeks to complete the epochs. Access to your H100 cluster would speed up her thesis work by at least 10x. We would be absolutely thrilled to collaborate!', 't1', 'u2', NOW() - INTERVAL '2 hours'),
-('c2', 'Thank you Dr. Priya! Yes, Divya is welcome to share our cluster. I have asked my PhD scholar Suresh to set up Docker containers and provision SSH keys for her. Let''s schedule a Zoom call this Monday to align on the technical details.', 't1', 'u1', NOW() - INTERVAL '1 hours');
+('c2', 'Thank you Dr. Priya! Yes, Divya is welcome to share our cluster. I have asked my PhD scholar Suresh to set up Docker containers and provision SSH keys for her. Let''s schedule a Meet call this Monday to align on the technical details.', 't1', 'u1', NOW() - INTERVAL '1 hours');
 
 -- F. Seed Academic Opportunities
 INSERT INTO opportunities (id, title, description, department, research_domain, author_id, created_at)

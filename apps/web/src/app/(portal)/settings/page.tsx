@@ -3,7 +3,7 @@
 /**
  * Account settings. Every control here does something: profile fields save through
  * the users API, research interests drive researcher suggestions, integrations
- * connect Google Workspace and Zoom for Nexus meetings, and appearance and
+ * connect Google Workspace for Nexus meetings, and appearance and
  * notification filters are stored in this browser (and read by the feed and the
  * notifications page).
  */
@@ -71,7 +71,6 @@ function UnifiedSettingsContent() {
     integrationConnections,
     fetchIntegrationStatus,
     getGoogleAuthUrl,
-    getZoomAuthUrl,
     connectIntegration,
     disconnectIntegration,
     myScholars,
@@ -88,9 +87,9 @@ function UnifiedSettingsContent() {
   const photoInputRef = React.useRef<HTMLInputElement>(null);
 
   const [loadingIntegrations, setLoadingIntegrations] = useState(false);
-  const [connectingProvider, setConnectingProvider] = useState<'GOOGLE' | 'ZOOM' | null>(null);
-  const [disconnectingProvider, setDisconnectingProvider] = useState<'GOOGLE_WORKSPACE' | 'ZOOM_WORKPLACE' | null>(null);
-  const [confirmDisconnect, setConfirmDisconnect] = useState<'GOOGLE_WORKSPACE' | 'ZOOM_WORKPLACE' | null>(null);
+  const [connectingProvider, setConnectingProvider] = useState(false);
+  const [disconnectingProvider, setDisconnectingProvider] = useState(false);
+  const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
   // Stored in this browser; read by the feed (sort, compact cards, abstracts).
   const [feedSortPreference, setFeedSortPreference] = useState<'latest' | 'top'>('latest');
@@ -288,39 +287,37 @@ function UnifiedSettingsContent() {
     setNewInterestInput('');
   };
 
-  const connect = async (provider: 'GOOGLE' | 'ZOOM') => {
-    const providerEnum = provider === 'GOOGLE' ? 'GOOGLE_WORKSPACE' : 'ZOOM_WORKPLACE';
+  const connect = async () => {
     try {
-      setConnectingProvider(provider);
+      setConnectingProvider(true);
       // Attempt seamless direct connection first (works instantly in dev / demo environments)
-      await connectIntegration(providerEnum);
-      addToast(`${provider === 'GOOGLE' ? 'Google Workspace' : 'Zoom'} connected successfully.`, 'success');
+      await connectIntegration('GOOGLE_WORKSPACE');
+      addToast('Google Workspace connected successfully.', 'success');
     } catch (err: any) {
       // Fall back to external OAuth redirection if needed
       try {
         const callbackUrl = `${window.location.origin}/settings/integrations/callback`;
-        const res = provider === 'GOOGLE' ? await getGoogleAuthUrl(callbackUrl) : await getZoomAuthUrl(callbackUrl);
+        const res = await getGoogleAuthUrl(callbackUrl);
         if (res?.authUrl) window.location.href = res.authUrl;
       } catch (oauthErr: any) {
-        addToast(oauthErr.message || `Could not start the ${provider === 'GOOGLE' ? 'Google' : 'Zoom'} connection.`, 'error');
+        addToast(oauthErr.message || 'Could not start the Google Workspace connection.', 'error');
       }
     } finally {
-      setConnectingProvider(null);
+      setConnectingProvider(false);
     }
   };
 
   const handleDisconnect = async () => {
-    const provider = confirmDisconnect;
-    if (!provider) return;
+    if (!confirmDisconnect) return;
     try {
-      setDisconnectingProvider(provider);
-      await disconnectIntegration(provider);
-      addToast(`${provider === 'GOOGLE_WORKSPACE' ? 'Google Workspace' : 'Zoom'} disconnected.`, 'info');
-      setConfirmDisconnect(null);
+      setDisconnectingProvider(true);
+      await disconnectIntegration('GOOGLE_WORKSPACE');
+      addToast('Google Workspace disconnected.', 'info');
+      setConfirmDisconnect(false);
     } catch (err: any) {
       addToast(err.message || 'The integration could not be disconnected.', 'error');
     } finally {
-      setDisconnectingProvider(null);
+      setDisconnectingProvider(false);
     }
   };
 
@@ -347,7 +344,6 @@ function UnifiedSettingsContent() {
   };
 
   const googleConn = integrationConnections?.google;
-  const zoomConn = integrationConnections?.zoom;
   const capacity = (currentUser as any)?.supervisorProfile?.maxScholars ?? 6;
 
   const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
@@ -368,14 +364,12 @@ function UnifiedSettingsContent() {
     detail,
     icon,
     conn,
-    provider,
     onConnect,
   }: {
     name: string;
     detail: string;
     icon: React.ReactNode;
     conn: any;
-    provider: 'GOOGLE_WORKSPACE' | 'ZOOM_WORKPLACE';
     onConnect: () => void;
   }) => {
     const connected = conn?.status === 'CONNECTED';
@@ -400,11 +394,11 @@ function UnifiedSettingsContent() {
           </div>
         </div>
         {connected ? (
-          <Button variant="secondary" size="sm" className="self-start" loading={disconnectingProvider === provider} onClick={() => setConfirmDisconnect(provider)}>
+          <Button variant="secondary" size="sm" className="self-start" loading={disconnectingProvider} onClick={() => setConfirmDisconnect(true)}>
             Disconnect
           </Button>
         ) : (
-          <Button size="sm" className="self-start" loading={connectingProvider === (provider === 'GOOGLE_WORKSPACE' ? 'GOOGLE' : 'ZOOM')} onClick={onConnect}>
+          <Button size="sm" className="self-start" loading={connectingProvider} onClick={onConnect}>
             Connect
             <ExternalLink aria-hidden />
           </Button>
@@ -670,9 +664,8 @@ function UnifiedSettingsContent() {
                   <IntegrationCard
                     name="Google Workspace"
                     detail="Google Meet links, Calendar sync, and Chat spaces for research collaborations."
-                    provider="GOOGLE_WORKSPACE"
                     conn={googleConn}
-                    onConnect={() => connect('GOOGLE')}
+                    onConnect={connect}
                     icon={
                       <svg className="size-5" viewBox="0 0 24 24" aria-hidden>
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -684,7 +677,7 @@ function UnifiedSettingsContent() {
                   />
                 </div>
                 <p className="text-sm text-ink-muted">
-                  CuriousBees integrates with Google Workspace for research video syncs and collaboration spaces. External video links (such as Zoom or Teams) can also be used directly when scheduling meetings without connecting an account.
+                  CuriousBees integrates with Google Workspace for research video syncs and collaboration spaces. External video links can also be used directly when scheduling meetings without connecting an account.
                 </p>
               </div>
             </Card>
@@ -845,18 +838,18 @@ function UnifiedSettingsContent() {
       </div>
 
       <Dialog
-        open={!!confirmDisconnect}
-        onClose={() => setConfirmDisconnect(null)}
+        open={confirmDisconnect}
+        onClose={() => setConfirmDisconnect(false)}
         dismissible={!disconnectingProvider}
         size="sm"
-        title={`Disconnect ${confirmDisconnect === 'GOOGLE_WORKSPACE' ? 'Google Workspace' : 'Zoom'}?`}
+        title="Disconnect Google Workspace?"
         description="New meetings will no longer be created with this account. You can reconnect at any time."
         footer={
           <>
-            <Button variant="secondary" onClick={() => setConfirmDisconnect(null)} disabled={!!disconnectingProvider}>
+            <Button variant="secondary" onClick={() => setConfirmDisconnect(false)} disabled={disconnectingProvider}>
               Cancel
             </Button>
-            <Button variant="danger" onClick={handleDisconnect} loading={!!disconnectingProvider}>
+            <Button variant="danger" onClick={handleDisconnect} loading={disconnectingProvider}>
               Disconnect
             </Button>
           </>

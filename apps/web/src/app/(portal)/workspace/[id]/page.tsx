@@ -70,13 +70,11 @@ type WorkspaceDetail = Workspace & {
 
 const MEETING_PROVIDER_LABEL: Record<MeetingProvider, string> = {
   GOOGLE_MEET: 'Google Meet',
-  ZOOM: 'Zoom',
   EXTERNAL: 'External link',
 };
 
 const COLLAB_PROVIDER_LABEL: Record<IntegrationProvider, string> = {
   GOOGLE_WORKSPACE: 'Google Workspace',
-  ZOOM_WORKPLACE: 'Zoom Workplace',
   EXTERNAL: 'External tools',
 };
 
@@ -336,7 +334,6 @@ export default function WorkspacePage() {
     }
   };
   const googleConnected = integrationConnections?.google?.status === 'CONNECTED';
-  const zoomConnected = integrationConnections?.zoom?.status === 'CONNECTED';
   const domain = workspace.researchDomainRef?.name || workspace.researchDomain;
   const topic = workspace.researchTopicRef?.name || workspace.researchTopic;
   const now = Date.now();
@@ -569,7 +566,7 @@ export default function WorkspacePage() {
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-sm font-semibold text-ink">{meeting.title}</h3>
-            <Badge tone={meeting.provider === 'GOOGLE_MEET' ? 'success' : meeting.provider === 'ZOOM' ? 'brand' : 'plum'}>
+            <Badge tone={meeting.provider === 'GOOGLE_MEET' ? 'success' : 'plum'}>
               {MEETING_PROVIDER_LABEL[meeting.provider]}
             </Badge>
           </div>
@@ -1025,7 +1022,7 @@ export default function WorkspacePage() {
                 <EmptyState
                   icon={Video}
                   title="No upcoming meetings"
-                  description="Schedule a Google Meet or Zoom call, or add a link to any other video tool."
+                  description="Schedule a Google Meet call or add an external video link."
                   action={<Button onClick={openMeetingDialog}>Schedule meeting</Button>}
                 />
               )}
@@ -1100,7 +1097,7 @@ export default function WorkspacePage() {
                 <CardHeader title={COLLAB_PROVIDER_LABEL[provider]} description="This workspace communicates via scheduled calls and video links." />
                 <CardBody className="space-y-4">
                   <p className="text-sm text-ink-secondary">
-                    Schedule video syncs with Google Meet or add external meeting links (such as Zoom or Teams) when your group needs to meet. To use a persistent chat space, create a Google Chat Space.
+                    Schedule video syncs with Google Meet or add external meeting links when your group needs to meet. To use a persistent chat space, create a Google Chat Space.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Button onClick={openMeetingDialog}>
@@ -1156,7 +1153,7 @@ export default function WorkspacePage() {
                 {(
                   [
                     { id: 'GOOGLE_WORKSPACE' as const, detail: 'Google Chat space and Google Meet video calls', connected: googleConnected, account: integrationConnections?.google },
-                    { id: 'EXTERNAL' as const, detail: 'External video links (Zoom, Teams, etc.)', connected: true, account: null },
+                    { id: 'EXTERNAL' as const, detail: 'External video links (Teams, etc.)', connected: true, account: null },
                   ] as const
                 ).map((option) => {
                   const selected = provider === option.id;
@@ -1420,7 +1417,7 @@ export default function WorkspacePage() {
                       selected ? 'border-brand-500 bg-brand-50 font-medium text-brand-800 ring-1 ring-brand-500' : 'border-line text-ink-secondary hover:border-line-strong',
                     )}
                   >
-                    {p === 'EXTERNAL' ? 'External link (Zoom, Teams...)' : MEETING_PROVIDER_LABEL[p]}
+                    {p === 'EXTERNAL' ? 'External link (Teams, etc.)' : MEETING_PROVIDER_LABEL[p]}
                   </button>
                 );
               })}
@@ -1436,7 +1433,7 @@ export default function WorkspacePage() {
           </fieldset>
 
           {meetingProvider === 'EXTERNAL' && (
-            <Field label="Meeting link" htmlFor="ws-mt-url" required hint="Zoom, Microsoft Teams, or any other video call URL.">
+            <Field label="Meeting link" htmlFor="ws-mt-url" required hint="Microsoft Teams or any other video call URL.">
               <input
                 id="ws-mt-url"
                 type="url"

@@ -30,7 +30,7 @@ export default function PrivacyPolicyPage() {
             messages, workspace files and meetings.
           </li>
           <li>
-            <strong>Connected apps</strong>: if you connect Google Workspace or Zoom, the tokens needed to create meetings and chat spaces for you. You can disconnect
+            <strong>Connected apps</strong>: if you connect Google Workspace, the tokens needed to create meetings and chat spaces for you. You can disconnect
             them in Settings at any time.
           </li>
           <li>

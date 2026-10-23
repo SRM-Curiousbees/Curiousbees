@@ -55,31 +55,6 @@ export class IntegrationsController {
     return this.integrationsService.handleGoogleCallback(req.user.id, code, redirectUri);
   }
 
-  /**
-   * Generates Zoom Workplace OAuth authorization URL
-   */
-  @Get('zoom/auth-url')
-  async getZoomAuthUrl(@Req() req: any, @Query('redirectUri') redirectUri: string) {
-    if (!redirectUri) {
-      throw new BadRequestException('redirectUri query parameter is required.');
-    }
-    return this.integrationsService.getZoomAuthUrl(req.user.id, redirectUri);
-  }
-
-  /**
-   * Completes Zoom Workplace OAuth code exchange
-   */
-  @Post('zoom/callback')
-  async handleZoomCallback(
-    @Req() req: any,
-    @Body('code') code: string,
-    @Body('redirectUri') redirectUri: string
-  ) {
-    if (!code || !redirectUri) {
-      throw new BadRequestException('code and redirectUri are required.');
-    }
-    return this.integrationsService.handleZoomCallback(req.user.id, code, redirectUri);
-  }
 
   /**
    * Connects an integration directly for active user

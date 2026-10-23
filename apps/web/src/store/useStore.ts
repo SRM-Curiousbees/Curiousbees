@@ -226,13 +226,11 @@ interface AppState {
   sendCollabMessage: (collabId: string, content: string) => Promise<CollaborationMessage>;
 
   // External Integrations & Meetings
-  integrationConnections: { google: IntegrationConnection; zoom: IntegrationConnection } | null;
+  integrationConnections: { google: IntegrationConnection } | null;
   workspaceMeetings: Record<string, ResearchMeeting[]>;
-  fetchIntegrationStatus: () => Promise<{ google: IntegrationConnection; zoom: IntegrationConnection }>;
+  fetchIntegrationStatus: () => Promise<{ google: IntegrationConnection }>;
   getGoogleAuthUrl: (redirectUri: string) => Promise<{ authUrl: string }>;
   handleGoogleCallback: (code: string, redirectUri: string) => Promise<any>;
-  getZoomAuthUrl: (redirectUri: string) => Promise<{ authUrl: string }>;
-  handleZoomCallback: (code: string, redirectUri: string) => Promise<any>;
   connectIntegration: (provider: IntegrationProvider) => Promise<any>;
   disconnectIntegration: (provider: IntegrationProvider) => Promise<any>;
   fetchWorkspaceMeetings: (workspaceId: string) => Promise<ResearchMeeting[]>;
@@ -1937,13 +1935,11 @@ export const useStore = create<AppState>((set, get) => ({
       }
       return {
         google: { provider: 'GOOGLE_WORKSPACE', status: 'NOT_CONNECTED' },
-        zoom: { provider: 'ZOOM_WORKPLACE', status: 'NOT_CONNECTED' },
       } as any;
     } catch (err) {
       console.error('Error fetching integration status:', err);
       return {
         google: { provider: 'GOOGLE_WORKSPACE', status: 'NOT_CONNECTED' },
-        zoom: { provider: 'ZOOM_WORKPLACE', status: 'NOT_CONNECTED' },
       } as any;
     }
   },
@@ -1970,30 +1966,6 @@ export const useStore = create<AppState>((set, get) => ({
     }
     const errData = await res.json().catch(() => ({}));
     throw new Error(errData.message || 'Failed to complete Google Workspace connection.');
-  },
-
-  getZoomAuthUrl: async (redirectUri: string) => {
-    const res = await apiFetch(`/api/integrations/zoom/auth-url?redirectUri=${encodeURIComponent(redirectUri)}`);
-    if (res.ok) {
-      return res.json();
-    }
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.message || 'Zoom Workplace Client ID is not configured. Please add ZOOM_CLIENT_ID to your root .env file.');
-  },
-
-  handleZoomCallback: async (code: string, redirectUri: string) => {
-    const res = await apiFetch('/api/integrations/zoom/callback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, redirectUri }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      await (get() as any).fetchIntegrationStatus();
-      return data;
-    }
-    const errData = await res.json().catch(() => ({}));
-    throw new Error(errData.message || 'Failed to complete Zoom Workplace connection.');
   },
 
   connectIntegration: async (provider: IntegrationProvider) => {

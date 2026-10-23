@@ -36,7 +36,7 @@
 
 * **🎓 Supervision**: Scholars send supervision requests to supervisors in their department; supervisors accept or decline in the Supervision Panel and review progress reports (on track, more information needed, delayed).
 * **🧪 Research record**: Each scholar keeps their thesis title, research stage, milestones and progress reports in *My research*.
-* **📁 Workspaces**: Private spaces for files (uploads up to 50 MB in a private S3 bucket, opened through short-lived links), milestones, updates and meetings (Google Meet, Zoom or any link).
+* **📁 Workspaces**: Private spaces for files (uploads up to 50 MB in a private S3 bucket, opened through short-lived links), milestones, updates and meetings (Google Meet or any video link).
 * **💬 Feed and collaboration**: Posts, papers and questions with comments and follows; collaboration requests open a conversation in Curious Nexus.
 * **📌 Opportunities and events**: Positions, projects and fellowships with external, email or in-app join requests; an institutional events calendar.
 * **🏛️ Governance**: Administrator-created accounts, faculties and departments, moderation, announcements, an audit log of sensitive actions, and analytics.

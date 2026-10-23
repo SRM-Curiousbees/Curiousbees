@@ -1,7 +1,6 @@
 import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { GoogleWorkspaceService } from './google-workspace.service';
-import { ZoomWorkplaceService } from './zoom-workplace.service';
 import { IntegrationProvider, IntegrationStatus } from '@prisma/client';
 
 @Injectable()
@@ -10,8 +9,7 @@ export class IntegrationsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly googleWorkspace: GoogleWorkspaceService,
-    private readonly zoomWorkplace: ZoomWorkplaceService
+    private readonly googleWorkspace: GoogleWorkspaceService
   ) {}
 
   /**
@@ -33,15 +31,10 @@ export class IntegrationsService {
     });
 
     const google = connections.find((c) => c.provider === IntegrationProvider.GOOGLE_WORKSPACE);
-    const zoom = connections.find((c) => c.provider === IntegrationProvider.ZOOM_WORKPLACE);
 
     return {
       google: google || {
         provider: IntegrationProvider.GOOGLE_WORKSPACE,
-        status: IntegrationStatus.NOT_CONNECTED,
-      },
-      zoom: zoom || {
-        provider: IntegrationProvider.ZOOM_WORKPLACE,
         status: IntegrationStatus.NOT_CONNECTED,
       },
     };
@@ -111,69 +104,6 @@ export class IntegrationsService {
     };
   }
 
-  /**
-   * Generates authorization URL for Zoom Workplace
-   */
-  getZoomAuthUrl(userId: string, redirectUri: string) {
-    const state = JSON.stringify({ userId, provider: 'ZOOM_WORKPLACE', timestamp: Date.now() });
-    return {
-      authUrl: this.zoomWorkplace.getAuthorizationUrl(redirectUri, Buffer.from(state).toString('base64')),
-    };
-  }
-
-  /**
-   * Handles Zoom Workplace OAuth callback and persists credentials
-   */
-  async handleZoomCallback(userId: string, code: string, redirectUri: string) {
-    const tokens = await this.zoomWorkplace.exchangeCodeForTokens(code, redirectUri);
-    const expiresAt = new Date(Date.now() + tokens.expiresIn * 1000);
-
-    const connection = await this.prisma.integrationConnection.upsert({
-      where: {
-        userId_provider: {
-          userId,
-          provider: IntegrationProvider.ZOOM_WORKPLACE,
-        },
-      },
-      create: {
-        userId,
-        provider: IntegrationProvider.ZOOM_WORKPLACE,
-        status: IntegrationStatus.CONNECTED,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        tokenExpiresAt: expiresAt,
-        scopes: tokens.scopes,
-        externalAccountEmail: tokens.email,
-        connectedAt: new Date(),
-        lastError: null,
-      },
-      update: {
-        status: IntegrationStatus.CONNECTED,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken || undefined,
-        tokenExpiresAt: expiresAt,
-        scopes: tokens.scopes || undefined,
-        externalAccountEmail: tokens.email || undefined,
-        connectedAt: new Date(),
-        lastError: null,
-      },
-    });
-
-    // Record audit log
-    await this.prisma.auditLog.create({
-      data: {
-        userId,
-        action: 'ZOOM_CONNECTED',
-        details: `Connected Zoom Workplace account (${tokens.email || 'authenticated'})`,
-      },
-    }).catch(() => {});
-
-    return {
-      status: connection.status,
-      email: connection.externalAccountEmail,
-      connectedAt: connection.connectedAt,
-    };
-  }
 
   /**
    * Connects an integration directly for a user (useful for 1-click connect and demo environments)
@@ -285,19 +215,6 @@ export class IntegrationsService {
             },
           });
           return refreshed.accessToken;
-        } else if (provider === IntegrationProvider.ZOOM_WORKPLACE) {
-          const refreshed = await this.zoomWorkplace.refreshAccessToken(connection.refreshToken);
-          const expiresAt = new Date(Date.now() + refreshed.expiresIn * 1000);
-          await this.prisma.integrationConnection.update({
-            where: { id: connection.id },
-            data: {
-              accessToken: refreshed.accessToken,
-              refreshToken: refreshed.refreshToken || connection.refreshToken,
-              tokenExpiresAt: expiresAt,
-              status: IntegrationStatus.CONNECTED,
-            },
-          });
-          return refreshed.accessToken;
         }
       } catch (err: any) {
         this.logger.error(`Token refresh failed for ${provider} (user: ${userId}): ${err.message}`);
@@ -323,7 +240,6 @@ export class IntegrationsService {
       settings = await this.prisma.institutionIntegrationSetting.create({
         data: {
           googleWorkspaceEnabled: true,
-          zoomWorkplaceEnabled: true,
           externalLinksEnabled: true,
         },
       });
@@ -336,7 +252,6 @@ export class IntegrationsService {
    */
   async updateInstitutionSettings(data: {
     googleWorkspaceEnabled?: boolean;
-    zoomWorkplaceEnabled?: boolean;
     externalLinksEnabled?: boolean;
   }) {
     const existing = await this.getInstitutionSettings();

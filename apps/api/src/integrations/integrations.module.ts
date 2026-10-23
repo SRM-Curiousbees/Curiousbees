@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AuthModule } from '../auth/auth.module';
 import { GoogleWorkspaceService } from './services/google-workspace.service';
-import { ZoomWorkplaceService } from './services/zoom-workplace.service';
 import { IntegrationsService } from './services/integrations.service';
 import { MeetingsService } from './services/meetings.service';
 import { IntegrationsController } from './controllers/integrations.controller';
@@ -18,7 +17,6 @@ import { WorkspaceCollaborationController } from './controllers/workspace-collab
   ],
   providers: [
     GoogleWorkspaceService,
-    ZoomWorkplaceService,
     IntegrationsService,
     MeetingsService,
   ],
@@ -26,7 +24,6 @@ import { WorkspaceCollaborationController } from './controllers/workspace-collab
     IntegrationsService,
     MeetingsService,
     GoogleWorkspaceService,
-    ZoomWorkplaceService,
   ],
 })
 export class IntegrationsModule {}

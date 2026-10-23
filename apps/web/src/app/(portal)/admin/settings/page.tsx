@@ -113,7 +113,6 @@ export default function AdminSettingsPage() {
             <ul className="divide-y divide-line">
               {[
                 { name: 'Google Workspace', detail: 'Google Meet and Chat spaces', on: !!config.integrations?.googleWorkspace },
-                { name: 'Zoom Workplace', detail: 'Zoom meetings', on: !!config.integrations?.zoomWorkplace },
               ].map((i) => (
                 <li key={i.name} className="flex items-center justify-between gap-4 px-5 py-3.5">
                   <div className="min-w-0">

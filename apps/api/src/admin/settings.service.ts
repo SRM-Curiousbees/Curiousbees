@@ -35,7 +35,6 @@ export class AdminSettingsService {
       },
       integrations: {
         googleWorkspace: configured('GOOGLE_WORKSPACE_CLIENT_ID', 'GOOGLE_CLIENT_ID'),
-        zoomWorkplace: configured('ZOOM_WORKPLACE_CLIENT_ID', 'ZOOM_CLIENT_ID'),
       },
       stored: stored.map((s) => ({ key: s.key, category: s.category, value: s.value, updatedAt: s.updatedAt })),
     };

@@ -23,7 +23,7 @@ const SCRUBBED_PREFIXES = [
   'AWS_',
   'BREVO_', 'MAIL_', 'SMTP_', 'MAIN_ADMIN_EMAIL', 'BOOTSTRAP_ADMIN_',
   'OPENSEARCH_',
-  'GOOGLE_', 'GEMINI_', 'ZOOM_', 'VAPID_',
+  'GOOGLE_', 'GEMINI_', 'VAPID_',
   'N8N_', 'EVENT_INGESTION_',
 ];
 
