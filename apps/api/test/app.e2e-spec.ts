@@ -95,8 +95,8 @@ describe('CuriousBees API (integration)', () => {
     http = request(app.getHttpServer());
 
     faculty = (await prisma.faculty.findFirstOrThrow({ where: { name: 'Faculty of Engineering & Technology' } }));
-    department = await prisma.department.findUniqueOrThrow({ where: { code: 'CSE' } });
-    otherDepartment = await prisma.department.findUniqueOrThrow({ where: { code: 'MCA' } });
+    department = await prisma.department.findUniqueOrThrow({ where: { code: 'CTECH-CET' } });
+    otherDepartment = await prisma.department.findUniqueOrThrow({ where: { code: 'CA-FLABS' } });
   });
 
   afterAll(async () => {
@@ -115,7 +115,7 @@ describe('CuriousBees API (integration)', () => {
 
     it('seeded reference data and exactly one bootstrap admin, no other users', async () => {
       expect(await prisma.campus.count()).toBe(1);
-      expect(await prisma.faculty.count()).toBeGreaterThan(5);
+      expect(await prisma.faculty.count()).toBeGreaterThanOrEqual(5);
       expect(await prisma.department.count()).toBeGreaterThan(10);
       expect(await prisma.researchDomain.count()).toBeGreaterThan(3);
       const users = await prisma.user.findMany();

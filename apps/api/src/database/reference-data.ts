@@ -4,6 +4,42 @@
  * production seed. Contains no users and no user-generated content.
  */
 
+import { srmData } from './srm-data';
+
+export const LEGACY_DEPARTMENT_CODE_MAP: Record<string, string> = {
+  MCA: 'CA-FLABS',
+  CA: 'CA-FLABS',
+  'CA-FSH': 'CA-FLABS',
+  CSE: 'CTECH-CET',
+  IT: 'NWC-CET',
+  AIML: 'CINT-CET',
+  ECE: 'ECE-CET',
+  EEE: 'EEE-CET',
+  BIOTECH: 'BIOTECH-CET',
+  MECH: 'MECH-CET',
+  CIVIL: 'CIVIL-CET',
+  CHEM: 'CHEMENG-CET',
+  AERO: 'AERO-CET',
+  BME: 'BME-CET',
+  PHYS: 'PHYS-FLABS',
+  CHEMISTRY: 'CHEM-FLABS',
+  MATHS: 'MATH-FLABS',
+  ENG: 'ENG-FLABS',
+  COMMERCE: 'COMM-FLABS',
+  SOM: 'DOM-FM',
+  'LAW-CORP': 'LAW-SOL',
+  'LAW-IPR': 'LAW-SOL',
+  HEALTH: 'AHS-FMHS',
+  'COMM-MED': 'MRC-FMHS',
+  'PHARM-CHEM': 'PC-FMHS',
+  'PHARM-PRAC': 'PP-FMHS',
+  'NURS-COMM': 'NURS-FMHS',
+  PHYSIO: 'CPT-FMHS',
+  'OCC-THERAPY': 'COT-FMHS',
+  'PUB-HEALTH': 'SPH-FMHS',
+  'HOTEL-MGMT': 'IHCM-FLABS',
+};
+
 export const SRM_ORGANIZATION_DATA = {
   campus: {
     code: 'KTR',
@@ -13,99 +49,77 @@ export const SRM_ORGANIZATION_DATA = {
   },
   faculties: [
     {
+      code: 'CET',
       name: 'Faculty of Engineering & Technology',
       legacyNames: ['Engineering & Technology'],
-      departments: [
-        { code: 'MCA', name: 'Computer Applications', description: 'Department of Computer Applications (MCA)' },
-        { code: 'CSE', name: 'Computing Technologies', description: 'Department of Computing Technologies (CSE)' },
-        { code: 'IT', name: 'Information Technology', description: 'Department of Information Technology' },
-        { code: 'AIML', name: 'Computational Intelligence', description: 'Department of Computational Intelligence (AIML)' },
-        { code: 'ECE', name: 'Electronics & Communication Engineering', description: 'Department of Electronics & Communication Engineering' },
-        { code: 'EEE', name: 'Electrical & Electronics Engineering', description: 'Department of Electrical & Electronics Engineering' },
-        { code: 'BIOTECH', name: 'Biotechnology', description: 'Department of Biotechnology' },
-        { code: 'MECH', name: 'Mechanical Engineering', description: 'Department of Mechanical Engineering' },
-        { code: 'CIVIL', name: 'Civil Engineering', description: 'Department of Civil Engineering' },
-        { code: 'CHEM', name: 'Chemical Engineering', description: 'Department of Chemical Engineering' },
-        { code: 'AERO', name: 'Aerospace Engineering', description: 'Department of Aerospace Engineering' },
-        { code: 'BME', name: 'Biomedical Engineering', description: 'Department of Biomedical Engineering' },
-      ],
+      departments: srmData.university.faculties[0].departments.map((d) => ({
+        code: d.code,
+        name: d.name,
+        description: `${d.name} (${d.code})`,
+        programmes: d.programmes,
+      })),
     },
     {
-      name: 'Faculty of Science & Humanities',
-      legacyNames: ['Science & Humanities'],
-      departments: [
-        { code: 'PHYS', name: 'Physics & Nanotechnology', description: 'Department of Physics & Nanotechnology' },
-        { code: 'CHEMISTRY', name: 'Chemistry', description: 'Department of Chemistry' },
-        { code: 'MATHS', name: 'Mathematics', description: 'Department of Mathematics' },
-        { code: 'ENG', name: 'English & Foreign Languages', description: 'Department of English & Foreign Languages' },
-        { code: 'COMMERCE', name: 'Commerce & Economics', description: 'Department of Commerce & Economics' },
+      code: 'FLABS',
+      name: 'Faculty of Liberal Arts & Business Studies',
+      legacyNames: [
+        'Faculty of Science & Humanities',
+        'Science & Humanities',
+        'Faculty of Hotel Management',
+        'Hotel Management',
       ],
+      departments: srmData.university.faculties[1].departments.map((d) => ({
+        code: d.code,
+        name: d.name,
+        description: `${d.name} (${d.code})`,
+        programmes: d.programmes,
+      })),
     },
     {
+      code: 'FM',
       name: 'Faculty of Management',
       legacyNames: ['Management'],
-      departments: [
-        { code: 'SOM', name: 'Management Studies', description: 'Department of Management Studies' },
-      ],
+      departments: srmData.university.faculties[2].departments.map((d) => ({
+        code: d.code,
+        name: d.name,
+        description: `${d.name} (${d.code})`,
+        programmes: d.programmes,
+      })),
     },
     {
-      name: 'Faculty of Law',
-      legacyNames: ['Law'],
-      departments: [
-        { code: 'LAW-CORP', name: 'Corporate Law & Governance', description: 'Department of Corporate Law' },
-        { code: 'LAW-IPR', name: 'Intellectual Property Rights', description: 'Department of IPR & Cyber Law' },
+      code: 'FMHS',
+      name: 'Medicine & Health Sciences',
+      legacyNames: [
+        'Faculty of Medicine & Health Sciences',
+        'Medical',
+        'Faculty of Pharmacy',
+        'Pharmacy',
+        'Faculty of Nursing',
+        'Nursing',
+        'Faculty of Physiotherapy',
+        'Physiotherapy',
+        'Faculty of Occupational Therapy',
+        'Occupational Therapy',
+        'Faculty of Public Health',
+        'Public Health',
       ],
+      departments: srmData.university.faculties[3].departments.map((d) => ({
+        code: d.code,
+        name: d.name,
+        description: `${d.name} (${d.code})`,
+        programmes: d.programmes,
+      })),
     },
     {
-      name: 'Faculty of Medicine & Health Sciences',
-      legacyNames: ['Medical'],
-      departments: [
-        { code: 'HEALTH', name: 'Health Sciences & Clinical Research', description: 'Department of Health Sciences & Clinical Research' },
-        { code: 'COMM-MED', name: 'Community Medicine', description: 'Department of Community Medicine' },
-      ],
-    },
-    {
-      name: 'Faculty of Pharmacy',
-      legacyNames: [],
-      departments: [
-        { code: 'PHARM-CHEM', name: 'Pharmaceutical Chemistry & Analysis', description: 'Department of Pharmaceutical Chemistry' },
-        { code: 'PHARM-PRAC', name: 'Pharmacy Practice', description: 'Department of Pharmacy Practice' },
-      ],
-    },
-    {
-      name: 'Faculty of Nursing',
-      legacyNames: [],
-      departments: [
-        { code: 'NURS-COMM', name: 'Community Health Nursing', description: 'Department of Community Health Nursing' },
-      ],
-    },
-    {
-      name: 'Faculty of Physiotherapy',
-      legacyNames: [],
-      departments: [
-        { code: 'PHYSIO', name: 'Physiotherapy & Rehabilitation', description: 'Department of Physiotherapy' },
-      ],
-    },
-    {
-      name: 'Faculty of Occupational Therapy',
-      legacyNames: [],
-      departments: [
-        { code: 'OCC-THERAPY', name: 'Occupational Therapy', description: 'Department of Occupational Therapy' },
-      ],
-    },
-    {
-      name: 'Faculty of Public Health',
-      legacyNames: [],
-      departments: [
-        { code: 'PUB-HEALTH', name: 'Public Health & Epidemiology', description: 'Department of Public Health' },
-      ],
-    },
-    {
-      name: 'Faculty of Hotel Management',
-      legacyNames: [],
-      departments: [
-        { code: 'HOTEL-MGMT', name: 'Hotel Management & Catering', description: 'Department of Hotel Management' },
-      ],
+      code: 'LAW',
+      name: 'SRM School of Law',
+      legacyNames: ['Faculty of Law', 'Law'],
+      departments: srmData.university.faculties[4].departments.map((d) => ({
+        code: d.code,
+        name: d.name,
+        description: `${d.name} (${d.code})`,
+        programmes: d.programmes,
+      })),
     },
   ],
 };

@@ -10,6 +10,7 @@ if (process.env.NODE_ENV !== 'test') dotenv.config({ path: path.resolve(__dirnam
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 require('../../../scripts/db/reset-guard').assertLocalDatabase(process.env.DATABASE_URL, 'seed named demo accounts (prisma/seed.ts); production uses src/scripts/seed-production.ts');
 
+import { seedOrganization } from '../src/database/seed-reference';
 import { SRM_ORGANIZATION_DATA, RESEARCH_INTERESTS } from '../src/database/reference-data';
 
 const prisma = new PrismaClient();
@@ -20,79 +21,23 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting safe, idempotent database seeding...');
 
-  // 1. Upsert Kattankulathur Campus
-  const campus = await prisma.campus.upsert({
-    where: { code: SRM_ORGANIZATION_DATA.campus.code },
-    update: {
-      name: SRM_ORGANIZATION_DATA.campus.name,
-      location: SRM_ORGANIZATION_DATA.campus.location,
-      status: SRM_ORGANIZATION_DATA.campus.status,
-    },
-    create: {
-      code: SRM_ORGANIZATION_DATA.campus.code,
-      name: SRM_ORGANIZATION_DATA.campus.name,
-      location: SRM_ORGANIZATION_DATA.campus.location,
-      status: SRM_ORGANIZATION_DATA.campus.status,
-    },
-  });
-  console.log(`✅ Campus verified: ${campus.name} (${campus.code})`);
+  // 1 & 2. Seed Campus, Faculties, and Departments (Delegated to seedOrganization)
+  await seedOrganization(prisma, console.log);
 
-  // 2. Upsert Faculties and Departments
   const facultyMap: Record<string, any> = {};
   const deptMap: Record<string, any> = {};
 
-  for (const item of SRM_ORGANIZATION_DATA.faculties) {
-    let faculty = await prisma.faculty.findUnique({ where: { name: item.name } });
-
-    if (!faculty && item.legacyNames.length > 0) {
-      for (const legacy of item.legacyNames) {
-        const found = await prisma.faculty.findUnique({ where: { name: legacy } });
-        if (found) {
-          faculty = await prisma.faculty.update({
-            where: { id: found.id },
-            data: { name: item.name, campusId: campus.id },
-          });
-          break;
-        }
-      }
-    }
-
-    if (!faculty) {
-      faculty = await prisma.faculty.create({
-        data: {
-          name: item.name,
-          campusId: campus.id,
-        },
-      });
-    } else {
-      faculty = await prisma.faculty.update({
-        where: { id: faculty.id },
-        data: { campusId: campus.id },
-      });
-    }
-
-    facultyMap[item.name] = faculty;
-
-    for (const dept of item.departments) {
-      const d = await prisma.department.upsert({
-        where: { code: dept.code },
-        update: {
-          name: dept.name,
-          facultyId: faculty.id,
-          description: dept.description,
-        },
-        create: {
-          name: dept.name,
-          code: dept.code,
-          facultyId: faculty.id,
-          description: dept.description,
-        },
-      });
-      deptMap[dept.code] = d;
-      deptMap[dept.name] = d;
-    }
+  const allFaculties = await prisma.faculty.findMany();
+  for (const f of allFaculties) {
+    facultyMap[f.name] = f;
   }
-  console.log(`✅ Seeded ${Object.keys(facultyMap).length} faculties and ${Object.keys(deptMap).length} departments.`);
+
+  const allDepts = await prisma.department.findMany();
+  for (const d of allDepts) {
+    deptMap[d.code] = d;
+    deptMap[d.name] = d;
+  }
+  console.log(`✅ Verified ${Object.keys(facultyMap).length} faculties and ${allDepts.length} departments.`);
 
   // 3. Create Research Interests (Idempotent)
   const interestsData = RESEARCH_INTERESTS;
@@ -115,8 +60,8 @@ async function main() {
       email: 'dr.sudha@srmist.edu.in',
       image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
       role: Role.RESEARCH_SUPERVISOR,
-      facultyName: 'Faculty of Engineering & Technology',
-      departmentCode: 'MCA',
+      facultyName: 'Faculty of Liberal Arts & Business Studies',
+      departmentCode: 'CA-FLABS',
       designation: 'Assistant Professor grade I',
       employeeId: '600215',
       bio: 'Assistant Professor grade I. Focused on genomic sequencing algorithms, web applications, and data science.',
@@ -127,8 +72,8 @@ async function main() {
       email: 'dr.razia@srmist.edu.in',
       image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
       role: Role.RESEARCH_SUPERVISOR,
-      facultyName: 'Faculty of Engineering & Technology',
-      departmentCode: 'MCA',
+      facultyName: 'Faculty of Liberal Arts & Business Studies',
+      departmentCode: 'CA-FLABS',
       designation: 'Associate Professor',
       employeeId: '600180',
       bio: 'Associate Professor in Computer Applications. Focus on computer networks, IoT and smart infrastructure.',
@@ -140,7 +85,7 @@ async function main() {
       image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150',
       role: Role.RESEARCH_SUPERVISOR,
       facultyName: 'Faculty of Engineering & Technology',
-      departmentCode: 'MCA',
+      departmentCode: 'ECE-CET',
       designation: 'Assistant Professor',
       employeeId: '600183',
       bio: 'Assistant Professor in ECE. Researching silicon photonics and wireless body area networks.',
@@ -151,8 +96,8 @@ async function main() {
       email: 'gr2516@srmist.edu.in',
       image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
       role: Role.RESEARCH_SCHOLAR,
-      facultyName: 'Faculty of Engineering & Technology',
-      departmentCode: 'MCA',
+      facultyName: 'Faculty of Liberal Arts & Business Studies',
+      departmentCode: 'CA-FLABS',
       employeeId: '800180',
       researchArea: 'Generative AI and Cloud Architectures',
       bio: 'PhD Candidate working on parameter-efficient fine-tuning methods for cloud environments.',
@@ -163,8 +108,8 @@ async function main() {
       email: 'santhosh.s@srmist.edu.in',
       image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
       role: Role.RESEARCH_SCHOLAR,
-      facultyName: 'Faculty of Engineering & Technology',
-      departmentCode: 'MCA',
+      facultyName: 'Faculty of Liberal Arts & Business Studies',
+      departmentCode: 'CA-FLABS',
       employeeId: '800217',
       researchArea: 'Bioinformatics and genomic target sequence analysis',
       bio: 'PhD Scholar researching nano-carriers in bioinformatics.',
@@ -175,8 +120,8 @@ async function main() {
       email: 'rm9040@srmist.edu.in',
       image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
       role: Role.RESEARCH_SCHOLAR,
-      facultyName: 'Faculty of Engineering & Technology',
-      departmentCode: 'MCA',
+      facultyName: 'Faculty of Liberal Arts & Business Studies',
+      departmentCode: 'CA-FLABS',
       employeeId: '800237',
       researchArea: 'Cryptography and distributed ledger systems',
       bio: 'Research scholar focusing on zero knowledge proof verification.',
@@ -187,8 +132,8 @@ async function main() {
       email: 'srmcuriousbees@gmail.com',
       image: 'https://lh3.googleusercontent.com/a/ACg8ocLyDIHFe7iTqEvN7tEbBWueG5lliIQdj-h6W0kcBD_teR0QyA=s96-c',
       role: Role.INSTITUTE_ADMIN,
-      facultyName: 'Faculty of Engineering & Technology',
-      departmentCode: 'MCA',
+      facultyName: 'Faculty of Liberal Arts & Business Studies',
+      departmentCode: 'CA-FLABS',
       bio: 'SRMIST Root Administrator for CuriousBees platform.',
       interests: [],
     },
@@ -198,8 +143,8 @@ async function main() {
       email: 'maddybgmistoreog@gmail.com',
       image: null,
       role: Role.INSTITUTE_ADMIN,
-      facultyName: 'Faculty of Engineering & Technology',
-      departmentCode: 'MCA',
+      facultyName: 'Faculty of Liberal Arts & Business Studies',
+      departmentCode: 'CA-FLABS',
       employeeId: 'ADM-89001',
       bio: 'Institute Administrator for CuriousBees Governance & Operations.',
       interests: [],
@@ -209,8 +154,8 @@ async function main() {
       email: 'mrmatheshwaran17@gmail.com',
       image: null,
       role: Role.RESEARCH_SUPERVISOR,
-      facultyName: 'Faculty of Engineering & Technology',
-      departmentCode: 'MCA',
+      facultyName: 'Faculty of Liberal Arts & Business Studies',
+      departmentCode: 'CA-FLABS',
       designation: 'Associate Professor / Research Supervisor',
       employeeId: 'EMP-600991',
       bio: 'Research Supervisor and Associate Professor focusing on Autonomous Distributed Systems, Scalable Cloud & AI.',
@@ -221,8 +166,8 @@ async function main() {
       email: 'r.matheshwaran.io@gmail.com',
       image: null,
       role: Role.RESEARCH_SCHOLAR,
-      facultyName: 'Faculty of Engineering & Technology',
-      departmentCode: 'MCA',
+      facultyName: 'Faculty of Liberal Arts & Business Studies',
+      departmentCode: 'CA-FLABS',
       employeeId: 'SCH-800991',
       researchArea: 'Autonomous Distributed Computing and AI Workload Optimization',
       bio: 'Doctoral Research Scholar researching parameter-efficient LLMs in distributed environments.',

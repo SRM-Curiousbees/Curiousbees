@@ -1,5 +1,5 @@
 import { PrismaClient, Role, UserStatus } from '@prisma/client';
-import { SRM_ORGANIZATION_DATA, RESEARCH_INTERESTS, DOMAINS_AND_TOPICS } from './reference-data';
+import { SRM_ORGANIZATION_DATA, RESEARCH_INTERESTS, DOMAINS_AND_TOPICS, LEGACY_DEPARTMENT_CODE_MAP } from './reference-data';
 import { isEmailDomainAllowed, normalizeEmail } from '../auth/email-policy';
 
 type Log = (message: string) => void;
@@ -13,22 +13,161 @@ export async function seedOrganization(prisma: PrismaClient, log: Log = console.
     create: campusData,
   });
 
-  let departmentCount = 0;
+  // 1. Resolve and merge faculties
+  const facultyMap: Record<string, any> = {};
+
   for (const item of faculties) {
-    const faculty = await prisma.faculty.upsert({
-      where: { name: item.name },
-      update: { campusId: campus.id },
-      create: { name: item.name, campusId: campus.id },
-    });
+    let faculty = await prisma.faculty.findUnique({ where: { name: item.name } });
+
+    if (!faculty && item.legacyNames.length > 0) {
+      for (const legacy of item.legacyNames) {
+        const found = await prisma.faculty.findUnique({ where: { name: legacy } });
+        if (found) {
+          faculty = await prisma.faculty.update({
+            where: { id: found.id },
+            data: { name: item.name, campusId: campus.id },
+          });
+          log(`  🔄 Renamed legacy faculty "${legacy}" -> "${item.name}"`);
+          break;
+        }
+      }
+    }
+
+    if (!faculty) {
+      faculty = await prisma.faculty.create({
+        data: { name: item.name, campusId: campus.id },
+      });
+      log(`  ✨ Created faculty: "${item.name}"`);
+    } else {
+      faculty = await prisma.faculty.update({
+        where: { id: faculty.id },
+        data: { campusId: campus.id },
+      });
+    }
+
+    facultyMap[item.name] = faculty;
+    facultyMap[item.code] = faculty;
+
+    // Check for remaining legacy faculties that should be merged into this canonical faculty
+    if (item.legacyNames.length > 0) {
+      for (const legacy of item.legacyNames) {
+        const redundant = await prisma.faculty.findUnique({ where: { name: legacy } });
+        if (redundant && redundant.id !== faculty.id) {
+          log(`  🔀 Merging legacy faculty "${legacy}" into canonical "${item.name}"...`);
+          await prisma.department.updateMany({
+            where: { facultyId: redundant.id },
+            data: { facultyId: faculty.id },
+          });
+          await prisma.supervisorProfile.updateMany({
+            where: { facultyId: redundant.id },
+            data: { facultyId: faculty.id },
+          });
+          await prisma.scholarProfile.updateMany({
+            where: { facultyId: redundant.id },
+            data: { facultyId: faculty.id },
+          });
+          await prisma.faculty.delete({ where: { id: redundant.id } });
+          log(`  ✓ Retired legacy faculty "${legacy}"`);
+        }
+      }
+    }
+  }
+
+  // 2. Migrate legacy department codes (e.g. MCA -> CA-FLABS, CSE -> CTECH-CET)
+  for (const [oldCode, newCode] of Object.entries(LEGACY_DEPARTMENT_CODE_MAP)) {
+    const oldDept = await prisma.department.findUnique({ where: { code: oldCode } });
+    if (oldDept) {
+      const targetDeptExists = await prisma.department.findUnique({ where: { code: newCode } });
+      if (!targetDeptExists) {
+        await prisma.department.update({
+          where: { id: oldDept.id },
+          data: { code: newCode },
+        });
+        log(`  🔄 Migrated legacy department code "${oldCode}" -> "${newCode}"`);
+      }
+    }
+  }
+
+  // 3. Upsert all 85 official departments
+  let departmentCount = 0;
+  const officialCodes = new Set<string>();
+
+  for (const item of faculties) {
+    const faculty = facultyMap[item.name];
+
     for (const dept of item.departments) {
+      officialCodes.add(dept.code);
       await prisma.department.upsert({
         where: { code: dept.code },
-        update: { name: dept.name, facultyId: faculty.id, description: dept.description },
-        create: { code: dept.code, name: dept.name, facultyId: faculty.id, description: dept.description },
+        update: {
+          name: dept.name,
+          facultyId: faculty.id,
+          description: dept.description,
+        },
+        create: {
+          code: dept.code,
+          name: dept.name,
+          facultyId: faculty.id,
+          description: dept.description,
+        },
       });
       departmentCount++;
     }
   }
+
+  // 4. Align Computer Applications (CA-FLABS) and other moved departments
+  const flabsFaculty = facultyMap['FLABS'] || facultyMap['Faculty of Liberal Arts & Business Studies'];
+  if (flabsFaculty) {
+    const caDept = await prisma.department.findUnique({ where: { code: 'CA-FLABS' } });
+    if (caDept && caDept.facultyId !== flabsFaculty.id) {
+      await prisma.department.update({
+        where: { id: caDept.id },
+        data: { facultyId: flabsFaculty.id },
+      });
+      await prisma.supervisorProfile.updateMany({
+        where: { departmentId: caDept.id },
+        data: { facultyId: flabsFaculty.id },
+      });
+      await prisma.scholarProfile.updateMany({
+        where: { departmentId: caDept.id },
+        data: { facultyId: flabsFaculty.id },
+      });
+    }
+  }
+
+  // 5. Clean up any obsolete empty departments
+  const allDepts = await prisma.department.findMany();
+  for (const d of allDepts) {
+    if (!officialCodes.has(d.code)) {
+      const userCount = await prisma.user.count({ where: { departmentId: d.id } });
+      const oppCount = await prisma.opportunity.count({ where: { departmentId: d.id } });
+      const eventCount = await prisma.event.count({ where: { departmentId: d.id } });
+      if (userCount === 0 && oppCount === 0 && eventCount === 0) {
+        await prisma.department.delete({ where: { id: d.id } });
+        log(`  🗑 Removed obsolete unused department: ${d.name} (${d.code})`);
+      }
+    }
+  }
+
+  // 6. Synchronize denormalized user department and faculty strings
+  const usersWithDept = await prisma.user.findMany({
+    where: { departmentId: { not: null } },
+    include: { departmentRef: { include: { faculty: true } } },
+  });
+
+  for (const u of usersWithDept) {
+    if (u.departmentRef) {
+      const expectedDept = u.departmentRef.name;
+      const expectedFac = u.departmentRef.faculty.name;
+      if (u.department !== expectedDept || u.faculty !== expectedFac) {
+        await prisma.user.update({
+          where: { id: u.id },
+          data: { department: expectedDept, faculty: expectedFac },
+        });
+      }
+    }
+  }
+
   log(`Organisation: campus ${campus.code}, ${faculties.length} faculties, ${departmentCount} departments.`);
 }
 

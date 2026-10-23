@@ -57,7 +57,7 @@ async function main() {
     throw new Error('Supervisor or Scholar user not found. Please run the base seed first.');
   }
 
-  const dept = await prisma.department.findFirst({ where: { code: 'MCA' } });
+  const dept = (await prisma.department.findFirst({ where: { code: 'CA-FLABS' } })) || (await prisma.department.findFirst({ where: { code: 'MCA' } }));
 
   // 2. Populate Research Feed (Threads, Comments, Likes)
   console.log('📝 Seeding Research Feed Posts...');
