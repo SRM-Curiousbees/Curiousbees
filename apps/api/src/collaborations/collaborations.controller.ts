@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Req, Query, BadRequestException } from '@nestjs/common';
 import { CollaborationsService } from './collaborations.service';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
 import { ResearchParticipantGuard } from '../auth/guards/research-participant.guard';
@@ -45,6 +45,22 @@ export class CollaborationsController {
   @UseGuards(ResearchParticipantGuard)
   async declineRequest(@Req() req: any, @Param('id') id: string) {
     return this.collaborationsService.declineRequest(id, req.user.id);
+  }
+
+  @Get('statuses')
+  async getCollaborationStatuses(
+    @Req() req: any,
+    @Query('userIds') userIds?: string,
+  ) {
+    const ids = (userIds || '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+    const uniqueIds = Array.from(new Set(ids));
+    if (uniqueIds.length > 50) {
+      throw new BadRequestException('A maximum of 50 userIds can be queried per request.');
+    }
+    return this.collaborationsService.getCollaborationStatuses(req.user.id, uniqueIds);
   }
 
   @Get('status/:targetUserId')

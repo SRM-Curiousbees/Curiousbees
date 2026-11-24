@@ -216,6 +216,7 @@ interface AppState {
 
   // Controlled Research Collaborations
   fetchCollabStatus: (targetUserId: string, threadId?: string) => Promise<CollaborationStatusResponse>;
+  fetchCollabStatuses: (userIds: string[]) => Promise<Record<string, CollaborationStatusResponse>>;
   sendCollabRequest: (recipientId: string, threadId?: string, message?: string) => Promise<ResearchCollabRequest>;
   cancelCollabRequest: (requestId: string) => Promise<ResearchCollabRequest>;
   acceptCollabRequest: (requestId: string, provider?: IntegrationProvider) => Promise<ResearchCollaboration>;
@@ -761,6 +762,17 @@ export const useStore = create<AppState>((set, get) => ({
       if (res.ok) {
         const threads = await res.json();
         set({ threads, feedError: null });
+        const meId = get().currentUser?.id;
+        const authorIds = Array.from(
+          new Set(
+            (Array.isArray(threads) ? threads : [])
+              .map((t: any) => t.authorId || t.author?.id)
+              .filter((id: any): id is string => typeof id === 'string' && id.length > 0 && id !== meId)
+          )
+        );
+        if (authorIds.length > 0) {
+          get().fetchCollabStatuses(authorIds).catch(() => {});
+        }
       } else {
         const err = await readApiError(res);
         set({ feedError: err || 'Something went wrong while retrieving research activity.' });
@@ -2111,6 +2123,26 @@ export const useStore = create<AppState>((set, get) => ({
     }
   },
 
+  fetchCollabStatuses: async (userIds: string[]) => {
+    const meId = get().currentUser?.id;
+    const unique = Array.from(new Set(userIds.filter((id) => id && id !== meId))).slice(0, 50);
+    if (unique.length === 0) return {};
+    try {
+      const res = await apiFetch(`/api/collaborations/statuses?userIds=${encodeURIComponent(unique.join(','))}`);
+      if (res.ok) {
+        const data = await res.json();
+        set((state) => ({
+          collabStatuses: { ...state.collabStatuses, ...data },
+        }));
+        return data;
+      }
+      return {};
+    } catch (e) {
+      console.error(e);
+      return {};
+    }
+  },
+
   sendCollabRequest: async (recipientId: string, threadId?: string, message?: string) => {
     set({ isLoading: true });
     try {
@@ -2173,9 +2205,11 @@ export const useStore = create<AppState>((set, get) => ({
       const data = await res.json();
       set(state => {
         const newReceived = state.myCollabRequests.received.filter(r => r.id !== requestId);
+        const otherId = data.requesterId === state.currentUser?.id ? data.recipientId : data.requesterId;
         return {
           myCollabRequests: { ...state.myCollabRequests, received: newReceived },
-          myCollaborations: [data, ...state.myCollaborations]
+          myCollaborations: [data, ...state.myCollaborations],
+          ...(otherId ? { collabStatuses: { ...state.collabStatuses, [otherId]: { status: 'ACTIVE', collaborationId: data.id } } } : {}),
         };
       });
       return data;

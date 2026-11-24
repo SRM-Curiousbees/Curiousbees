@@ -68,12 +68,13 @@ export default function ResearchPostCard({
   
   const authorId = post.authorId || post.author?.id;
   const isOwner = authorId === currentUser?.id;
+  const hasCollabStatus = authorId ? Object.prototype.hasOwnProperty.call(collabStatuses, authorId) : true;
   
   React.useEffect(() => {
-    if (authorId && currentUser && !isOwner) {
+    if (authorId && currentUser && !isOwner && !hasCollabStatus) {
       fetchCollabStatus(authorId, post.id);
     }
-  }, [authorId, post.id, currentUser, isOwner, fetchCollabStatus]);
+  }, [authorId, post.id, currentUser, isOwner, hasCollabStatus, fetchCollabStatus]);
 
   const collabState = collabStatuses[authorId]?.status || 'NONE';
   const collabRequestId = collabStatuses[authorId]?.requestId;

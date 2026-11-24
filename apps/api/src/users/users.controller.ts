@@ -16,8 +16,11 @@ export class UsersController {
   }
 
   @Get(':id/profile')
-  async getUserProfile(@Param('id') id: string) {
-    return this.usersService.getProfile(id);
+  async getUserProfile(@Req() req: any, @Param('id') id: string) {
+    if (req.user?.id === id) {
+      return this.usersService.getProfile(id);
+    }
+    return this.usersService.getPublicProfile(id);
   }
 
   @Put('profile')

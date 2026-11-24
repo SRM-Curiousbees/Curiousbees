@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentInput } from '@curiousbees/types';
 import { CreateCommentSchema } from '@curiousbees/shared-utils';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PUBLIC_AUTHOR_SELECT } from '../users/discovery';
 
 @Injectable()
 export class CommentsService {
@@ -12,25 +13,33 @@ export class CommentsService {
   ) {}
 
   async getCommentsByThread(threadId: string, userId?: string) {
+    const thread = await this.prisma.thread.findUnique({
+      where: { id: threadId },
+      select: { id: true, hidden: true, authorId: true },
+    });
+    if (!thread || (thread.hidden && thread.authorId !== userId)) {
+      throw new NotFoundException('Research thread not found.');
+    }
+
     return this.prisma.comment.findMany({
       where: { threadId, parentId: null },
       include: {
         author: {
-          select: { id: true, name: true, email: true, image: true, role: true, department: true }
+          select: PUBLIC_AUTHOR_SELECT
         },
         _count: { select: { likes: true } },
         likes: userId ? { where: { userId } } : false,
         replies: {
           include: {
             author: {
-              select: { id: true, name: true, email: true, image: true, role: true, department: true }
+              select: PUBLIC_AUTHOR_SELECT
             },
             _count: { select: { likes: true } },
             likes: userId ? { where: { userId } } : false,
             replies: {
               include: {
                 author: {
-                  select: { id: true, name: true, email: true, image: true, role: true, department: true }
+                  select: PUBLIC_AUTHOR_SELECT
                 },
                 _count: { select: { likes: true } },
                 likes: userId ? { where: { userId } } : false,
@@ -53,19 +62,20 @@ export class CommentsService {
 
     const { content, threadId, parentId } = parsed.data;
 
-    // Check if thread exists
+    // Check if thread exists and is not hidden by moderation
     const threadExists = await this.prisma.thread.findUnique({
-      where: { id: threadId }
+      where: { id: threadId },
+      select: { id: true, hidden: true, authorId: true },
     });
-    if (!threadExists) {
-      throw new BadRequestException('The thread does not exist.');
+    if (!threadExists || threadExists.hidden) {
+      throw new NotFoundException('The thread does not exist.');
     }
 
     if (parentId) {
       const parentExists = await this.prisma.comment.findUnique({
         where: { id: parentId }
       });
-      if (!parentExists) {
+      if (!parentExists || parentExists.threadId !== threadId) {
         throw new BadRequestException('The parent comment does not exist.');
       }
     }
@@ -79,14 +89,7 @@ export class CommentsService {
       },
       include: {
         author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            role: true,
-            department: true
-          }
+          select: PUBLIC_AUTHOR_SELECT
         }
       }
     });
@@ -100,14 +103,16 @@ export class CommentsService {
       this.notifications.sendNotification(
         'New Interaction on your post',
         `${replierName} commented: "${bodySnippet}"`,
-        threadExists.authorId
+        threadExists.authorId,
+        'COMMENT',
+        `/feed/${threadId}`
       ).catch(e => console.error('Comment notification failed:', e));
 
       // FCM Push Alert (async, non-blocking)
       this.notifications.sendPushToUser(threadExists.authorId, {
         title: 'New Discussion Reply! 💬',
         body: `${replierName} commented: "${bodySnippet}"`,
-        url: `/threads/${threadId}`
+        url: `/feed/${threadId}`
       }).catch(e => console.error('FCM Dispatch Failed:', e));
     }
 
@@ -131,7 +136,7 @@ export class CommentsService {
       data: { content },
       include: {
         author: {
-          select: { id: true, name: true, email: true, image: true, role: true, department: true }
+          select: PUBLIC_AUTHOR_SELECT
         },
         _count: { select: { likes: true } }
       }

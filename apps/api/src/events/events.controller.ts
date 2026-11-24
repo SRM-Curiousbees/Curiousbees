@@ -2,6 +2,9 @@ import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuard
 import { EventsService } from './events.service';
 import { SupabaseAuthGuard } from '../auth/supabase.guard';
 import { ApprovedGuard } from '../auth/approved.guard';
+import { RolesGuard } from '../auth/roles/roles.guard';
+import { Roles } from '../auth/roles/roles.decorator';
+import { Role } from '../auth/roles/role.enum';
 import { EventStatus, Prisma } from '@prisma/client';
 
 @Controller('events')
@@ -26,13 +29,15 @@ export class EventsController {
   }
 
   @Get('review')
+  @UseGuards(RolesGuard)
+  @Roles(Role.INSTITUTE_ADMIN)
   async getReviewEvents(@Req() req: any) {
     return this.eventsService.getReviewEvents(req.user);
   }
 
-
-
   @Post()
+  @UseGuards(RolesGuard)
+  @Roles(Role.INSTITUTE_ADMIN, Role.RESEARCH_SUPERVISOR)
   async createEvent(
     @Req() req: any,
     @Body() body: { title: string; date: string; time: string; venue: string; description?: string; eventType?: string; registrationLink?: string }
@@ -41,6 +46,8 @@ export class EventsController {
   }
 
   @Put(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.INSTITUTE_ADMIN, Role.RESEARCH_SUPERVISOR)
   async updateEvent(
     @Req() req: any,
     @Param('id') id: string,
@@ -50,6 +57,8 @@ export class EventsController {
   }
 
   @Patch(':id/status')
+  @UseGuards(RolesGuard)
+  @Roles(Role.INSTITUTE_ADMIN)
   async updateEventStatus(
     @Req() req: any,
     @Param('id') id: string,
@@ -59,6 +68,8 @@ export class EventsController {
   }
 
   @Delete(':id')
+  @UseGuards(RolesGuard)
+  @Roles(Role.INSTITUTE_ADMIN)
   async deleteEvent(
     @Req() req: any,
     @Param('id') id: string

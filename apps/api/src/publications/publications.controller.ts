@@ -36,6 +36,7 @@ export class PublicationsController {
   }
 
   @Put(':id')
+  @UseGuards(ResearchParticipantGuard)
   async update(
     @Req() req: any,
     @Param('id') id: string,
@@ -45,6 +46,7 @@ export class PublicationsController {
   }
 
   @Delete(':id')
+  @UseGuards(ResearchParticipantGuard)
   async remove(@Req() req: any, @Param('id') id: string) {
     return this.publicationsService.remove(id, req.user.id, req.user.role);
   }

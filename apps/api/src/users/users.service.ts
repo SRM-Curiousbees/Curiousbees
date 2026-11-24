@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProfileInput } from '@curiousbees/types';
 import { UpdateProfileSchema } from '@curiousbees/shared-utils';
@@ -6,7 +6,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { MailService } from './mail.service';
 import { Role, UserStatus } from '@prisma/client';
 import { ROOT_ADMIN_EMAIL } from '../auth/email-policy';
-import { DISCOVERY_PROFILE_SELECT, RESEARCH_ROLES } from './discovery';
+import { DISCOVERY_PROFILE_SELECT, PUBLIC_AUTHOR_SELECT, RESEARCH_ROLES } from './discovery';
 
 @Injectable()
 export class UsersService {
@@ -109,6 +109,115 @@ export class UsersService {
 
     if (!user) {
       throw new BadRequestException('User not found.');
+    }
+
+    return user;
+  }
+
+  /**
+   * Public-safe researcher profile for viewing another researcher's profile.
+   * Excludes email, employeeId, auth identifiers, approval metadata, inactive/suspended users,
+   * institute admins, and hidden publications.
+   */
+  async getPublicProfile(userId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        role: { in: RESEARCH_ROLES },
+        status: UserStatus.ACTIVE,
+        suspended: false,
+      },
+      select: {
+        id: true,
+        name: true,
+        image: true,
+        role: true,
+        department: true,
+        departmentId: true,
+        faculty: true,
+        bio: true,
+        createdAt: true,
+        interests: {
+          include: {
+            interest: true,
+          },
+        },
+        externalLinks: {
+          where: { isVisible: true },
+          orderBy: { createdAt: 'asc' },
+        },
+        departmentRef: {
+          include: {
+            faculty: {
+              include: {
+                campus: true,
+              },
+            },
+          },
+        },
+        supervisorProfile: {
+          select: {
+            id: true,
+            designation: true,
+            researchArea: true,
+            maxScholars: true,
+            department: true,
+            faculty: true,
+          },
+        },
+        scholarProfile: {
+          select: {
+            id: true,
+            researchArea: true,
+            department: true,
+            faculty: true,
+          },
+        },
+        researchProfile: {
+          include: {
+            milestones: { orderBy: { dueDate: 'asc' } },
+            activities: { take: 10, orderBy: { createdAt: 'desc' } },
+          },
+        },
+        publications: {
+          where: { hidden: false },
+          orderBy: { year: 'desc' },
+        },
+        userDomains: {
+          include: { domain: true },
+        },
+        userTopics: {
+          include: { topic: true },
+        },
+        supervisor: {
+          select: {
+            ...PUBLIC_AUTHOR_SELECT,
+            supervisorProfile: {
+              select: { designation: true, researchArea: true },
+            },
+          },
+        },
+        scholars: {
+          where: {
+            role: Role.RESEARCH_SCHOLAR,
+            status: UserStatus.ACTIVE,
+            suspended: false,
+          },
+          select: {
+            ...PUBLIC_AUTHOR_SELECT,
+            scholarProfile: {
+              select: { researchArea: true },
+            },
+            researchProfile: {
+              select: { id: true, title: true, researchArea: true, currentStage: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Researcher profile not found.');
     }
 
     return user;
@@ -835,15 +944,21 @@ export class UsersService {
     const { q, role, department, departmentId, facultyId, campusId, interest, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = {
+      status: UserStatus.ACTIVE,
+      suspended: false,
+    };
+    const andConditions: any[] = [];
     if (q) {
-      where.OR = [
-        { name: { contains: q, mode: 'insensitive' } },
-        { department: { contains: q, mode: 'insensitive' } },
-        { departmentRef: { name: { contains: q, mode: 'insensitive' } } },
-        { departmentRef: { faculty: { name: { contains: q, mode: 'insensitive' } } } },
-        { bio: { contains: q, mode: 'insensitive' } },
-      ];
+      andConditions.push({
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { department: { contains: q, mode: 'insensitive' } },
+          { departmentRef: { name: { contains: q, mode: 'insensitive' } } },
+          { departmentRef: { faculty: { name: { contains: q, mode: 'insensitive' } } } },
+          { bio: { contains: q, mode: 'insensitive' } },
+        ],
+      });
     }
     // Only research roles can be listed; any other ?role= value (e.g. INSTITUTE_ADMIN) is ignored.
     where.role = role && (RESEARCH_ROLES as string[]).includes(role) ? role : { in: RESEARCH_ROLES };
@@ -855,12 +970,17 @@ export class UsersService {
     } else if (campusId) {
       where.departmentRef = { faculty: { campusId } };
     } else if (department) {
-      where.OR = [
-        { departmentId: department },
-        { department: { equals: department, mode: 'insensitive' } },
-        { departmentRef: { name: { equals: department, mode: 'insensitive' } } },
-        { departmentRef: { code: { equals: department.toUpperCase(), mode: 'insensitive' } } },
-      ];
+      andConditions.push({
+        OR: [
+          { departmentId: department },
+          { department: { equals: department, mode: 'insensitive' } },
+          { departmentRef: { name: { equals: department, mode: 'insensitive' } } },
+          { departmentRef: { code: { equals: department.toUpperCase(), mode: 'insensitive' } } },
+        ],
+      });
+    }
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
     }
 
     if (interest) {
@@ -910,7 +1030,13 @@ export class UsersService {
           interests: { include: { interest: true } },
           userDomains: { include: { domain: true } },
           userTopics: { include: { topic: true } },
-          supervisorProfile: true,
+          supervisorProfile: {
+            select: {
+              designation: true,
+              researchArea: true,
+              maxScholars: true,
+            },
+          },
           _count: {
             select: {
               scholars: {
@@ -1104,19 +1230,23 @@ export class UsersService {
 
   async getFollowers(targetId: string, page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
+    const where = {
+      followingId: targetId,
+      follower: { status: UserStatus.ACTIVE, suspended: false },
+    };
     const [followers, total] = await Promise.all([
       this.prisma.userFollow.findMany({
-        where: { followingId: targetId },
+        where,
         skip,
         take: limit,
         include: {
           follower: {
-            select: { id: true, name: true, role: true, department: true, image: true }
+            select: PUBLIC_AUTHOR_SELECT
           }
         },
         orderBy: { createdAt: 'desc' }
       }),
-      this.prisma.userFollow.count({ where: { followingId: targetId } })
+      this.prisma.userFollow.count({ where })
     ]);
 
     return {
@@ -1127,19 +1257,23 @@ export class UsersService {
 
   async getFollowing(targetId: string, page: number = 1, limit: number = 20) {
     const skip = (page - 1) * limit;
+    const where = {
+      followerId: targetId,
+      following: { status: UserStatus.ACTIVE, suspended: false },
+    };
     const [following, total] = await Promise.all([
       this.prisma.userFollow.findMany({
-        where: { followerId: targetId },
+        where,
         skip,
         take: limit,
         include: {
           following: {
-            select: { id: true, name: true, role: true, department: true, image: true }
+            select: PUBLIC_AUTHOR_SELECT
           }
         },
         orderBy: { createdAt: 'desc' }
       }),
-      this.prisma.userFollow.count({ where: { followerId: targetId } })
+      this.prisma.userFollow.count({ where })
     ]);
 
     return {

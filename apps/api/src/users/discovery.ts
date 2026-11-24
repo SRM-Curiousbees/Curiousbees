@@ -22,3 +22,20 @@ export const DISCOVERY_PROFILE_SELECT = {
   bio: true,
   interests: { include: { interest: true } },
 } satisfies Prisma.UserSelect;
+
+/**
+ * Minimal author fields safe to attach to feed posts, comments, and replies.
+ * Excludes email, employeeId, auth identifiers, and approval/moderation metadata.
+ */
+export const PUBLIC_AUTHOR_SELECT = {
+  id: true,
+  name: true,
+  image: true,
+  role: true,
+  department: true,
+  faculty: true,
+  departmentId: true,
+  departmentRef: {
+    select: { id: true, name: true, code: true, faculty: { select: { id: true, name: true } } },
+  },
+} satisfies Prisma.UserSelect;

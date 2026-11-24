@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PUBLIC_AUTHOR_SELECT } from '../users/discovery';
 
 @Injectable()
 export class PublicationsService {
@@ -39,27 +40,7 @@ export class PublicationsService {
       where,
       include: {
         user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            department: true,
-            faculty: true,
-            departmentRef: {
-              select: {
-                id: true,
-                name: true,
-                code: true,
-                faculty: {
-                  select: {
-                    id: true,
-                    name: true,
-                  },
-                },
-              },
-            },
-          },
+          select: PUBLIC_AUTHOR_SELECT,
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -71,15 +52,11 @@ export class PublicationsService {
       where: { id },
       include: {
         user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+          select: PUBLIC_AUTHOR_SELECT,
         },
       },
     });
-    if (!pub) {
+    if (!pub || pub.hidden) {
       throw new NotFoundException('Publication not found.');
     }
     return pub;
@@ -93,9 +70,8 @@ export class PublicationsService {
   ) {
     const pub = await this.findOne(id);
 
-    // Only owner, supervisor, or admin can edit
-    if (pub.userId !== userId && role !== 'SUPERVISOR' && role !== 'INSTITUTE_ADMIN') {
-      throw new ForbiddenException('Access denied. You cannot edit this publication.');
+    if (pub.userId !== userId && role !== 'INSTITUTE_ADMIN') {
+      throw new ForbiddenException('Access denied. You can only edit your own publications.');
     }
 
     return this.prisma.publication.update({
@@ -107,9 +83,8 @@ export class PublicationsService {
   async remove(id: string, userId: string, role: string) {
     const pub = await this.findOne(id);
 
-    // Only owner, supervisor, or admin can delete
-    if (pub.userId !== userId && role !== 'SUPERVISOR' && role !== 'INSTITUTE_ADMIN') {
-      throw new ForbiddenException('Access denied. You cannot delete this publication.');
+    if (pub.userId !== userId && role !== 'INSTITUTE_ADMIN') {
+      throw new ForbiddenException('Access denied. You can only delete your own publications.');
     }
 
     return this.prisma.publication.delete({

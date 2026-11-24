@@ -305,6 +305,73 @@ export class CollaborationsService {
     return { status: 'NONE' };
   }
 
+  async getCollaborationStatuses(userId: string, targetUserIds: string[]) {
+    const uniqueIds = Array.from(new Set(targetUserIds.filter((id) => id && id !== userId)));
+    if (uniqueIds.length === 0) {
+      return {};
+    }
+    if (uniqueIds.length > 50) {
+      throw new BadRequestException('A maximum of 50 userIds can be queried per request.');
+    }
+
+    const [pendingRequests, activeCollaborations] = await Promise.all([
+      this.prisma.researchCollabRequest.findMany({
+        where: {
+          status: 'PENDING',
+          OR: [
+            { requesterId: userId, recipientId: { in: uniqueIds } },
+            { requesterId: { in: uniqueIds }, recipientId: userId },
+          ],
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.researchCollaboration.findMany({
+        where: {
+          status: 'ACTIVE',
+          OR: [
+            { requesterId: userId, recipientId: { in: uniqueIds } },
+            { requesterId: { in: uniqueIds }, recipientId: userId },
+          ],
+        },
+        orderBy: { lastActivityAt: 'desc' },
+      }),
+    ]);
+
+    const result: Record<string, { status: string; requestId?: string; collaborationId?: string }> = {};
+    for (const id of uniqueIds) {
+      result[id] = { status: 'NONE' };
+    }
+
+    // Apply in reverse priority order so higher-priority statuses win cleanly:
+    // ACTIVE -> PENDING_RECEIVED -> PENDING_SENT
+    for (const collab of activeCollaborations) {
+      const otherId = collab.requesterId === userId ? collab.recipientId : collab.requesterId;
+      if (result[otherId]?.status === 'NONE') {
+        result[otherId] = { status: 'ACTIVE', collaborationId: collab.id };
+      }
+    }
+
+    for (const req of pendingRequests) {
+      if (req.recipientId === userId) {
+        const otherId = req.requesterId;
+        if (result[otherId] && result[otherId].status !== 'PENDING_SENT') {
+          result[otherId] = { status: 'PENDING_RECEIVED', requestId: req.id };
+        }
+      }
+    }
+
+    for (const req of pendingRequests) {
+      if (req.requesterId === userId) {
+        const otherId = req.recipientId;
+        if (result[otherId] && result[otherId].status !== 'PENDING_SENT') {
+          result[otherId] = { status: 'PENDING_SENT', requestId: req.id };
+        }
+      }
+    }
+
+    return result;
+  }
+
   // ─── GET MY COLLABORATIONS ─────────────────────────────────────────────────
 
   async getMyCollaborations(userId: string) {

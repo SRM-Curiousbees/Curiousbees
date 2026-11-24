@@ -1,9 +1,11 @@
 import { Injectable, BadRequestException, ForbiddenException, NotFoundException, Optional } from '@nestjs/common';
+import { UserStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateThreadInput } from '@curiousbees/types';
 import { CreateThreadSchema } from '@curiousbees/shared-utils';
 import { NotificationsService } from '../notifications/notifications.service';
 import { FilesService } from '../files/files.service';
+import { PUBLIC_AUTHOR_SELECT } from '../users/discovery';
 
 @Injectable()
 export class ThreadsService {
@@ -29,6 +31,10 @@ export class ThreadsService {
       ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
       where: {
         hidden: false,
+        author: {
+          status: UserStatus.ACTIVE,
+          suspended: false,
+        },
         ...(tag && {
           tags: {
             has: tag
@@ -47,17 +53,7 @@ export class ThreadsService {
       include: {
         author: {
           select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            role: true,
-            faculty: true,
-            department: true,
-            departmentId: true,
-            departmentRef: {
-              select: { id: true, name: true, code: true, faculty: { select: { id: true, name: true } } },
-            },
+            ...PUBLIC_AUTHOR_SELECT,
             followers: userId ? {
               where: { followerId: userId },
               select: { id: true }
@@ -105,13 +101,17 @@ export class ThreadsService {
   }
 
   async getThreadCounts(search?: string, userId?: string) {
-    const whereClause: any = search ? {
-      OR: [
-        { title: { contains: search, mode: 'insensitive' } },
-        { content: { contains: search, mode: 'insensitive' } },
-        { tags: { has: search } }
-      ]
-    } : undefined;
+    const whereClause: any = {
+      hidden: false,
+      author: { status: UserStatus.ACTIVE, suspended: false },
+      ...(search ? {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { content: { contains: search, mode: 'insensitive' } },
+          { tags: { has: search } }
+        ]
+      } : {}),
+    };
 
     const counts = await this.prisma.thread.groupBy({
       by: ['type'],
@@ -126,7 +126,10 @@ export class ThreadsService {
     let savedCount = 0;
     if (userId) {
       savedCount = await this.prisma.savedThread.count({
-        where: { userId }
+        where: {
+          userId,
+          thread: { hidden: false },
+        }
       });
     }
 
@@ -144,17 +147,7 @@ export class ThreadsService {
       include: {
         author: {
           select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            role: true,
-            faculty: true,
-            department: true,
-            departmentId: true,
-            departmentRef: {
-              select: { id: true, name: true, code: true, faculty: { select: { id: true, name: true } } },
-            },
+            ...PUBLIC_AUTHOR_SELECT,
             bio: true
           }
         },
@@ -172,29 +165,13 @@ export class ThreadsService {
           where: { parentId: null },
           include: {
             author: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                image: true,
-                role: true,
-                faculty: true,
-                department: true
-              }
+              select: PUBLIC_AUTHOR_SELECT
             },
             _count: { select: { likes: true } },
             replies: {
               include: {
                 author: {
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    image: true,
-                    role: true,
-                    faculty: true,
-                    department: true
-                  }
+                  select: PUBLIC_AUTHOR_SELECT
                 },
                 _count: { select: { likes: true } }
               },
@@ -218,17 +195,14 @@ export class ThreadsService {
 
   async getThreadPublic(id: string) {
     return this.prisma.thread.findFirst({
-      where: { id, hidden: false },
+      where: {
+        id,
+        hidden: false,
+        author: { status: UserStatus.ACTIVE, suspended: false },
+      },
       include: {
         author: {
-          select: {
-            id: true,
-            name: true,
-            image: true,
-            role: true,
-            faculty: true,
-            department: true,
-          }
+          select: PUBLIC_AUTHOR_SELECT
         },
         attachments: true,
         _count: {
@@ -282,15 +256,7 @@ export class ThreadsService {
       },
       include: {
         author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            role: true,
-            faculty: true,
-            department: true
-          }
+          select: PUBLIC_AUTHOR_SELECT
         },
         attachments: true,
         saves: authorId ? {
@@ -307,6 +273,14 @@ export class ThreadsService {
   }
 
   async toggleLike(threadId: string, userId: string) {
+    const thread = await this.prisma.thread.findUnique({
+      where: { id: threadId },
+      select: { id: true, hidden: true, authorId: true, title: true }
+    });
+    if (!thread || thread.hidden) {
+      throw new NotFoundException('Research thread not found.');
+    }
+
     const existing = await this.prisma.threadLike.findUnique({
       where: {
         threadId_userId: { threadId, userId }
@@ -325,11 +299,7 @@ export class ThreadsService {
 
       // Send in-app notification to post author (if not self-like)
       try {
-        const thread = await this.prisma.thread.findUnique({
-          where: { id: threadId },
-          select: { authorId: true, title: true }
-        });
-        if (thread && thread.authorId !== userId) {
+        if (thread.authorId !== userId) {
           const liker = await this.prisma.user.findUnique({
             where: { id: userId },
             select: { name: true }
@@ -339,7 +309,9 @@ export class ThreadsService {
           this.notifications.sendNotification(
             'New Interaction on your post',
             `${likerName} liked "${postSnippet}"`,
-            thread.authorId
+            thread.authorId,
+            'LIKE',
+            `/feed/${threadId}`
           ).catch(e => console.error('Like notification failed:', e));
         }
       } catch (e) {
@@ -352,6 +324,14 @@ export class ThreadsService {
   }
 
   async toggleSave(threadId: string, userId: string) {
+    const thread = await this.prisma.thread.findUnique({
+      where: { id: threadId },
+      select: { id: true, hidden: true }
+    });
+    if (!thread || thread.hidden) {
+      throw new NotFoundException('Research thread not found.');
+    }
+
     const existing = await this.prisma.savedThread.findUnique({
       where: {
         threadId_userId: { threadId, userId }
@@ -376,6 +356,14 @@ export class ThreadsService {
   }
 
   async shareThread(threadId: string, userId: string, platform?: string) {
+    const thread = await this.prisma.thread.findUnique({
+      where: { id: threadId },
+      select: { id: true, hidden: true }
+    });
+    if (!thread || thread.hidden) {
+      throw new NotFoundException('Research thread not found.');
+    }
+
     return this.prisma.threadShare.create({
       data: {
         threadId,
@@ -386,26 +374,67 @@ export class ThreadsService {
   }
 
   async reportThread(threadId: string, reporterId: string, reason: string, description?: string) {
-    if (!reason) {
+    if (!reason || !reason.trim()) {
       throw new BadRequestException('Reason is required');
     }
-    const report = await this.prisma.threadReport.create({
-      data: {
-        threadId,
+    const thread = await this.prisma.thread.findUnique({
+      where: { id: threadId },
+      select: { id: true, hidden: true }
+    });
+    if (!thread || thread.hidden) {
+      throw new NotFoundException('Research thread not found.');
+    }
+
+    const existingOpen = await this.prisma.moderationReport.findFirst({
+      where: {
         reporterId,
-        reason,
-        description
-      }
+        targetType: 'POST',
+        targetId: threadId,
+        status: { in: ['OPEN', 'UNDER_REVIEW'] },
+      },
+      select: { id: true },
     });
+    if (existingOpen) {
+      throw new BadRequestException('You have already reported this post and it is awaiting review.');
+    }
+
+    const cleanReason = reason.trim();
+    const cleanDesc = description?.trim() || undefined;
+
+    const [report, moderationReport] = await Promise.all([
+      this.prisma.threadReport.create({
+        data: {
+          threadId,
+          reporterId,
+          reason: cleanReason,
+          description: cleanDesc,
+        }
+      }),
+      this.prisma.moderationReport.create({
+        data: {
+          reporterId,
+          targetType: 'POST',
+          targetId: threadId,
+          reason: cleanReason,
+          description: cleanDesc || null,
+          severity: 'MEDIUM',
+          status: 'OPEN',
+        }
+      }),
+    ]);
+
     await this.prisma.auditLog.create({
-      data: { userId: reporterId, action: 'Post Reported', details: `Reported thread ${threadId} for ${reason}` }
+      data: { userId: reporterId, action: 'Post Reported', details: `Reported thread ${threadId} for ${cleanReason}` }
     });
-    return report;
+    return { ...report, moderationReportId: moderationReport.id };
   }
 
   async requestCollaboration(threadId: string, scholarId: string, message?: string) {
-    const thread = await this.prisma.thread.findUnique({ where: { id: threadId } });
-    if (!thread) {
+    const thread = await this.prisma.thread.findUnique({
+      where: { id: threadId },
+      select: { id: true, hidden: true }
+    });
+    if (!thread || thread.hidden) {
       throw new NotFoundException('Thread not found');
     }
 
@@ -420,20 +449,18 @@ export class ThreadsService {
 
   async getSavedThreads(userId: string) {
     const saved = await this.prisma.savedThread.findMany({
-      where: { userId },
+      where: {
+        userId,
+        thread: {
+          hidden: false,
+          author: { status: UserStatus.ACTIVE, suspended: false },
+        },
+      },
       include: {
         thread: {
           include: {
             author: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-                image: true,
-                role: true,
-                faculty: true,
-                department: true
-              }
+              select: PUBLIC_AUTHOR_SELECT
             },
             attachments: true,
             saves: {
@@ -482,15 +509,7 @@ export class ThreadsService {
       data: updateData as any, // Cast to any to handle type diffs, or selectively pick fields
       include: {
         author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            role: true,
-            faculty: true,
-            department: true
-          }
+          select: PUBLIC_AUTHOR_SELECT
         },
         attachments: true,
         saves: userId ? {

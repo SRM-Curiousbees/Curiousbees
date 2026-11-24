@@ -285,6 +285,16 @@ For complete cloud hosting instructions (Vercel frontend, Railway / Docker backe
 
 ## 📚 Documentation Index
 
+### MCA Project Submission Package (`docs/submission/`)
+* 📦 **[Submission Overview & Setup](./docs/submission/README.md)** — Complete project overview, prerequisites, commands, and AWS/Supabase setup.
+* 📘 **[MCA Project Report](./docs/submission/PROJECT_REPORT.md)** — Formal 24-section academic project report.
+* 🏗️ **[System Architecture](./docs/submission/SYSTEM_ARCHITECTURE.md)** — System, auth, role workflow, and request lifecycle Mermaid diagrams.
+* 🧩 **[Module Documentation](./docs/submission/MODULE_DOCUMENTATION.md)** — Detailed inventory of frontend routes, API controllers, models, and permissions.
+* 🗄️ **[Database Documentation](./docs/submission/DATABASE_DOCUMENTATION.md)** — 54-model Prisma schema overview and ER diagram.
+* 📖 **[User Guide](./docs/submission/USER_GUIDE.md)** & **[Demonstration Script](./docs/submission/DEMONSTRATION_SCRIPT.md)** — Role-wise user manuals and 5–10 minute demo script.
+* 🧪 **[Testing & Verification](./docs/submission/TESTING_AND_VERIFICATION.md)**, **[Limitations & Future Scope](./docs/submission/LIMITATIONS_AND_FUTURE_SCOPE.md)**, and **[Submission Checklist](./docs/submission/SUBMISSION_CHECKLIST.md)**.
+
+### Engineering & Operations Guides
 For in-depth guides and specifications, visit our documentation portal:
 
 * 🏛️ **[System Architecture Guide](./docs/architecture/ARCHITECTURE.md)** — Architectural design and module relationships.

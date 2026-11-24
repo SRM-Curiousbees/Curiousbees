@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException, Logger, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EventStatus, Prisma, Role } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
@@ -45,9 +45,7 @@ export class EventsService {
    * Specifically returns events requiring human review (administrators only).
    */
   async getReviewEvents(viewer: { role?: string }) {
-    if (viewer?.role !== Role.INSTITUTE_ADMIN && viewer?.role !== 'ADMIN') {
-      throw new UnauthorizedException('Only administrators can see events awaiting review.');
-    }
+    this.checkAdminPermissions(viewer, 'Only administrators can see events awaiting review.');
     return this.getEvents({ status: EventStatus.REVIEW_REQUIRED }, viewer);
   }
 
@@ -67,15 +65,20 @@ export class EventsService {
     return event;
   }
 
+  private checkAdminPermissions(user: any, message = 'Only administrators can perform this action.') {
+    if (user?.role === Role.INSTITUTE_ADMIN || user?.role === 'ADMIN') return;
+    throw new ForbiddenException(message);
+  }
+
   private checkEditPermissions(user: any, event: any) {
-    if (user.role === Role.INSTITUTE_ADMIN || user.role === 'ADMIN') return;
-    if (user.role === Role.RESEARCH_SUPERVISOR && event.authorId === user.id) return;
-    throw new UnauthorizedException('You do not have permission to modify this event.');
+    if (user?.role === Role.INSTITUTE_ADMIN || user?.role === 'ADMIN') return;
+    if (user?.role === Role.RESEARCH_SUPERVISOR && event.authorId === user.id) return;
+    throw new ForbiddenException('You do not have permission to modify this event.');
   }
 
   private checkCreatePermissions(user: any) {
-    if (user.role === Role.INSTITUTE_ADMIN || user.role === 'ADMIN' || user.role === Role.RESEARCH_SUPERVISOR) return;
-    throw new UnauthorizedException('You do not have permission to create an event.');
+    if (user?.role === Role.INSTITUTE_ADMIN || user?.role === 'ADMIN' || user?.role === Role.RESEARCH_SUPERVISOR) return;
+    throw new ForbiddenException('You do not have permission to create an event.');
   }
 
   /**
@@ -204,8 +207,8 @@ export class EventsService {
    * Patches only the status of an event (for AI review queue).
    */
   async updateEventStatus(user: any, id: string, status: EventStatus) {
-    const event = await this.getEventById(id);
-    this.checkEditPermissions(user, event);
+    this.checkAdminPermissions(user, 'Only administrators can update event approval status.');
+    await this.getEventById(id);
 
     try {
       const updatedEvent = await this.prisma.event.update({
@@ -231,8 +234,8 @@ export class EventsService {
    * Deletes an event.
    */
   async deleteEvent(user: any, id: string) {
-    const event = await this.getEventById(id);
-    this.checkEditPermissions(user, event);
+    this.checkAdminPermissions(user, 'Only administrators can delete events.');
+    await this.getEventById(id);
 
     try {
       return await this.prisma.event.delete({
