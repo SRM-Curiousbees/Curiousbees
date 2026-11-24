@@ -75,6 +75,11 @@ turbo/
 Thumbs.db
 ehthumbs.db
 
+# 📄 Temporary & Office Documents
+~$*
+*.docx
+*.pdf
+
 # 🤖 Development Agent Cache
 .gemini/
 .agents/
